@@ -1,0 +1,56 @@
+\documentclass[Master,english,Harvard]{twbook}
+\input{preamble}
+
+\title{Design and Evaluation of an LLM-based Retrieval-Augmented-Generation Prototype for Security Analyst Support in Cyber Threat Intelligence}
+\author{Joben Preet Bhinder}
+\studentnumber{2410302067}
+\supervisor{Wolfgang Rogner, BSc. MSc.}
+\secondsupervisor{Tamás Horváth, BSc. MSc.}
+\place{Vienna}
+\degreecourse{Information Systems Management}
+
+\addbibresource{references.bib}
+
+\kurzfassung{\input{content/frontmatter/kurzfassung}}
+\schlagworte{RAG, Cyber Threat Intelligence, Retrieval-Augmented Generation, Evaluation}
+
+\outline{\input{content/frontmatter/abstract}}
+\keywords{RAG, Cyber Threat Intelligence, Retrieval-Augmented Generation, Evaluation}
+\acknowledgements{\input{content/frontmatter/acknowledgements}}
+
+\begin{document}
+
+\maketitle
+
+\input{content/chapters/01_introduction}
+\input{content/chapters/02_methodology}
+\input{content/chapters/03_results}
+\input{content/chapters/04_discussion}
+
+\input{content/meta/ai_tools}
+
+\clearpage
+\printbibliography
+
+\clearpage
+\listoffigures
+
+\clearpage
+\listoftables
+
+\clearpage
+\listaitools
+
+\clearpage
+\addcontentsline{toc}{chapter}{\listacroname}
+\chapter*{\listacroname}
+\input{content/meta/acronyms}
+
+\clearpage
+\appendix
+
+\input{content/appendix/appendix_a}
+\clearpage
+\input{content/appendix/appendix_b}
+
+\end{document}
