@@ -1,0 +1,47 @@
+# =============================================================================
+# CTI-RAG Prototype - Pinned Dependencies
+# Master Thesis: Bhinder (2026)
+# Python 3.12.x required
+# =============================================================================
+
+# --- Core LLM & RAG Framework ---
+langchain>=0.3.0,<0.4
+langchain-core>=0.3.0,<0.4
+langchain-community>=0.3.0,<0.4
+langchain-ollama>=0.2.0,<0.3
+
+# --- Vector Store ---
+chromadb>=0.5.0,<0.7
+
+# --- Embeddings & Reranking ---
+sentence-transformers>=3.0.0,<4.0
+torch>=2.4.0,<3.0
+
+# --- BM25 Lexical Search ---
+rank-bm25>=0.2.2,<0.3
+
+# --- Evaluation ---
+ragas>=0.2.0,<0.3
+datasets>=2.0.0,<3.0        # Required by RAGAS
+
+# --- Data Processing ---
+pydantic>=2.0.0,<3.0
+pyyaml>=6.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# --- API Layer (for MCP extension) ---
+fastapi>=0.110.0,<1.0
+uvicorn>=0.30.0,<1.0
+
+# --- MCP SDK ---
+mcp>=1.0.0,<2.0
+
+# --- Utilities ---
+tqdm>=4.66.0
+numpy>=1.26.0,<2.0
+pandas>=2.2.0,<3.0
+
+# --- Notebook Support ---
+jupyter>=1.0.0
+ipykernel>=6.29.0
