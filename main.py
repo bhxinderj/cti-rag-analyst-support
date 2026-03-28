@@ -50,7 +50,7 @@ def setup_logging(verbose: bool = False):
 
 def cmd_download(args):
     """Download CTI data sources."""
-    from src.cti_rag.ingestion.downloader import download_nvd, download_cisa_kev
+    from src.cti_rag.ingestion.downloader import download_nvd, download_cisa_kev, download_misp_feeds
 
     config = load_config()
     root = get_project_root()
@@ -68,6 +68,13 @@ def cmd_download(args):
     if args.source in ("cisa_kev", "all"):
         kev_config = config["data"]["sources"]["cisa_kev"]
         download_cisa_kev(output_dir=root / kev_config["raw_dir"])
+
+    if args.source in ("misp", "all"):
+        misp_config = config["data"]["sources"]["misp"]
+        download_misp_feeds(
+            output_dir=root / misp_config["raw_dir"],
+            max_events=args.misp_max_events,
+        )
 
     print("\nDownload complete. Check data/raw/ for files.")
 
@@ -307,8 +314,9 @@ def main():
 
     # Download
     dl = subparsers.add_parser("download", help="Download CTI data")
-    dl.add_argument("--source", choices=["nvd", "cisa_kev", "all"], default="all")
+    dl.add_argument("--source", choices=["nvd", "cisa_kev", "misp", "all"], default="all")
     dl.add_argument("--nvd-api-key", type=str, default=None)
+    dl.add_argument("--misp-max-events", type=int, default=500, help="Max MISP events to download")
 
     # Index
     idx = subparsers.add_parser("index", help="Build search indexes")
