@@ -85,75 +85,58 @@ def download_nvd(
         start_index = 0
         results_per_page = 2000
         year_docs = []
+        max_retries = 3
 
-        pub_start = f"{year}-01-01T00:00:00.000"
-        pub_end = f"{year}-12-31T23:59:59.999"
+        # Split year into quarters to stay under NVD's 10K result limit per query
+        quarters = [
+            (f"{year}-01-01T00:00:00.000", f"{year}-03-31T23:59:59.999"),
+            (f"{year}-04-01T00:00:00.000", f"{year}-06-30T23:59:59.999"),
+            (f"{year}-07-01T00:00:00.000", f"{year}-09-30T23:59:59.999"),
+            (f"{year}-10-01T00:00:00.000", f"{year}-12-31T23:59:59.999"),
+        ]
 
-        logger.info(f"Downloading NVD CVEs for {year} (CVSS >= {min_cvss})...")
+        logger.info(f"Downloading NVD CVEs for {year} (will filter CVSS >= {min_cvss} locally)...")
 
-        while True:
-            params = {
-                "pubStartDate": pub_start,
-                "pubEndDate": pub_end,
-                "cvssV3Severity": "HIGH",  # HIGH and CRITICAL
-                "startIndex": start_index,
-                "resultsPerPage": results_per_page,
-            }
+        for q_start, q_end in quarters:
+            start_index = 0
 
-            try:
-                response = requests.get(
-                    NVD_API_URL, params=params, headers=headers, timeout=30
-                )
-                response.raise_for_status()
-                data = response.json()
-            except requests.RequestException as e:
-                logger.error(f"NVD API error for {year} at index {start_index}: {e}")
-                time.sleep(delay * 2)
-                continue
+            while True:
+                params = {
+                    "pubStartDate": q_start,
+                    "pubEndDate": q_end,
+                    "startIndex": start_index,
+                    "resultsPerPage": results_per_page,
+                }
 
-            vulns = data.get("vulnerabilities", [])
-            total = data.get("totalResults", 0)
-            year_docs.extend(vulns)
+                success = False
+                for attempt in range(max_retries):
+                    try:
+                        response = requests.get(
+                            NVD_API_URL, params=params, headers=headers, timeout=30
+                        )
+                        response.raise_for_status()
+                        data = response.json()
+                        success = True
+                        break
+                    except requests.RequestException as e:
+                        logger.warning(f"NVD API attempt {attempt+1}/{max_retries} failed: {e}")
+                        time.sleep(delay * (attempt + 1))
 
-            logger.info(f"  {year}: fetched {len(year_docs)}/{total} CVEs")
+                if not success:
+                    logger.error(f"Skipping {q_start} to {q_end} at index {start_index} after {max_retries} retries")
+                    break
 
-            if start_index + results_per_page >= total:
-                break
+                vulns = data.get("vulnerabilities", [])
+                total = data.get("totalResults", 0)
+                year_docs.extend(vulns)
 
-            start_index += results_per_page
-            time.sleep(delay)
+                logger.info(f"  {year} ({q_start[:10]} to {q_end[:10]}): fetched {start_index + len(vulns)}/{total}")
 
-        # Also fetch CRITICAL severity separately
-        start_index = 0
-        while True:
-            params = {
-                "pubStartDate": pub_start,
-                "pubEndDate": pub_end,
-                "cvssV3Severity": "CRITICAL",
-                "startIndex": start_index,
-                "resultsPerPage": results_per_page,
-            }
+                if start_index + results_per_page >= total:
+                    break
 
-            try:
-                response = requests.get(
-                    NVD_API_URL, params=params, headers=headers, timeout=30
-                )
-                response.raise_for_status()
-                data = response.json()
-            except requests.RequestException as e:
-                logger.error(f"NVD API error (CRITICAL) for {year}: {e}")
-                time.sleep(delay * 2)
-                continue
-
-            vulns = data.get("vulnerabilities", [])
-            total = data.get("totalResults", 0)
-            year_docs.extend(vulns)
-
-            if start_index + results_per_page >= total:
-                break
-
-            start_index += results_per_page
-            time.sleep(delay)
+                start_index += results_per_page
+                time.sleep(delay)
 
         # Deduplicate by CVE ID
         seen = set()
@@ -163,6 +146,24 @@ def download_nvd(
             if cve_id not in seen:
                 seen.add(cve_id)
                 unique_docs.append(v)
+
+        # Filter by CVSS v3 score locally (more reliable than API param)
+        filtered_docs = []
+        for v in unique_docs:
+            cve = v.get("cve", {})
+            metrics = cve.get("metrics", {})
+            # Check cvssMetricV31, then cvssMetricV30
+            cvss_score = 0.0
+            for key in ("cvssMetricV31", "cvssMetricV30"):
+                metric_list = metrics.get(key, [])
+                if metric_list:
+                    cvss_score = metric_list[0].get("cvssData", {}).get("baseScore", 0.0)
+                    break
+            if cvss_score >= min_cvss:
+                filtered_docs.append(v)
+
+        unique_docs = filtered_docs
+        logger.info(f"  {year}: {len(unique_docs)} CVEs after CVSS >= {min_cvss} filter")
 
         # Save year file
         output_file = output_dir / f"nvd_cves_{year}.json"
@@ -217,6 +218,80 @@ def download_cisa_kev(output_dir: Path):
     }])
 
     logger.info(f"CISA KEV: {count} vulnerabilities saved to {output_file.name}")
+
+
+def download_misp_feeds(output_dir: Path, max_events: int = 500):
+    """
+    Download public MISP feeds from CIRCL.
+
+    Uses the CIRCL OSINT MISP feed (public, no authentication required).
+    Downloads the manifest first, then fetches individual event JSON files.
+
+    Args:
+        output_dir: Directory to save JSON files
+        max_events: Maximum number of events to download (most recent first)
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_url = "https://www.circl.lu/doc/misp/feed-osint/manifest.json"
+
+    logger.info("Downloading CIRCL OSINT MISP feed manifest...")
+    try:
+        resp = requests.get(manifest_url, timeout=30)
+        resp.raise_for_status()
+        manifest = resp.json()
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch MISP manifest: {e}")
+        return
+
+    # Sort events by timestamp (most recent first), take max_events
+    event_ids = sorted(
+        manifest.keys(),
+        key=lambda eid: manifest[eid].get("timestamp", "0"),
+        reverse=True,
+    )[:max_events]
+
+    logger.info(f"MISP feed: {len(manifest)} events available, downloading {len(event_ids)}...")
+
+    base_url = "https://www.circl.lu/doc/misp/feed-osint/"
+    downloaded = 0
+    errors = 0
+    download_manifest = []
+
+    for i, event_id in enumerate(tqdm(event_ids, desc="MISP events")):
+        event_file = output_dir / f"{event_id}.json"
+
+        # Skip if already downloaded
+        if event_file.exists():
+            downloaded += 1
+            continue
+
+        try:
+            event_url = f"{base_url}{event_id}.json"
+            resp = requests.get(event_url, timeout=15)
+            resp.raise_for_status()
+
+            with open(event_file, "w", encoding="utf-8") as f:
+                json.dump(resp.json(), f)
+
+            downloaded += 1
+            download_manifest.append({
+                "filename": f"{event_id}.json",
+                "event_info": manifest[event_id].get("info", "")[:100],
+                "sha256": _sha256_file(event_file),
+            })
+
+            # Be polite to CIRCL's server
+            time.sleep(0.5)
+
+        except requests.RequestException as e:
+            errors += 1
+            logger.warning(f"Failed to download MISP event {event_id}: {e}")
+            if errors > 20:
+                logger.error("Too many errors, stopping MISP download")
+                break
+
+    _save_manifest(output_dir, download_manifest)
+    logger.info(f"MISP download complete: {downloaded} events saved, {errors} errors")
 
 
 if __name__ == "__main__":

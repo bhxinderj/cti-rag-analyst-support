@@ -44,11 +44,13 @@ def setup_logging(verbose: bool = False):
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    # Suppress harmless ChromaDB telemetry errors (known bug in 0.6.x)
+    logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
 
 
 def cmd_download(args):
     """Download CTI data sources."""
-    from src.cti_rag.ingestion.downloader import download_nvd, download_cisa_kev
+    from src.cti_rag.ingestion.downloader import download_nvd, download_cisa_kev, download_misp_feeds
 
     config = load_config()
     root = get_project_root()
@@ -66,6 +68,13 @@ def cmd_download(args):
     if args.source in ("cisa_kev", "all"):
         kev_config = config["data"]["sources"]["cisa_kev"]
         download_cisa_kev(output_dir=root / kev_config["raw_dir"])
+
+    if args.source in ("misp", "all"):
+        misp_config = config["data"]["sources"]["misp"]
+        download_misp_feeds(
+            output_dir=root / misp_config["raw_dir"],
+            max_events=args.misp_max_events,
+        )
 
     print("\nDownload complete. Check data/raw/ for files.")
 
@@ -213,6 +222,73 @@ def cmd_evaluate(args):
         print(f"  {metric}: {score:.4f}")
 
 
+def cmd_interactive(args):
+    """Interactive query session – type questions, get RAG answers."""
+    from src.cti_rag.rag.chain import RAGChain
+
+    mode = args.mode
+    print(f"\n{'='*80}")
+    print(f"  CTI-RAG Interactive Mode (retrieval: {mode})")
+    print(f"  Type your question and press Enter.")
+    print(f"  Commands:  /baseline  – toggle baseline mode (no retrieval)")
+    print(f"             /mode      – switch retrieval mode (hybrid/bm25/vector)")
+    print(f"             /quit      – exit")
+    print(f"{'='*80}\n")
+
+    chain = RAGChain(retrieval_mode=mode)
+    use_baseline = False
+
+    while True:
+        try:
+            prompt = "(baseline) > " if use_baseline else f"({mode}) > "
+            question = input(prompt).strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nGoodbye!")
+            break
+
+        if not question:
+            continue
+
+        if question == "/quit":
+            print("Goodbye!")
+            break
+
+        if question == "/baseline":
+            use_baseline = not use_baseline
+            state = "ON (no retrieval)" if use_baseline else "OFF (RAG active)"
+            print(f"  Baseline mode: {state}\n")
+            continue
+
+        if question.startswith("/mode"):
+            parts = question.split()
+            if len(parts) == 2 and parts[1] in ("hybrid", "bm25", "vector"):
+                mode = parts[1]
+                chain = RAGChain(retrieval_mode=mode)
+                print(f"  Switched to: {mode}\n")
+            else:
+                print("  Usage: /mode hybrid|bm25|vector\n")
+            continue
+
+        # Run query
+        if use_baseline:
+            response = chain.query_baseline(question)
+            print(f"\n{'─'*80}")
+            print(f"Mode: BASELINE | Time: {response.generation_time_ms:.0f}ms")
+            print(f"{'─'*80}")
+            print(f"\n{response.answer}\n")
+        else:
+            response = chain.query(question)
+            print(f"\n{'─'*80}")
+            print(f"Mode: {mode} | Retrieval: {response.retrieval_time_ms:.0f}ms | Generation: {response.generation_time_ms:.0f}ms")
+            print(f"{'─'*80}")
+            print(f"\n{response.answer}")
+            print(f"\n{'─'*40}")
+            print(f"Sources:")
+            for doc in response.source_documents:
+                print(f"  [{doc['doc_id']}] (score: {doc.get('score', 0):.3f})")
+            print()
+
+
 def cmd_ablation(args):
     """Run full ablation study across all retrieval modes."""
     print("Running ablation study: BM25 → Vector → Hybrid")
@@ -238,8 +314,9 @@ def main():
 
     # Download
     dl = subparsers.add_parser("download", help="Download CTI data")
-    dl.add_argument("--source", choices=["nvd", "cisa_kev", "all"], default="all")
+    dl.add_argument("--source", choices=["nvd", "cisa_kev", "misp", "all"], default="all")
     dl.add_argument("--nvd-api-key", type=str, default=None)
+    dl.add_argument("--misp-max-events", type=int, default=500, help="Max MISP events to download")
 
     # Index
     idx = subparsers.add_parser("index", help="Build search indexes")
@@ -259,6 +336,10 @@ def main():
     ev.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
     ev.add_argument("--name", type=str, default="default")
 
+    # Interactive
+    ia = subparsers.add_parser("interactive", help="Interactive query session")
+    ia.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
+
     # Ablation
     subparsers.add_parser("ablation", help="Run full ablation study")
 
@@ -270,6 +351,7 @@ def main():
         "index": cmd_index,
         "query": cmd_query,
         "baseline": cmd_baseline,
+        "interactive": cmd_interactive,
         "evaluate": cmd_evaluate,
         "ablation": cmd_ablation,
     }
