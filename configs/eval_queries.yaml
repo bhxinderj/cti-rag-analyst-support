@@ -1,0 +1,71 @@
+# =============================================================================
+# CTI Evaluation Query Set
+# Master Thesis: Bhinder (2026)
+# =============================================================================
+# Representative CTI queries for prototype evaluation.
+# Organized by task type (maps to SRQ2 scenarios).
+#
+# Each query includes:
+#   - question: the natural language query
+#   - task_type: IOC enrichment | vulnerability_analysis | ttp_correlation
+#   - ground_truth: expected answer (for RAGAS context_recall)
+#   - difficulty: simple | moderate | complex
+
+queries:
+  # --- Task Type 1: Vulnerability Analysis (CVE/CWE) ---
+  - id: vuln_001
+    question: "What is CVE-2024-3094 and what is its impact?"
+    task_type: vulnerability_analysis
+    ground_truth: "CVE-2024-3094 is a critical vulnerability in XZ Utils (liblzma) involving a supply chain compromise that inserted a backdoor allowing unauthorized remote access through SSH authentication bypass. It has a CVSS score of 10.0."
+    difficulty: simple
+
+  - id: vuln_002
+    question: "Which critical vulnerabilities affect Apache Log4j and what are the recommended mitigations?"
+    task_type: vulnerability_analysis
+    ground_truth: "CVE-2021-44228 (Log4Shell) is a critical RCE vulnerability in Apache Log4j2 with CVSS 10.0. Mitigations include upgrading to Log4j 2.17.0+, removing JndiLookup class, and setting log4j2.formatMsgNoLookups=true."
+    difficulty: moderate
+
+  - id: vuln_003
+    question: "Compare the severity and attack vectors of recent Microsoft Exchange Server vulnerabilities."
+    task_type: vulnerability_analysis
+    ground_truth: "Key Exchange vulnerabilities include ProxyLogon (CVE-2021-26855, CVSS 9.8, network-based SSRF), ProxyShell (CVE-2021-34473, CVSS 9.8, pre-auth RCE), and ProxyNotShell (CVE-2022-41040/41082). All are actively exploited and listed in CISA KEV."
+    difficulty: complex
+
+  # --- Task Type 2: IOC Enrichment ---
+  - id: ioc_001
+    question: "What threat actors are associated with attacks targeting Fortinet VPN appliances?"
+    task_type: ioc_enrichment
+    ground_truth: "Multiple APT groups have exploited Fortinet VPN vulnerabilities including CVE-2018-13379. CISA has issued advisories about state-sponsored actors targeting these vulnerabilities for initial access."
+    difficulty: moderate
+
+  - id: ioc_002
+    question: "What vulnerabilities have been actively exploited in ransomware campaigns according to CISA?"
+    task_type: ioc_enrichment
+    ground_truth: "CISA KEV catalog flags vulnerabilities with known ransomware campaign use, including vulnerabilities in Microsoft Exchange, Citrix, Pulse Secure VPN, and SonicWall products."
+    difficulty: moderate
+
+  # --- Task Type 3: TTP Correlation (ATT&CK) ---
+  - id: ttp_001
+    question: "What initial access techniques (MITRE ATT&CK) are commonly associated with the exploitation of public-facing application vulnerabilities?"
+    task_type: ttp_correlation
+    ground_truth: "Exploitation of public-facing applications maps to MITRE ATT&CK technique T1190. This is commonly used by threat actors leveraging vulnerabilities in web servers, VPN appliances, and email servers for initial access."
+    difficulty: moderate
+
+  - id: ttp_002
+    question: "Which CVEs from the last two years are associated with lateral movement techniques?"
+    task_type: ttp_correlation
+    ground_truth: "Lateral movement techniques (TA0008) are associated with vulnerabilities enabling privilege escalation and remote execution, such as PrintNightmare (CVE-2021-34527) for T1021 Remote Services and various Exchange vulnerabilities for T1210 Exploitation of Remote Services."
+    difficulty: complex
+
+  # --- Cross-source correlation queries ---
+  - id: cross_001
+    question: "For CVE-2023-22515, what is the vulnerability, which products are affected, is it in the CISA KEV, and what threat intelligence is available?"
+    task_type: vulnerability_analysis
+    ground_truth: "CVE-2023-22515 is a critical broken access control vulnerability in Atlassian Confluence Data Center and Server allowing privilege escalation. It is listed in CISA KEV as actively exploited. CVSS 10.0."
+    difficulty: complex
+
+  - id: cross_002
+    question: "What are the most critical vulnerabilities that have been both listed in CISA KEV and associated with known ransomware campaigns?"
+    task_type: ioc_enrichment
+    ground_truth: "CISA KEV tracks vulnerabilities with known ransomware use, including CVE-2021-44228 (Log4Shell), CVE-2021-34527 (PrintNightmare), multiple Exchange ProxyShell CVEs, and CVE-2023-34362 (MOVEit Transfer)."
+    difficulty: complex
