@@ -19,6 +19,7 @@ For ablation study: set retrieval_mode to "bm25", "vector", or "hybrid".
 
 import logging
 import pickle
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -102,9 +103,21 @@ class HybridRetriever:
 
         logger.info(f"HybridRetriever initialized (mode={self.mode})")
 
+    @staticmethod
+    def _tokenize_cti(text: str) -> list[str]:
+        """CTI-aware tokenizer matching the indexer's tokenization."""
+        text = text.lower()
+        tokens = text.split()
+        cleaned = []
+        for token in tokens:
+            token = re.sub(r'^[^\w-]+|[^\w-]+$', '', token)
+            if token:
+                cleaned.append(token)
+        return cleaned
+
     def _search_bm25(self, query: str, top_k: int) -> list[RetrievedChunk]:
         """Lexical search using BM25."""
-        tokenized_query = query.lower().split()
+        tokenized_query = self._tokenize_cti(query)
         scores = self.bm25.get_scores(tokenized_query)
         top_indices = np.argsort(scores)[::-1][:top_k]
 

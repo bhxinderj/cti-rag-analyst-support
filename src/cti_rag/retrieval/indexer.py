@@ -10,6 +10,7 @@ Both indexes are persisted to disk for reproducibility.
 
 import logging
 import pickle
+import re
 from pathlib import Path
 
 import chromadb
@@ -21,6 +22,27 @@ from ..ingestion.models import CTIDocument
 from ..utils.config import load_config, get_project_root
 
 logger = logging.getLogger(__name__)
+
+
+def _tokenize_cti(text: str) -> list[str]:
+    """
+    CTI-aware tokenizer for BM25.
+
+    Handles CTI-specific identifiers correctly:
+    - Strips trailing punctuation (so queries like "CVE-2021-44228?" work)
+    - Preserves hyphenated CTI identifiers as single tokens (CVE-2021-44228, CWE-79)
+    - Lowercases everything for case-insensitive matching
+    """
+    text = text.lower()
+    # Split on whitespace, then strip trailing punctuation from each token
+    tokens = text.split()
+    cleaned = []
+    for token in tokens:
+        # Strip punctuation from edges but preserve hyphens inside tokens
+        token = re.sub(r'^[^\w-]+|[^\w-]+$', '', token)
+        if token:
+            cleaned.append(token)
+    return cleaned
 
 
 class CTIIndexer:
@@ -89,8 +111,10 @@ class CTIIndexer:
         corpus_texts = [doc.to_embedding_text() for doc in documents]
         doc_ids = [doc.doc_id for doc in documents]
 
-        # Tokenize for BM25 (simple whitespace + lowercase)
-        tokenized_corpus = [text.lower().split() for text in corpus_texts]
+        # Tokenize for BM25 with CTI-aware preprocessing:
+        # - Strip punctuation so "CVE-2021-44228?" matches "CVE-2021-44228"
+        # - Preserve hyphenated identifiers (CVE-IDs, CWE-IDs, ATT&CK IDs)
+        tokenized_corpus = [_tokenize_cti(text) for text in corpus_texts]
 
         bm25 = BM25Okapi(tokenized_corpus)
 
