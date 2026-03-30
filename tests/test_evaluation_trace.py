@@ -113,6 +113,16 @@ def test_evaluator_writes_trace_rich_result_json():
                 ground_truths=["CVE-2024-3094 is the XZ Utils backdoor."],
                 experiment_name="smoke",
                 sample_ids=["eval-cve-3094"],
+                sample_metadata=[{
+                    "id": "eval-cve-3094",
+                    "task_type": "vulnerability_analysis",
+                    "difficulty": "simple",
+                    "ground_truth_points": [
+                        "CVE-2024-3094 is the XZ Utils backdoor.",
+                        "It affected SSH authentication.",
+                    ],
+                }],
+                run_metadata={"snapshot_date": "2026-03-28"},
             )
 
         saved_files = list(Path(tmp_dir).glob("ragas_smoke_*.json"))
@@ -120,7 +130,14 @@ def test_evaluator_writes_trace_rich_result_json():
 
         saved = json.loads(saved_files[0].read_text())
         assert result["metrics"]["faithfulness"] == 1.0
+        assert result["run_metadata"]["snapshot_date"] == "2026-03-28"
         assert saved["per_sample"][0]["sample_id"] == "eval-cve-3094"
+        assert saved["per_sample"][0]["task_type"] == "vulnerability_analysis"
+        assert saved["per_sample"][0]["difficulty"] == "simple"
+        assert saved["per_sample"][0]["ground_truth_points"] == [
+            "CVE-2024-3094 is the XZ Utils backdoor.",
+            "It affected SSH authentication.",
+        ]
         assert saved["per_sample"][0]["retrieved_doc_ids"] == [
             "nvd_CVE-2024-3094",
             "cisa_kev_CVE-2021-44228",
@@ -128,3 +145,38 @@ def test_evaluator_writes_trace_rich_result_json():
         assert saved["per_sample"][0]["cited_doc_ids"] == ["nvd_CVE-2024-3094"]
         assert saved["per_sample"][0]["used_chunks"][0]["rank"] == 1
         assert saved["per_sample"][0]["retrieval_trace"]["stages"]["bm25"][0]["doc_id"] == "nvd_CVE-2024-3094"
+        assert "avg_generation_time_ms" in saved["timing"]
+        assert saved["output_path"].endswith(".json")
+
+
+def test_evaluator_can_save_baseline_artifacts_without_ragas_metrics():
+    response = RAGResponse(
+        query="What is CVE-2024-3094?",
+        answer="Summary: CVE-2024-3094 is the XZ Utils backdoor.",
+        generation_time_ms=15.0,
+        total_time_ms=15.0,
+        retrieval_mode="baseline_no_retrieval",
+    )
+
+    evaluator = object.__new__(RAGASEvaluator)
+    with TemporaryDirectory() as tmp_dir:
+        evaluator.results_dir = Path(tmp_dir)
+        result = evaluator.save_run_artifacts(
+            responses=[response],
+            ground_truths=["CVE-2024-3094 is the XZ Utils backdoor."],
+            experiment_name="baseline_smoke",
+            sample_ids=["eval-cve-3094"],
+            sample_metadata=[{
+                "task_type": "vulnerability_analysis",
+                "difficulty": "simple",
+                "ground_truth_points": ["CVE-2024-3094 is the XZ Utils backdoor."],
+            }],
+            run_metadata={"snapshot_date": "2026-03-28"},
+            result_prefix="baseline",
+        )
+
+        saved_files = list(Path(tmp_dir).glob("baseline_baseline_smoke_*.json"))
+        assert len(saved_files) == 1
+        assert result["metrics"] == {}
+        assert result["per_sample"][0]["retrieval_mode"] == "baseline_no_retrieval"
+        assert "ragas_metrics" not in result["per_sample"][0]

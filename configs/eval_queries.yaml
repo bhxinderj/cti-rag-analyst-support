@@ -8,64 +8,101 @@
 # Each query includes:
 #   - question: the natural language query
 #   - task_type: IOC enrichment | vulnerability_analysis | ttp_correlation
-#   - ground_truth: expected answer (for RAGAS context_recall)
+#   - ground_truth_points: atomic reference facts used to build the evaluation reference
 #   - difficulty: simple | moderate | complex
+#
+# Design constraints:
+#   - use the same query set for RAG and baseline
+#   - keep questions aligned with the prototype snapshot and available corpus
+#   - avoid unstable prompts such as "recent", "most critical", or open-ended top-N wording
+#   - keep ground truths concise, explicit, and close to directly retrievable evidence
 
 queries:
   # --- Task Type 1: Vulnerability Analysis (CVE/CWE) ---
   - id: vuln_001
     question: "What is CVE-2024-3094 and what is its impact?"
     task_type: vulnerability_analysis
-    ground_truth: "CVE-2024-3094 is a critical vulnerability in XZ Utils (liblzma) involving a supply chain compromise that inserted a backdoor allowing unauthorized remote access through SSH authentication bypass. It has a CVSS score of 10.0."
+    ground_truth_points:
+      - "CVE-2024-3094 is a supply-chain backdoor in XZ Utils (liblzma)."
+      - "Its impact includes unauthorized remote access through SSH authentication manipulation or bypass."
+      - "It is rated critical with a CVSS score of 10.0."
     difficulty: simple
 
   - id: vuln_002
-    question: "Which critical vulnerabilities affect Apache Log4j and what are the recommended mitigations?"
+    question: "What is CVE-2021-44228 (Log4Shell) and what mitigations are recommended?"
     task_type: vulnerability_analysis
-    ground_truth: "CVE-2021-44228 (Log4Shell) is a critical RCE vulnerability in Apache Log4j2 with CVSS 10.0. Mitigations include upgrading to Log4j 2.17.0+, removing JndiLookup class, and setting log4j2.formatMsgNoLookups=true."
+    ground_truth_points:
+      - "CVE-2021-44228 (Log4Shell) is a critical remote code execution vulnerability in Apache Log4j2."
+      - "It has a CVSS score of 10.0."
+      - "The primary mitigation is upgrading to Log4j 2.17.0 or later."
+      - "Other commonly cited mitigations include removing the JndiLookup class or setting log4j2.formatMsgNoLookups=true where applicable."
     difficulty: moderate
 
   - id: vuln_003
-    question: "Compare the severity and attack vectors of recent Microsoft Exchange Server vulnerabilities."
+    question: "Compare ProxyLogon, ProxyShell, and ProxyNotShell in Microsoft Exchange Server in terms of attack vector and impact."
     task_type: vulnerability_analysis
-    ground_truth: "Key Exchange vulnerabilities include ProxyLogon (CVE-2021-26855, CVSS 9.8, network-based SSRF), ProxyShell (CVE-2021-34473, CVSS 9.8, pre-auth RCE), and ProxyNotShell (CVE-2022-41040/41082). All are actively exploited and listed in CISA KEV."
+    ground_truth_points:
+      - "ProxyLogon includes CVE-2021-26855 and is typically described as a network-based SSRF chain with severe impact."
+      - "ProxyShell includes CVE-2021-34473 and is commonly described as a pre-authentication remote code execution chain."
+      - "ProxyNotShell refers to CVE-2022-41040 and CVE-2022-41082 and is associated with Exchange exploitation leading to remote code execution."
+      - "All three are treated as high-priority Exchange exploitation cases because of active exploitation or severe operational impact."
     difficulty: complex
 
   # --- Task Type 2: IOC Enrichment ---
   - id: ioc_001
-    question: "What threat actors are associated with attacks targeting Fortinet VPN appliances?"
+    question: "Which Fortinet VPN vulnerability is commonly referenced in exploitation reporting, and what type of actor activity is described?"
     task_type: ioc_enrichment
-    ground_truth: "Multiple APT groups have exploited Fortinet VPN vulnerabilities including CVE-2018-13379. CISA has issued advisories about state-sponsored actors targeting these vulnerabilities for initial access."
+    ground_truth_points:
+      - "CVE-2018-13379 is a commonly referenced Fortinet VPN vulnerability in exploitation reporting."
+      - "The reported activity is typically described as exploitation by advanced or state-sponsored actors."
+      - "The exploitation is commonly framed as initial-access activity against exposed VPN appliances."
     difficulty: moderate
 
   - id: ioc_002
-    question: "What vulnerabilities have been actively exploited in ransomware campaigns according to CISA?"
+    question: "Which CISA KEV vulnerabilities are noted as used in ransomware campaigns? Provide representative examples."
     task_type: ioc_enrichment
-    ground_truth: "CISA KEV catalog flags vulnerabilities with known ransomware campaign use, including vulnerabilities in Microsoft Exchange, Citrix, Pulse Secure VPN, and SonicWall products."
+    ground_truth_points:
+      - "Representative CISA KEV examples with ransomware use include CVE-2021-44228 (Log4Shell)."
+      - "Representative CISA KEV examples with ransomware use include CVE-2021-34527 (PrintNightmare)."
+      - "Representative CISA KEV examples with ransomware use include Microsoft Exchange ProxyShell vulnerabilities and CVE-2023-34362 (MOVEit Transfer)."
+      - "These examples span widely deployed enterprise software and internet-facing services."
     difficulty: moderate
 
   # --- Task Type 3: TTP Correlation (ATT&CK) ---
   - id: ttp_001
     question: "What initial access techniques (MITRE ATT&CK) are commonly associated with the exploitation of public-facing application vulnerabilities?"
     task_type: ttp_correlation
-    ground_truth: "Exploitation of public-facing applications maps to MITRE ATT&CK technique T1190. This is commonly used by threat actors leveraging vulnerabilities in web servers, VPN appliances, and email servers for initial access."
+    ground_truth_points:
+      - "Exploitation of public-facing applications maps to MITRE ATT&CK technique T1190."
+      - "This technique is relevant to exploitation of web servers, VPN appliances, and email servers for initial access."
     difficulty: moderate
 
   - id: ttp_002
-    question: "Which CVEs from the last two years are associated with lateral movement techniques?"
+    question: "How do public-facing application exploitation and lateral movement map to MITRE ATT&CK in Exchange-related attack chains?"
     task_type: ttp_correlation
-    ground_truth: "Lateral movement techniques (TA0008) are associated with vulnerabilities enabling privilege escalation and remote execution, such as PrintNightmare (CVE-2021-34527) for T1021 Remote Services and various Exchange vulnerabilities for T1210 Exploitation of Remote Services."
+    ground_truth_points:
+      - "Public-facing application exploitation maps to T1190 Exploit Public-Facing Application."
+      - "Exchange-related follow-on exploitation or propagation can map to T1210 Exploitation of Remote Services."
+      - "Lateral movement discussion in this context should distinguish initial access from later remote-service abuse."
     difficulty: complex
 
   # --- Cross-source correlation queries ---
   - id: cross_001
     question: "For CVE-2023-22515, what is the vulnerability, which products are affected, is it in the CISA KEV, and what threat intelligence is available?"
     task_type: vulnerability_analysis
-    ground_truth: "CVE-2023-22515 is a critical broken access control vulnerability in Atlassian Confluence Data Center and Server allowing privilege escalation. It is listed in CISA KEV as actively exploited. CVSS 10.0."
+    ground_truth_points:
+      - "CVE-2023-22515 is a critical broken access control vulnerability in Atlassian Confluence Data Center and Server."
+      - "Its impact includes privilege escalation or unauthorized administrative access."
+      - "It is listed in CISA KEV as actively exploited."
+      - "It carries a CVSS score of 10.0."
     difficulty: complex
 
   - id: cross_002
-    question: "What are the most critical vulnerabilities that have been both listed in CISA KEV and associated with known ransomware campaigns?"
+    question: "Provide representative examples of vulnerabilities that are both in CISA KEV and associated with ransomware campaigns, including the affected products."
     task_type: ioc_enrichment
-    ground_truth: "CISA KEV tracks vulnerabilities with known ransomware use, including CVE-2021-44228 (Log4Shell), CVE-2021-34527 (PrintNightmare), multiple Exchange ProxyShell CVEs, and CVE-2023-34362 (MOVEit Transfer)."
+    ground_truth_points:
+      - "Representative KEV-plus-ransomware examples include CVE-2021-44228 affecting Apache Log4j."
+      - "Representative KEV-plus-ransomware examples include CVE-2021-34527 affecting Windows Print Spooler."
+      - "Representative KEV-plus-ransomware examples include ProxyShell vulnerabilities affecting Microsoft Exchange Server."
+      - "Representative KEV-plus-ransomware examples include CVE-2023-34362 affecting MOVEit Transfer."
     difficulty: complex
