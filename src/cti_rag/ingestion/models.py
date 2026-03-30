@@ -119,6 +119,7 @@ class CTIDocument(BaseModel):
             "title": self.title,
             "severity": self.severity.value,
             "published_date": self.published_date.isoformat() if self.published_date else "",
+            "modified_date": self.modified_date.isoformat() if self.modified_date else "",
         }
 
         if self.cvss_score is not None:

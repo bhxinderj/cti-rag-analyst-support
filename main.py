@@ -25,6 +25,7 @@ Usage:
 
 import argparse
 from collections import Counter
+import hashlib
 import json
 import logging
 import os
@@ -52,7 +53,7 @@ def setup_logging(verbose: bool = False):
 
 
 def _filter_documents_by_snapshot(documents, snapshot_date_str: str):
-    """Keep only documents published on or before the configured snapshot date."""
+    """Keep only documents whose visible state is not newer than the snapshot date."""
     snapshot_date = datetime.strptime(snapshot_date_str, "%Y-%m-%d").date()
     kept_docs = []
     dropped_docs = []
@@ -61,9 +62,82 @@ def _filter_documents_by_snapshot(documents, snapshot_date_str: str):
         if doc.published_date and doc.published_date.date() > snapshot_date:
             dropped_docs.append(doc)
             continue
+        if doc.modified_date and doc.modified_date.date() > snapshot_date:
+            dropped_docs.append(doc)
+            continue
         kept_docs.append(doc)
 
     return kept_docs, dropped_docs
+
+
+def _sha256_file(filepath: Path) -> str:
+    sha256 = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
+def _load_json_file(filepath: Path) -> dict | None:
+    if not filepath.exists():
+        return None
+    with open(filepath, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _manifest_download_after_snapshot(manifest_path: Path, snapshot_date_str: str) -> bool:
+    manifest = _load_json_file(manifest_path)
+    if not manifest or not manifest.get("download_date"):
+        return False
+    try:
+        download_date = datetime.fromisoformat(manifest["download_date"]).date()
+    except ValueError:
+        return False
+    snapshot_date = datetime.strptime(snapshot_date_str, "%Y-%m-%d").date()
+    return download_date > snapshot_date
+
+
+def _advisory_files_record_last_updated(directory: Path) -> bool:
+    for filepath in sorted(directory.glob("*.json")):
+        if filepath.name == "manifest.json":
+            continue
+        data = _load_json_file(filepath)
+        if not data:
+            continue
+        return bool(data.get("last_updated"))
+    return False
+
+
+def _write_index_manifest(root: Path, config: dict, documents, processed_file: Path) -> Path:
+    raw_manifests = {}
+    for source_name, source_config in config["data"]["sources"].items():
+        manifest_path = root / source_config["raw_dir"] / "manifest.json"
+        manifest = _load_json_file(manifest_path)
+        if not manifest:
+            continue
+        raw_manifests[source_name] = {
+            "path": str(manifest_path),
+            "download_date": manifest.get("download_date", ""),
+            "snapshot_date": manifest.get("snapshot_date", ""),
+            "file_count": len(manifest.get("files", [])),
+            "sha256": _sha256_file(manifest_path),
+        }
+
+    index_manifest = {
+        "created_at": datetime.now().isoformat(),
+        "snapshot_date": config["data"]["snapshot_date"],
+        "document_count": len(documents),
+        "source_counts": dict(sorted(Counter(doc.source.value for doc in documents).items())),
+        "processed_documents_path": str(processed_file),
+        "processed_documents_sha256": _sha256_file(processed_file),
+        "raw_manifests": raw_manifests,
+    }
+
+    manifest_path = root / "data/indexes/index_manifest.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(index_manifest, f, indent=2)
+    return manifest_path
 
 
 def _activate_setup(setup: str | None):
@@ -94,11 +168,15 @@ def cmd_download(args):
             year_start=nvd_config["year_range"][0],
             year_end=nvd_config["year_range"][1],
             api_key=args.nvd_api_key,
+            snapshot_date=config["data"].get("snapshot_date"),
         )
 
     if args.source in ("cisa_kev", "all"):
         kev_config = config["data"]["sources"]["cisa_kev"]
-        download_cisa_kev(output_dir=root / kev_config["raw_dir"])
+        download_cisa_kev(
+            output_dir=root / kev_config["raw_dir"],
+            snapshot_date=config["data"].get("snapshot_date"),
+        )
 
     if args.source in ("cisa_advisories", "all"):
         advisory_config = config["data"]["sources"]["cisa_advisories"]
@@ -114,6 +192,7 @@ def cmd_download(args):
         download_misp_feeds(
             output_dir=root / misp_config["raw_dir"],
             max_events=args.misp_max_events,
+            snapshot_date=config["data"].get("snapshot_date"),
         )
 
     print("\nDownload complete. Check data/raw/ for files.")
@@ -130,6 +209,7 @@ def cmd_index(args):
     config = load_config()
     root = get_project_root()
     all_docs = []
+    snapshot_date = config["data"]["snapshot_date"]
 
     print(f"Setup: {config['data'].get('active_setup', 'default').upper()}")
 
@@ -145,17 +225,31 @@ def cmd_index(args):
     kev_dir = root / config["data"]["sources"]["cisa_kev"]["raw_dir"]
     kev_file = kev_dir / "known_exploited_vulnerabilities.json"
     if kev_file.exists():
-        kev_docs = parse_cisa_kev(kev_file)
-        all_docs.extend(kev_docs)
-        print(f"  CISA KEV: {len(kev_docs)} documents")
+        if _manifest_download_after_snapshot(kev_dir / "manifest.json", snapshot_date):
+            print(
+                "  CISA KEV: skipped because the catalog was downloaded after the configured "
+                "snapshot_date and KEV has no per-entry last-updated field."
+            )
+        else:
+            kev_docs = parse_cisa_kev(kev_file)
+            all_docs.extend(kev_docs)
+            print(f"  CISA KEV: {len(kev_docs)} documents")
 
     # Parse CISA Advisories
     if config["data"].get("include_cisa_advisories", True):
         advisory_dir = root / config["data"]["sources"]["cisa_advisories"]["raw_dir"]
         if advisory_dir.exists() and list(advisory_dir.glob("*.json")):
-            advisory_docs = parse_cisa_advisories_directory(advisory_dir)
-            all_docs.extend(advisory_docs)
-            print(f"  CISA Advisories: {len(advisory_docs)} documents")
+            if _manifest_download_after_snapshot(
+                advisory_dir / "manifest.json", snapshot_date
+            ) and not _advisory_files_record_last_updated(advisory_dir):
+                print(
+                    "  CISA Advisories: skipped because the raw files were downloaded after "
+                    "the configured snapshot_date and do not record per-advisory last_updated."
+                )
+            else:
+                advisory_docs = parse_cisa_advisories_directory(advisory_dir)
+                all_docs.extend(advisory_docs)
+                print(f"  CISA Advisories: {len(advisory_docs)} documents")
     else:
         print("  CISA Advisories: skipped for setup A")
 
@@ -175,7 +269,7 @@ def cmd_index(args):
         dropped_by_source = Counter(doc.source.value for doc in dropped_docs)
         print(
             f"  Snapshot cutoff ({config['data']['snapshot_date']}): "
-            f"excluded {len(dropped_docs)} documents published after cutoff "
+            f"excluded {len(dropped_docs)} documents newer than cutoff "
             f"{dict(sorted(dropped_by_source.items()))}"
         )
 
@@ -191,6 +285,9 @@ def cmd_index(args):
     with open(processed_file, "w") as f:
         json.dump([doc.model_dump(mode="json") for doc in all_docs], f, indent=2, default=str)
     print(f"Processed documents saved: {processed_file}")
+
+    index_manifest = _write_index_manifest(root, config, all_docs, processed_file)
+    print(f"Index manifest saved: {index_manifest}")
 
     # Build indexes
     indexer = CTIIndexer()
