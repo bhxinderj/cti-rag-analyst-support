@@ -85,6 +85,80 @@ def _load_json_file(filepath: Path) -> dict | None:
         return json.load(f)
 
 
+def _build_ground_truth_text(query_spec: dict) -> str:
+    """Return the canonical reference text used for evaluation."""
+    ground_truth_points = query_spec.get("ground_truth_points")
+    if ground_truth_points:
+        if not isinstance(ground_truth_points, list) or not all(
+            isinstance(point, str) and point.strip() for point in ground_truth_points
+        ):
+            raise ValueError(
+                f"Query {query_spec.get('id', '<unknown>')} has invalid ground_truth_points"
+            )
+        return " ".join(point.strip() for point in ground_truth_points)
+
+    ground_truth = query_spec.get("ground_truth", "")
+    if isinstance(ground_truth, str) and ground_truth.strip():
+        return ground_truth.strip()
+
+    raise ValueError(
+        f"Query {query_spec.get('id', '<unknown>')} must define ground_truth or ground_truth_points"
+    )
+
+
+def _load_eval_queries(query_file: Path) -> list[dict]:
+    """Load and validate the evaluation query set."""
+    with open(query_file, "r", encoding="utf-8") as f:
+        eval_data = yaml.safe_load(f) or {}
+
+    queries = eval_data.get("queries", [])
+    if not isinstance(queries, list) or not queries:
+        raise ValueError(f"No evaluation queries found in {query_file}")
+
+    allowed_task_types = {
+        "ioc_enrichment",
+        "vulnerability_analysis",
+        "ttp_correlation",
+    }
+    allowed_difficulties = {"simple", "moderate", "complex"}
+    seen_ids: set[str] = set()
+    normalized_queries = []
+
+    for raw_query in queries:
+        if not isinstance(raw_query, dict):
+            raise ValueError(f"Invalid query entry in {query_file}: {raw_query!r}")
+
+        query_id = raw_query.get("id")
+        question = raw_query.get("question")
+        task_type = raw_query.get("task_type")
+        difficulty = raw_query.get("difficulty")
+
+        if not isinstance(query_id, str) or not query_id.strip():
+            raise ValueError("Each evaluation query requires a non-empty string id")
+        normalized_query_id = query_id.strip()
+        if normalized_query_id in seen_ids:
+            raise ValueError(f"Duplicate evaluation query id: {normalized_query_id}")
+        if not isinstance(question, str) or not question.strip():
+            raise ValueError(f"Evaluation query {query_id} requires a non-empty question")
+        if task_type not in allowed_task_types:
+            raise ValueError(f"Evaluation query {query_id} has unsupported task_type: {task_type}")
+        if difficulty not in allowed_difficulties:
+            raise ValueError(f"Evaluation query {query_id} has unsupported difficulty: {difficulty}")
+
+        normalized_query = dict(raw_query)
+        normalized_query["id"] = normalized_query_id
+        normalized_query["question"] = question.strip()
+        normalized_query["ground_truth"] = _build_ground_truth_text(raw_query)
+        if "ground_truth_points" in normalized_query:
+            normalized_query["ground_truth_points"] = [
+                point.strip() for point in normalized_query["ground_truth_points"]
+            ]
+        seen_ids.add(normalized_query_id)
+        normalized_queries.append(normalized_query)
+
+    return normalized_queries
+
+
 def _manifest_download_after_snapshot(manifest_path: Path, snapshot_date_str: str) -> bool:
     manifest = _load_json_file(manifest_path)
     if not manifest or not manifest.get("download_date"):
@@ -330,8 +404,12 @@ def cmd_baseline(args):
     """Run a query without retrieval (baseline comparison)."""
     from src.cti_rag.rag.chain import RAGChain
 
+    config = load_config()
     chain = RAGChain()
-    response = chain.query_baseline(args.question)
+    response = chain.query_baseline(
+        args.question,
+        snapshot_date=config["data"].get("snapshot_date"),
+    )
 
     print(f"\n{'='*80}")
     print(f"Question: {response.query}")
@@ -352,10 +430,7 @@ def cmd_evaluate(args):
 
     # Load evaluation queries
     query_file = root / config["evaluation"]["query_set_path"]
-    with open(query_file, "r") as f:
-        eval_data = yaml.safe_load(f)
-
-    queries = eval_data["queries"]
+    queries = _load_eval_queries(query_file)
     print(f"Loaded {len(queries)} evaluation queries")
     print(f"Setup: {args.setup.upper()}")
 
@@ -369,6 +444,24 @@ def cmd_evaluate(args):
         responses.append(resp)
 
     ground_truths = [q["ground_truth"] for q in queries]
+    sample_ids = [q["id"] for q in queries]
+    sample_metadata = [
+        {
+            "id": q["id"],
+            "question": q["question"],
+            "task_type": q["task_type"],
+            "difficulty": q["difficulty"],
+            "ground_truth_points": q.get("ground_truth_points", []),
+        }
+        for q in queries
+    ]
+    run_metadata = {
+        "setup": args.setup,
+        "retrieval_mode": args.mode,
+        "snapshot_date": config["data"].get("snapshot_date"),
+        "query_set_path": str(query_file),
+        "query_set_sha256": _sha256_file(query_file),
+    }
 
     # Evaluate
     evaluator = RAGASEvaluator()
@@ -376,7 +469,35 @@ def cmd_evaluate(args):
         rag_responses=responses,
         ground_truths=ground_truths,
         experiment_name=f"setup_{args.setup}_{args.mode}_{args.name}",
-        sample_ids=[q["id"] for q in queries],
+        sample_ids=sample_ids,
+        sample_metadata=sample_metadata,
+        run_metadata=run_metadata,
+    )
+
+    print("Running baseline on the same query set for comparable artifacts...")
+    baseline_chain = RAGChain()
+    baseline_responses = []
+    for q in queries:
+        print(f"  Baseline: {q['id']} - {q['question'][:60]}...")
+        baseline_responses.append(
+            baseline_chain.query_baseline(
+                q["question"],
+                snapshot_date=config["data"].get("snapshot_date"),
+            )
+        )
+
+    baseline_results = evaluator.save_run_artifacts(
+        responses=baseline_responses,
+        ground_truths=ground_truths,
+        experiment_name=f"setup_{args.setup}_baseline_{args.name}",
+        sample_ids=sample_ids,
+        sample_metadata=sample_metadata,
+        run_metadata={
+            **run_metadata,
+            "retrieval_mode": "baseline_no_retrieval",
+            "comparison_target": f"setup_{args.setup}_{args.mode}_{args.name}",
+        },
+        result_prefix="baseline",
     )
 
     print(f"\n{'='*80}")
@@ -384,6 +505,8 @@ def cmd_evaluate(args):
     print(f"{'='*80}")
     for metric, score in results["metrics"].items():
         print(f"  {metric}: {score:.4f}")
+    print(f"\nSaved RAG artifact: {results['output_path']}")
+    print(f"Saved baseline artifact: {baseline_results['output_path']}")
 
 
 def cmd_interactive(args):
