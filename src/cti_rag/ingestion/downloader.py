@@ -10,11 +10,15 @@ Usage:
 """
 
 import hashlib
+import html
 import json
 import logging
+import re
+import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urljoin
 
 import requests
 from tqdm import tqdm
@@ -28,6 +32,192 @@ NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 
 # CISA KEV catalog
 CISA_KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+
+# CISA cybersecurity advisories RSS feed
+CISA_ADVISORIES_FEED_URL = "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+CISA_ADVISORY_ARCHIVE_URL = (
+    "https://www.cisa.gov/news-events/cybersecurity-advisories"
+    "?f%5B0%5D=advisory_type%3A94&f%5B1%5D=release_date_year%3A{year}&items_per_page=All"
+)
+CISA_REQUEST_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; CTI-RAG-Prototype/1.0)"}
+CISA_ADVISORY_START_HEADING_RE = re.compile(
+    r"<h([2-4])[^>]*>\s*(?:<strong>)?\s*"
+    r"(executive\s+summary|summary|background|technical\s+details|mitigations?|"
+    r"recommendations?|overview|initial\s+access|persistence|detection|contact\s+information|"
+    r"appendix\s+[a-z0-9:\-\s&]+)"
+    r"\s*(?:</strong>)?\s*</h\1>",
+    flags=re.IGNORECASE | re.DOTALL,
+)
+
+
+def _strip_html(raw_html: str) -> str:
+    """Convert simple HTML fragments into plain text."""
+    text = re.sub(r"<\s*br\s*/?>", "\n", raw_html, flags=re.IGNORECASE)
+    text = re.sub(r"</\s*(p|div|li|ul|ol|table|tr|h2|h3|h4|h5|h6)\s*>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _extract_html_sections(raw_html: str) -> dict[str, str]:
+    """Split advisory HTML into coarse sections based on headings."""
+    normalized_html = html.unescape(raw_html)
+    heading_pattern = re.compile(r"<h([2-6])[^>]*>(.*?)</h\1>", re.IGNORECASE | re.DOTALL)
+    matches = list(heading_pattern.finditer(normalized_html))
+
+    if not matches:
+        body = _strip_html(normalized_html)
+        return {"full_advisory": body} if body else {}
+
+    sections = {}
+    for idx, match in enumerate(matches):
+        heading = _strip_html(match.group(2)).lower()
+        section_key = re.sub(r"[^a-z0-9]+", "_", heading).strip("_") or f"section_{idx + 1}"
+        start = match.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(normalized_html)
+        section_text = _strip_html(normalized_html[start:end])
+        if section_text:
+            sections[section_key] = section_text
+
+    if not sections:
+        body = _strip_html(normalized_html)
+        return {"full_advisory": body} if body else {}
+
+    return sections
+
+
+def _extract_cve_ids_from_text(text: str) -> list[str]:
+    """Extract CVE identifiers from advisory HTML/text."""
+    return sorted(set(re.findall(r"\bCVE-\d{4}-\d{4,}\b", text, flags=re.IGNORECASE)))
+
+
+def _fetch_cisa_url_text(url: str) -> str:
+    """Fetch CISA content, falling back to curl if requests is blocked."""
+    try:
+        response = requests.get(
+            url,
+            headers=CISA_REQUEST_HEADERS,
+            timeout=30,
+        )
+        response.raise_for_status()
+        return response.text
+    except requests.HTTPError as exc:
+        if exc.response is None or exc.response.status_code != 403:
+            raise
+
+    result = subprocess.run(
+        [
+            "curl",
+            "-L",
+            "--max-time",
+            "30",
+            "-A",
+            CISA_REQUEST_HEADERS["User-Agent"],
+            url,
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout
+
+
+def _extract_cisa_archive_links(listing_html: str) -> list[str]:
+    """Extract AA-style cybersecurity advisory links from the archive page."""
+    matches = re.findall(
+        r'href="(/news-events/cybersecurity-advisories/aa\d{2}-\d{3}[a-z])"',
+        listing_html,
+        flags=re.IGNORECASE,
+    )
+    return sorted(set(urljoin("https://www.cisa.gov", match) for match in matches))
+
+
+def _extract_cisa_page_title(page_html: str) -> str:
+    """Extract advisory title from page metadata."""
+    match = re.search(r'<meta property="og:title" content="([^"]+?) \| CISA"', page_html)
+    if match:
+        return html.unescape(match.group(1)).strip()
+
+    match = re.search(r"<title>([^<]+?) \| CISA</title>", page_html)
+    if match:
+        return html.unescape(match.group(1)).strip()
+
+    return "Unknown CISA Advisory"
+
+
+def _extract_cisa_published_datetime(page_html: str) -> datetime | None:
+    """Extract the advisory's Last Revised timestamp."""
+    for pattern in (
+        r'c-field--name-field-last-updated.*?<time datetime="([^"]+)"',
+        r'c-field--name-field-release-date.*?<time datetime="([^"]+)"',
+    ):
+        match = re.search(
+            pattern,
+            page_html,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if match:
+            try:
+                return datetime.fromisoformat(match.group(1).replace("Z", "+00:00"))
+            except ValueError:
+                return None
+    return None
+
+
+def _extract_cisa_alert_code(page_html: str, fallback_url: str) -> str:
+    """Extract the CISA alert/advisory code."""
+    match = re.search(
+        r'c-field--name-field-alert-code.*?<div class="c-field__content">([^<]+)</div>',
+        page_html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if match:
+        return html.unescape(match.group(1)).strip().upper()
+    return fallback_url.rstrip("/").split("/")[-1].upper()
+
+
+def _extract_cisa_body_html(page_html: str) -> str:
+    """Extract the main advisory body content from the page."""
+    main_match = re.search(r"<main\b.*?</main>", page_html, flags=re.IGNORECASE | re.DOTALL)
+    if not main_match:
+        return page_html
+
+    main_html = main_match.group(0)
+    start_idx = 0
+
+    content_start = CISA_ADVISORY_START_HEADING_RE.search(main_html)
+    if content_start:
+        start_idx = content_start.start()
+    else:
+        alert_code_match = re.search(
+            r'c-field--name-field-alert-code.*?</div>\s*</div>',
+            main_html,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if alert_code_match:
+            after_alert = main_html[alert_code_match.end():]
+            first_heading = re.search(r"<h[2-4][^>]*>.*?</h[2-4]>", after_alert, flags=re.IGNORECASE | re.DOTALL)
+            if first_heading:
+                start_idx = alert_code_match.end() + first_heading.start()
+
+    advisory_html = main_html[start_idx:]
+    end_markers = [
+        r"<h[2-4][^>]*>\s*(?:<strong>)?\s*Please share your thoughts",
+        r"<h[2-4][^>]*>\s*(?:<strong>)?\s*Related Advisories",
+        r'c-product-survey',
+        r'c-field--name-field-tags',
+        r'This product is provided subject to this',
+    ]
+    end_positions = [
+        match.start()
+        for pattern in end_markers
+        if (match := re.search(pattern, advisory_html, flags=re.IGNORECASE | re.DOTALL))
+    ]
+    if end_positions:
+        advisory_html = advisory_html[:min(end_positions)]
+
+    return advisory_html
 
 
 def _sha256_file(filepath: Path) -> str:
@@ -220,6 +410,82 @@ def download_cisa_kev(output_dir: Path):
     logger.info(f"CISA KEV: {count} vulnerabilities saved to {output_file.name}")
 
 
+def download_cisa_advisories(
+    output_dir: Path,
+    year_start: int = 2020,
+    year_end: int = 2026,
+    snapshot_date: str | None = None,
+):
+    """
+    Download CISA Cybersecurity Advisories from the official RSS feed.
+
+    The feed is filtered to CISA's /news-events/cybersecurity-advisories/ entries
+    and normalized into the JSON structure expected by parse_cisa_advisory().
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for stale_file in output_dir.glob("*.json"):
+        stale_file.unlink()
+
+    snapshot_cutoff = datetime.strptime(snapshot_date, "%Y-%m-%d").date() if snapshot_date else None
+
+    manifest_files = []
+    advisory_count = 0
+
+    for year in range(year_start, year_end + 1):
+        logger.info(f"Downloading CISA Cybersecurity Advisories archive for {year}...")
+        listing_html = _fetch_cisa_url_text(CISA_ADVISORY_ARCHIVE_URL.format(year=year))
+        advisory_links = _extract_cisa_archive_links(listing_html)
+
+        for link in advisory_links:
+            page_html = _fetch_cisa_url_text(link)
+            published_dt = _extract_cisa_published_datetime(page_html)
+            if not published_dt:
+                logger.warning(f"Skipping advisory without parsable date: {link}")
+                continue
+
+            published_date = published_dt.date()
+            if snapshot_cutoff and published_date > snapshot_cutoff:
+                continue
+
+            advisory_id = _extract_cisa_alert_code(page_html, link)
+            title = _extract_cisa_page_title(page_html)
+            advisory_body_html = _extract_cisa_body_html(page_html)
+            sections = _extract_html_sections(advisory_body_html)
+            if not sections:
+                continue
+
+            advisory_doc = {
+                "id": advisory_id,
+                "title": title,
+                "published": published_dt.isoformat(),
+                "cve_ids": _extract_cve_ids_from_text(advisory_body_html),
+                "sections": sections,
+                "metadata": {
+                    "source_url": link,
+                    "archive_year": year,
+                },
+            }
+
+            output_file = output_dir / f"{advisory_id.lower()}.json"
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(advisory_doc, f, indent=2)
+
+            manifest_files.append(
+                {
+                    "filename": output_file.name,
+                    "advisory_id": advisory_id,
+                    "published": published_dt.isoformat(),
+                    "source_url": link,
+                    "archive_year": year,
+                    "sha256": _sha256_file(output_file),
+                }
+            )
+            advisory_count += 1
+
+    _save_manifest(output_dir, manifest_files)
+    logger.info(f"CISA Cybersecurity Advisories: {advisory_count} advisories saved to {output_dir}")
+
+
 def download_misp_feeds(output_dir: Path, max_events: int = 500):
     """
     Download public MISP feeds from CIRCL.
@@ -300,7 +566,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
     parser = argparse.ArgumentParser(description="Download CTI data sources")
-    parser.add_argument("--source", choices=["nvd", "cisa_kev", "all"], default="all")
+    parser.add_argument("--source", choices=["nvd", "cisa_kev", "cisa_advisories", "all"], default="all")
     parser.add_argument("--nvd-api-key", type=str, default=None, help="NVD API key for faster downloads")
     args = parser.parse_args()
 
@@ -320,3 +586,12 @@ if __name__ == "__main__":
     if args.source in ("cisa_kev", "all"):
         kev_config = config["data"]["sources"]["cisa_kev"]
         download_cisa_kev(output_dir=root / kev_config["raw_dir"])
+
+    if args.source in ("cisa_advisories", "all"):
+        advisory_config = config["data"]["sources"]["cisa_advisories"]
+        download_cisa_advisories(
+            output_dir=root / advisory_config["raw_dir"],
+            year_start=advisory_config.get("year_range", [2020, datetime.now().year])[0],
+            year_end=advisory_config.get("year_range", [2020, datetime.now().year])[1],
+            snapshot_date=config["data"].get("snapshot_date"),
+        )
