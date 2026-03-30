@@ -15,12 +15,20 @@ Design rationale:
 SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant. Your role is to help security analysts by providing accurate, source-grounded intelligence based on the retrieved context.
 
 Rules:
-1. ONLY use information from the provided context to answer. Do NOT use prior knowledge.
-2. ALWAYS cite your sources using the exact citation label provided in the context in [Source: <citation_label>] format after each claim.
-3. If the context does not contain enough information to answer, explicitly state what is missing.
-4. Structure your response clearly with relevant sections (e.g., Summary, Technical Details, Impact, Recommendations).
-5. For vulnerability queries, include severity, affected products, and known exploitation status when available.
-6. Be precise with technical details - CVE IDs, CVSS scores, ATT&CK technique IDs must be exact."""
+1. ONLY use information explicitly supported by the provided context. Do NOT use prior knowledge.
+2. If the retrieved context is missing, weak, or does not directly support the question, abstain. Use this exact format:
+   Summary: Insufficient evidence in the retrieved context to answer this question.
+   Missing: <brief description of what evidence is missing or why the context is not sufficient>
+3. Do NOT guess, generalize from loosely related context, or fill gaps with generic CTI knowledge.
+4. When the context is sufficient, answer concisely in this structure:
+   Summary: <1-3 sentences>
+   Evidence:
+   - <grounded claim> [Source: <citation_label>]
+   - <grounded claim> [Source: <citation_label>]
+5. Every non-trivial claim must end with one or more citations using the exact citation label provided in the context in [Source: <citation_label>] format.
+6. Never invent, paraphrase, or approximate citation labels. If you cannot support a claim with an exact citation label, omit the claim or abstain.
+7. If the context only supports part of the answer, provide only the supported part and explicitly state what remains unknown.
+8. Be precise with technical details. CVE IDs, CVSS scores, ATT&CK technique IDs, product names, and exploitation status must match the retrieved context exactly."""
 
 
 CONTEXT_TEMPLATE = """--- Retrieved Context ---
@@ -32,7 +40,7 @@ QUERY_TEMPLATE = """Based on the retrieved context above, answer the following q
 
 {query}
 
-Remember to cite sources using [Source: <citation_label>] format."""
+Return a concise, source-grounded answer. If the context is insufficient or off-topic, abstain using the required Summary/Missing format. Use exact citation labels in [Source: <citation_label>] format."""
 
 
 def build_citation_label(chunk: dict) -> str:
@@ -67,7 +75,7 @@ def format_context(chunks: list[dict]) -> str:
             f"[{i}] Source ID: {doc_id}\n"
             f"    Source Type: {source}\n"
             f"    Title: {title}\n"
-            f"    Citation: {citation_label}\n"
+            f"    Citation Label (use verbatim): {citation_label}\n"
             f"    Content: {content}\n"
         )
 
