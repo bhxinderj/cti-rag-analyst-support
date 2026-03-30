@@ -10,9 +10,9 @@ Author: Joben Preet Bhinder | Advisor: Wolfgang Rogner, BSc. MSc
 This prototype enables natural-language querying over CTI data using a hybrid retrieval pipeline (BM25 + vector search) combined with a locally running LLM (Llama 3.1 via Ollama). It retrieves relevant vulnerability and threat intelligence context, generates source-grounded answers with citations, and supports systematic evaluation via the RAGAS framework.
 
 ### Data Sources
-- **NVD/CVE** — National Vulnerability Database (CVSS >= 7.0, 2020–2025)
-- **CISA KEV** — Known Exploited Vulnerabilities catalog
-- **MISP** — CIRCL OSINT feed (threat events, IOCs, ATT&CK mappings)
+- **NVD/CVE** — National Vulnerability Database (CVSS >= 7.0, 2020–2026; filtered by the configured `snapshot_date`)
+- **CISA KEV** — Known Exploited Vulnerabilities catalog (entries added on or before the configured `snapshot_date`)
+- **MISP** — CIRCL OSINT feed (threat events, IOCs, ATT&CK mappings; events published on or before the configured `snapshot_date`)
 
 ### Key Features
 - Hybrid retrieval: BM25 (lexical) + ChromaDB (vector) with Reciprocal Rank Fusion
@@ -25,29 +25,53 @@ This prototype enables natural-language querying over CTI data using a hybrid re
 
 ## Prerequisites
 
-- **macOS** with Apple Silicon (M1/M2/M3/M4) — tested on M4, 24GB RAM
-- **Python 3.12** — `brew install python@3.12`
-- **Ollama** — https://ollama.com/download
-- **Git** — for cloning the repository
+### Tested Environment
+- **macOS** on Apple Silicon (M1/M2/M3/M4) — tested on M4, 24GB RAM
+- **Python 3.12**
+- **Ollama**
+- **Git**
+
+### Expected Compatibility
+The prototype is designed to be portable and is expected to also run on **Linux** and **Windows**, provided the following are available:
+- Python 3.12
+- Ollama
+- compatible PyTorch / sentence-transformers dependencies
+- sufficient memory for local embedding and reranking models
+
+Note:
+- The project has been **tested on macOS Apple Silicon**
+- Linux and Windows are **expected to work**, but were **not formally validated** in the current prototype stage
 
 ## Setup
 
 ### 1. Clone and create virtual environment
 
+#### macOS / Linux
+
 ```bash
 git clone https://github.com/bhxinderj/cti-rag-analyst-support.git
 cd cti-rag-analyst-support
-/opt/homebrew/bin/python3.12 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+#### Windows (PowerShell)
+
+```powershell
+git clone https://github.com/bhxinderj/cti-rag-analyst-support.git
+cd cti-rag-analyst-support
+py -3.12 -m venv .venv
+.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
 ### 2. Install and start Ollama
 
-```bash
-# Install Ollama (if not already installed)
-brew install ollama
+Install Ollama for your operating system:
+- macOS, Linux, Windows: https://ollama.com/download
 
+```bash
 # Start Ollama service
 ollama serve
 
@@ -148,9 +172,19 @@ cti-rag-analyst-support/
 All parameters are centralized in `configs/settings.yaml` for reproducibility:
 - LLM model and inference settings
 - Embedding model selection
+- Embedding device selection (`cpu`, `cuda`, or `mps` depending on host system)
 - Retrieval parameters (top-k, RRF constant, reranking)
-- Data source filters (CVSS threshold, year range)
+- Data source filters (CVSS threshold, year range, global `snapshot_date` cutoff on publication/addition date)
 - RAGAS evaluation metrics
+
+Recommended embedding device values:
+- **Apple Silicon macOS**: `mps`
+- **Linux/Windows with NVIDIA GPU**: `cuda`
+- **CPU-only systems**: `cpu`
+
+Important:
+- `mps` should only be used on supported Apple Silicon systems
+- on unsupported systems, use `cpu` or `cuda` instead
 
 ## Tech Stack
 
@@ -164,7 +198,7 @@ All parameters are centralized in `configs/settings.yaml` for reproducibility:
 | Reranking | cross-encoder/ms-marco-MiniLM-L-6-v2 |
 | Orchestration | LangChain (LCEL) |
 | Evaluation | RAGAS |
-| GPU Acceleration | Apple Metal (MPS) via PyTorch |
+| Compute Backend | PyTorch via CPU, CUDA, or Apple Metal (MPS), depending on host system |
 
 ## License
 
