@@ -16,7 +16,7 @@ SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant. 
 
 Rules:
 1. ONLY use information from the provided context to answer. Do NOT use prior knowledge.
-2. ALWAYS cite your sources using [Source: <doc_id>] format after each claim.
+2. ALWAYS cite your sources using the exact citation label provided in the context in [Source: <citation_label>] format after each claim.
 3. If the context does not contain enough information to answer, explicitly state what is missing.
 4. Structure your response clearly with relevant sections (e.g., Summary, Technical Details, Impact, Recommendations).
 5. For vulnerability queries, include severity, affected products, and known exploitation status when available.
@@ -32,7 +32,21 @@ QUERY_TEMPLATE = """Based on the retrieved context above, answer the following q
 
 {query}
 
-Remember to cite sources using [Source: <doc_id>] format."""
+Remember to cite sources using [Source: <citation_label>] format."""
+
+
+def build_citation_label(chunk: dict) -> str:
+    """
+    Build a human-readable citation label while keeping a stable technical identifier.
+    """
+    title = chunk.get("title", "").strip()
+    doc_id = chunk.get("doc_id", "").strip()
+
+    if title and doc_id:
+        return f"{title} | {doc_id}"
+    if title:
+        return title
+    return doc_id or "unknown_source"
 
 
 def format_context(chunks: list[dict]) -> str:
@@ -47,11 +61,13 @@ def format_context(chunks: list[dict]) -> str:
         content = chunk.get("content", "")
         source = chunk.get("source", "unknown")
         title = chunk.get("title", "")
+        citation_label = chunk.get("citation_label", build_citation_label(chunk))
 
         context_parts.append(
             f"[{i}] Source ID: {doc_id}\n"
             f"    Source Type: {source}\n"
             f"    Title: {title}\n"
+            f"    Citation: {citation_label}\n"
             f"    Content: {content}\n"
         )
 

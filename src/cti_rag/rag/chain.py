@@ -22,6 +22,7 @@ from .prompts import (
     format_context,
     QUERY_TEMPLATE,
     BASELINE_SYSTEM_PROMPT,
+    build_citation_label,
 )
 
 logger = logging.getLogger(__name__)
@@ -98,13 +99,15 @@ class RAGChain:
         # --- Step 2: Assemble context ---
         chunk_dicts = []
         for chunk in chunks:
-            chunk_dicts.append({
+            chunk_dict = {
                 "doc_id": chunk.doc_id,
                 "content": chunk.content,
                 "source": chunk.metadata.get("source", "unknown"),
                 "title": chunk.metadata.get("title", ""),
                 "score": chunk.score,
-            })
+            }
+            chunk_dict["citation_label"] = build_citation_label(chunk_dict)
+            chunk_dicts.append(chunk_dict)
 
         context_str = format_context(chunk_dicts)
 
