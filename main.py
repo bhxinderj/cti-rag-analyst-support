@@ -24,9 +24,12 @@ Usage:
 """
 
 import argparse
+from collections import Counter
 import json
 import logging
+import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -48,9 +51,37 @@ def setup_logging(verbose: bool = False):
     logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
 
 
+def _filter_documents_by_snapshot(documents, snapshot_date_str: str):
+    """Keep only documents published on or before the configured snapshot date."""
+    snapshot_date = datetime.strptime(snapshot_date_str, "%Y-%m-%d").date()
+    kept_docs = []
+    dropped_docs = []
+
+    for doc in documents:
+        if doc.published_date and doc.published_date.date() > snapshot_date:
+            dropped_docs.append(doc)
+            continue
+        kept_docs.append(doc)
+
+    return kept_docs, dropped_docs
+
+
+def _activate_setup(setup: str | None):
+    """Activate experiment setup A/B for this process."""
+    if setup:
+        os.environ["CTI_RAG_SETUP"] = setup.lower()
+    else:
+        os.environ.pop("CTI_RAG_SETUP", None)
+
+
 def cmd_download(args):
     """Download CTI data sources."""
-    from src.cti_rag.ingestion.downloader import download_nvd, download_cisa_kev, download_misp_feeds
+    from src.cti_rag.ingestion.downloader import (
+        download_nvd,
+        download_cisa_kev,
+        download_cisa_advisories,
+        download_misp_feeds,
+    )
 
     config = load_config()
     root = get_project_root()
@@ -69,6 +100,15 @@ def cmd_download(args):
         kev_config = config["data"]["sources"]["cisa_kev"]
         download_cisa_kev(output_dir=root / kev_config["raw_dir"])
 
+    if args.source in ("cisa_advisories", "all"):
+        advisory_config = config["data"]["sources"]["cisa_advisories"]
+        download_cisa_advisories(
+            output_dir=root / advisory_config["raw_dir"],
+            year_start=advisory_config.get("year_range", [2020, datetime.now().year])[0],
+            year_end=advisory_config.get("year_range", [2020, datetime.now().year])[1],
+            snapshot_date=config["data"].get("snapshot_date"),
+        )
+
     if args.source in ("misp", "all"):
         misp_config = config["data"]["sources"]["misp"]
         download_misp_feeds(
@@ -86,9 +126,12 @@ def cmd_index(args):
     from src.cti_rag.ingestion.misp_parser import parse_misp_directory
     from src.cti_rag.retrieval.indexer import CTIIndexer
 
+    _activate_setup(args.setup)
     config = load_config()
     root = get_project_root()
     all_docs = []
+
+    print(f"Setup: {config['data'].get('active_setup', 'default').upper()}")
 
     # Parse NVD
     nvd_dir = root / config["data"]["sources"]["nvd"]["raw_dir"]
@@ -107,11 +150,14 @@ def cmd_index(args):
         print(f"  CISA KEV: {len(kev_docs)} documents")
 
     # Parse CISA Advisories
-    advisory_dir = root / config["data"]["sources"]["cisa_advisories"]["raw_dir"]
-    if advisory_dir.exists() and list(advisory_dir.glob("*.json")):
-        advisory_docs = parse_cisa_advisories_directory(advisory_dir)
-        all_docs.extend(advisory_docs)
-        print(f"  CISA Advisories: {len(advisory_docs)} documents")
+    if config["data"].get("include_cisa_advisories", True):
+        advisory_dir = root / config["data"]["sources"]["cisa_advisories"]["raw_dir"]
+        if advisory_dir.exists() and list(advisory_dir.glob("*.json")):
+            advisory_docs = parse_cisa_advisories_directory(advisory_dir)
+            all_docs.extend(advisory_docs)
+            print(f"  CISA Advisories: {len(advisory_docs)} documents")
+    else:
+        print("  CISA Advisories: skipped for setup A")
 
     # Parse MISP
     misp_dir = root / config["data"]["sources"]["misp"]["raw_dir"]
@@ -120,6 +166,19 @@ def cmd_index(args):
         all_docs.extend(misp_docs)
         print(f"  MISP: {len(misp_docs)} documents")
 
+    all_docs, dropped_docs = _filter_documents_by_snapshot(
+        all_docs,
+        config["data"]["snapshot_date"],
+    )
+
+    if dropped_docs:
+        dropped_by_source = Counter(doc.source.value for doc in dropped_docs)
+        print(
+            f"  Snapshot cutoff ({config['data']['snapshot_date']}): "
+            f"excluded {len(dropped_docs)} documents published after cutoff "
+            f"{dict(sorted(dropped_by_source.items()))}"
+        )
+
     if not all_docs:
         print("\nNo documents found. Run 'python main.py download' first.")
         return
@@ -127,9 +186,8 @@ def cmd_index(args):
     print(f"\nTotal documents to index: {len(all_docs)}")
 
     # Save processed documents for inspection
-    processed_dir = root / "data" / "processed"
-    processed_dir.mkdir(parents=True, exist_ok=True)
-    processed_file = processed_dir / "all_documents.json"
+    processed_file = root / config["data"].get("processed_path", "data/processed/all_documents.json")
+    processed_file.parent.mkdir(parents=True, exist_ok=True)
     with open(processed_file, "w") as f:
         json.dump([doc.model_dump(mode="json") for doc in all_docs], f, indent=2, default=str)
     print(f"Processed documents saved: {processed_file}")
@@ -150,11 +208,13 @@ def cmd_query(args):
     """Run a single RAG query."""
     from src.cti_rag.rag.chain import RAGChain
 
+    _activate_setup(args.setup)
     chain = RAGChain(retrieval_mode=args.mode)
     response = chain.query(args.question)
 
     print(f"\n{'='*80}")
     print(f"Question: {response.query}")
+    print(f"Setup: {args.setup.upper()}")
     print(f"Mode: {response.retrieval_mode}")
     print(f"Retrieval: {response.retrieval_time_ms:.0f}ms | Generation: {response.generation_time_ms:.0f}ms | Total: {response.total_time_ms:.0f}ms")
     print(f"{'='*80}")
@@ -185,6 +245,7 @@ def cmd_evaluate(args):
     from src.cti_rag.rag.chain import RAGChain
     from src.cti_rag.evaluation.ragas_eval import RAGASEvaluator
 
+    _activate_setup(args.setup)
     config = load_config()
     root = get_project_root()
 
@@ -195,6 +256,7 @@ def cmd_evaluate(args):
 
     queries = eval_data["queries"]
     print(f"Loaded {len(queries)} evaluation queries")
+    print(f"Setup: {args.setup.upper()}")
 
     # Run RAG pipeline
     chain = RAGChain(retrieval_mode=args.mode)
@@ -212,7 +274,7 @@ def cmd_evaluate(args):
     results = evaluator.evaluate(
         rag_responses=responses,
         ground_truths=ground_truths,
-        experiment_name=f"{args.mode}_{args.name}",
+        experiment_name=f"setup_{args.setup}_{args.mode}_{args.name}",
     )
 
     print(f"\n{'='*80}")
@@ -226,9 +288,10 @@ def cmd_interactive(args):
     """Interactive query session – type questions, get RAG answers."""
     from src.cti_rag.rag.chain import RAGChain
 
+    _activate_setup(args.setup)
     mode = args.mode
     print(f"\n{'='*80}")
-    print(f"  CTI-RAG Interactive Mode (retrieval: {mode})")
+    print(f"  CTI-RAG Interactive Mode (setup: {args.setup}, retrieval: {mode})")
     print(f"  Type your question and press Enter.")
     print(f"  Commands:  /baseline  – toggle baseline mode (no retrieval)")
     print(f"             /mode      – switch retrieval mode (hybrid/bm25/vector)")
@@ -291,6 +354,7 @@ def cmd_interactive(args):
 
 def cmd_ablation(args):
     """Run full ablation study across all retrieval modes."""
+    _activate_setup(args.setup)
     print("Running ablation study: BM25 → Vector → Hybrid")
     print("=" * 80)
 
@@ -303,6 +367,7 @@ def cmd_ablation(args):
         eval_args = EvalArgs()
         eval_args.mode = mode
         eval_args.name = f"ablation_{mode}"
+        eval_args.setup = args.setup
 
         cmd_evaluate(eval_args)
 
@@ -314,18 +379,20 @@ def main():
 
     # Download
     dl = subparsers.add_parser("download", help="Download CTI data")
-    dl.add_argument("--source", choices=["nvd", "cisa_kev", "misp", "all"], default="all")
+    dl.add_argument("--source", choices=["nvd", "cisa_kev", "cisa_advisories", "misp", "all"], default="all")
     dl.add_argument("--nvd-api-key", type=str, default=None)
     dl.add_argument("--misp-max-events", type=int, default=500, help="Max MISP events to download")
 
     # Index
     idx = subparsers.add_parser("index", help="Build search indexes")
     idx.add_argument("--clear", action="store_true", help="Clear existing indexes first")
+    idx.add_argument("--setup", choices=["a", "b"], default="a", help="Dataset setup: A without advisories, B with advisories")
 
     # Query
     q = subparsers.add_parser("query", help="Run a RAG query")
     q.add_argument("question", type=str)
     q.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
+    q.add_argument("--setup", choices=["a", "b"], default="a", help="Dataset setup to query")
 
     # Baseline
     bl = subparsers.add_parser("baseline", help="Run baseline query (no retrieval)")
@@ -335,13 +402,16 @@ def main():
     ev = subparsers.add_parser("evaluate", help="Run RAGAS evaluation")
     ev.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
     ev.add_argument("--name", type=str, default="default")
+    ev.add_argument("--setup", choices=["a", "b"], default="a", help="Dataset setup to evaluate")
 
     # Interactive
     ia = subparsers.add_parser("interactive", help="Interactive query session")
     ia.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
+    ia.add_argument("--setup", choices=["a", "b"], default="a", help="Dataset setup to use interactively")
 
     # Ablation
-    subparsers.add_parser("ablation", help="Run full ablation study")
+    ab = subparsers.add_parser("ablation", help="Run full ablation study")
+    ab.add_argument("--setup", choices=["a", "b"], default="a", help="Dataset setup to evaluate")
 
     args = parser.parse_args()
     setup_logging(args.verbose)
