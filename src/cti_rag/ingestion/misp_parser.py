@@ -14,7 +14,7 @@ and tags that provide rich context for threat intelligence.
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .models import CTIDocument, CTISourceType, SeverityLevel, IOCEntry
@@ -101,6 +101,26 @@ def _extract_iocs(event: dict) -> list[IOCEntry]:
     return iocs
 
 
+def _parse_misp_timestamp(value) -> datetime | None:
+    """Parse a MISP unix timestamp into a UTC datetime."""
+    if value in (None, "", 0, "0"):
+        return None
+    try:
+        return datetime.fromtimestamp(int(value), tz=timezone.utc)
+    except (ValueError, TypeError, OSError):
+        return None
+
+
+def _parse_misp_date(value: str | None) -> datetime | None:
+    """Parse the event-level YYYY-MM-DD date when publish_timestamp is missing."""
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
 def parse_misp_event(event: dict) -> CTIDocument | None:
     """
     Parse a single MISP event dict into a CTIDocument.
@@ -153,14 +173,13 @@ def parse_misp_event(event: dict) -> CTIDocument | None:
 
     content = "\n".join(content_parts)
 
-    # Parse date
-    pub_date = None
-    timestamp = event.get("timestamp") or event.get("publish_timestamp")
-    if timestamp:
-        try:
-            pub_date = datetime.fromtimestamp(int(timestamp))
-        except (ValueError, TypeError, OSError):
-            pass
+    # Prefer publish_timestamp for publication time; keep timestamp as last modification time.
+    pub_date = (
+        _parse_misp_timestamp(event.get("publish_timestamp"))
+        or _parse_misp_date(event.get("date"))
+        or _parse_misp_timestamp(event.get("timestamp"))
+    )
+    mod_date = _parse_misp_timestamp(event.get("timestamp"))
 
     return CTIDocument(
         doc_id=f"misp_{event_id}",
@@ -172,11 +191,14 @@ def parse_misp_event(event: dict) -> CTIDocument | None:
         attack_techniques=attack_techniques,
         iocs=iocs,
         published_date=pub_date,
+        modified_date=mod_date,
         metadata={
             "misp_event_id": event_id,
             "misp_uuid": event.get("uuid", ""),
             "org": event.get("Orgc", {}).get("name", ""),
             "attribute_count": len(event.get("Attribute", [])),
+            "publish_timestamp": event.get("publish_timestamp", ""),
+            "timestamp": event.get("timestamp", ""),
         },
     )
 

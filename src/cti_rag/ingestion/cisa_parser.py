@@ -110,11 +110,20 @@ def parse_cisa_advisory(filepath: Path) -> list[CTIDocument]:
     title = data.get("title", advisory_id)
     cve_ids = data.get("cve_ids", [])
     published = data.get("published", "")
+    last_updated = data.get("last_updated", "")
+    raw_metadata = data.get("metadata", {})
 
     pub_date = None
     if published:
         try:
             pub_date = datetime.fromisoformat(published.replace("Z", "+00:00"))
+        except ValueError:
+            pass
+
+    mod_date = None
+    if last_updated:
+        try:
+            mod_date = datetime.fromisoformat(last_updated.replace("Z", "+00:00"))
         except ValueError:
             pass
 
@@ -137,7 +146,9 @@ def parse_cisa_advisory(filepath: Path) -> list[CTIDocument]:
             content=f"Advisory: {title}\nSection: {section_name}\n\n{section_text}",
             cve_ids=cve_ids,
             published_date=pub_date,
+            modified_date=mod_date,
             metadata={
+                **raw_metadata,
                 "advisory_id": advisory_id,
                 "section": section_name,
             },
