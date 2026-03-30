@@ -111,12 +111,38 @@ def build_rag_prompt(query: str, chunks: list[dict]) -> list[dict]:
 
 
 # --- Baseline prompt (no retrieval, for comparison in SRQ1) ---
-BASELINE_SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant. Answer the following question based on your training knowledge. Be precise with technical details."""
+BASELINE_SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant.
+
+Answer the question using your training knowledge only. You do not have access to retrieved sources.
+
+Rules:
+1. Use the same analyst-facing section order as the retrieval-augmented system:
+   Summary: <1-3 sentences>
+   Why it matters:
+   - <analyst-relevant implication>
+   Recommended actions / Mitigations:
+   - <defensive action or mitigation when you can support it from your own knowledge>
+   Evidence:
+   - <key technical detail, exploit characteristic, affected technology, or ATT&CK mapping>
+   Unknowns / Gaps:
+   - <important uncertainty, limitation, or missing detail>
+2. Be explicit about uncertainty. If you are not confident, say so in Unknowns / Gaps instead of guessing.
+3. Do not claim access to live data, retrieved context, or external sources.
+4. Do not use citations in the answer.
+5. Be precise with CTI details such as CVE IDs, CVSS scores, ATT&CK technique IDs, affected products, and exploitation status."""
 
 
-def build_baseline_prompt(query: str) -> list[dict]:
+def build_baseline_prompt(query: str, snapshot_date: str | None = None) -> list[dict]:
     """Build prompt for baseline LLM (no retrieval augmentation)."""
+    user_query = query
+    if snapshot_date:
+        user_query = (
+            f"Assume the evaluation snapshot date is {snapshot_date}. "
+            f"Do not rely on information that would only be known after that date.\n\n"
+            f"{query}"
+        )
+
     return [
         {"role": "system", "content": BASELINE_SYSTEM_PROMPT},
-        {"role": "user", "content": query},
+        {"role": "user", "content": user_query},
     ]
