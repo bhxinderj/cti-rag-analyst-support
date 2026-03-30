@@ -9,6 +9,7 @@ logged and inspectable for evaluation and debugging.
 """
 
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -26,6 +27,155 @@ from .prompts import (
 )
 
 logger = logging.getLogger(__name__)
+
+_CTI_ENTITY_PATTERNS = (
+    re.compile(r"\bCVE-\d{4}-\d{4,}\b", flags=re.IGNORECASE),
+    re.compile(r"\bCWE-\d+\b", flags=re.IGNORECASE),
+    re.compile(r"\bT\d{4}(?:\.\d{3})?\b", flags=re.IGNORECASE),
+    re.compile(r"\bTA\d{4}\b", flags=re.IGNORECASE),
+    re.compile(r"\b[GSM]\d{4}\b", flags=re.IGNORECASE),
+    re.compile(r"\bDS\d{4}\b", flags=re.IGNORECASE),
+    re.compile(r"\bDET\d{4}\b", flags=re.IGNORECASE),
+)
+_GROUNDING_STOPWORDS = {
+    "about", "after", "against", "also", "among", "been", "being", "does",
+    "from", "have", "into", "known", "more", "most", "that", "their",
+    "them", "then", "they", "this", "those", "used", "using", "what",
+    "when", "where", "which", "with", "within", "would", "could", "should",
+    "there", "these", "than", "into", "across", "query", "question",
+}
+_CITATION_BLOCK_RE = re.compile(r"\[(?:Source|Sources)\s*:\s*([^\]]+)\]")
+_ABSTENTION_SUMMARY = "Insufficient evidence in the retrieved context to answer this question."
+
+
+def _normalize_alias(text: str) -> str:
+    """Normalize citation aliases and free-text matches for exact lookup."""
+    return " ".join(text.split()).strip().lower()
+
+
+def _extract_query_entities(query: str) -> list[str]:
+    """Extract exact CTI identifiers that should be present in relevant context."""
+    entities = []
+    for pattern in _CTI_ENTITY_PATTERNS:
+        entities.extend(match.group(0).lower() for match in pattern.finditer(query))
+    return sorted(set(entities))
+
+
+def _extract_meaningful_terms(text: str) -> list[str]:
+    """Keep query terms that can act as a cheap relevance signal."""
+    tokens = re.findall(r"[a-z0-9_-]+", text.lower())
+    return sorted({
+        token for token in tokens
+        if len(token) >= 4 and token not in _GROUNDING_STOPWORDS and not token.isdigit()
+    })
+
+
+def _build_abstention_answer(reason: str) -> str:
+    """Return the analyst-facing abstention text."""
+    return f"Summary: {_ABSTENTION_SUMMARY}\nMissing: {reason}"
+
+
+def _assess_context_support(question: str, chunk_dicts: list[dict]) -> str | None:
+    """
+    Decide whether the retrieved context is strong enough to justify generation.
+
+    The guard is intentionally simple:
+    - no context => abstain
+    - CTI identifiers in query must appear in retrieved evidence
+    - otherwise require at least minimal lexical overlap with the question
+    """
+    if not chunk_dicts:
+        return "No relevant context was retrieved."
+
+    query_entities = _extract_query_entities(question)
+    if query_entities:
+        combined_context = " ".join(
+            f"{chunk.get('doc_id', '')} {chunk.get('title', '')} {chunk.get('content', '')}".lower()
+            for chunk in chunk_dicts
+        )
+        missing_entities = [entity for entity in query_entities if entity not in combined_context]
+        if missing_entities:
+            return f"The retrieved context does not mention {', '.join(missing_entities)}."
+        return None
+
+    query_terms = _extract_meaningful_terms(question)
+    if not query_terms:
+        return None
+
+    total_matches: set[str] = set()
+    best_chunk_matches = 0
+
+    for chunk in chunk_dicts:
+        haystack = f"{chunk.get('title', '')} {chunk.get('content', '')}".lower()
+        chunk_matches = {term for term in query_terms if term in haystack}
+        total_matches.update(chunk_matches)
+        best_chunk_matches = max(best_chunk_matches, len(chunk_matches))
+
+    required_matches = min(2, len(query_terms))
+    if best_chunk_matches < required_matches and len(total_matches) < required_matches:
+        return "The retrieved context is only weakly related to the question."
+
+    return None
+
+
+def _build_citation_alias_map(source_documents: list[dict]) -> dict[str, str]:
+    """Map allowed citation aliases back to their canonical citation label."""
+    alias_map: dict[str, str] = {}
+    ambiguous_aliases: set[str] = set()
+
+    for doc in source_documents:
+        canonical = doc.get("citation_label", "").strip()
+        if not canonical:
+            continue
+
+        for alias in (canonical, doc.get("doc_id", ""), doc.get("title", "")):
+            normalized = _normalize_alias(alias)
+            if not normalized:
+                continue
+
+            existing = alias_map.get(normalized)
+            if existing and existing != canonical:
+                ambiguous_aliases.add(normalized)
+                continue
+
+            alias_map[normalized] = canonical
+
+    for alias in ambiguous_aliases:
+        alias_map.pop(alias, None)
+
+    return alias_map
+
+
+def _normalize_response_citations(answer: str, source_documents: list[dict]) -> str:
+    """
+    Normalize citation blocks to the canonical [Source: <citation_label>] form.
+
+    Invalid or ambiguous citation aliases are removed rather than preserved.
+    """
+    alias_map = _build_citation_alias_map(source_documents)
+    if not alias_map:
+        return answer
+
+    def replace(match: re.Match) -> str:
+        raw_value = match.group(1).strip()
+        candidates = [raw_value]
+        if ";" in raw_value:
+            candidates = [part.strip() for part in raw_value.split(";") if part.strip()]
+
+        canonical_labels: list[str] = []
+        for candidate in candidates:
+            canonical = alias_map.get(_normalize_alias(candidate))
+            if not canonical:
+                return ""
+            if canonical not in canonical_labels:
+                canonical_labels.append(canonical)
+
+        return " ".join(f"[Source: {label}]" for label in canonical_labels)
+
+    normalized = _CITATION_BLOCK_RE.sub(replace, answer)
+    normalized = re.sub(r"[ \t]+\n", "\n", normalized)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized.strip()
 
 
 @dataclass
@@ -111,6 +261,21 @@ class RAGChain:
 
         context_str = format_context(chunk_dicts)
 
+        abstention_reason = _assess_context_support(question, chunk_dicts)
+        if abstention_reason:
+            total_time = (time.time() - total_start) * 1000
+            logger.info("Abstaining before generation: %s", abstention_reason)
+            return RAGResponse(
+                query=question,
+                answer=_build_abstention_answer(abstention_reason),
+                contexts=[chunk.content for chunk in chunks],
+                source_documents=chunk_dicts,
+                retrieval_time_ms=retrieval_time,
+                generation_time_ms=0.0,
+                total_time_ms=total_time,
+                retrieval_mode=self.retrieval_mode,
+            )
+
         # --- Step 3: Build prompt ---
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
@@ -121,6 +286,7 @@ class RAGChain:
         generation_start = time.time()
         response = self.llm.invoke(messages)
         generation_time = (time.time() - generation_start) * 1000
+        answer = _normalize_response_citations(response.content, chunk_dicts)
 
         total_time = (time.time() - total_start) * 1000
         logger.info(f"Generated response in {generation_time:.0f}ms (total: {total_time:.0f}ms)")
@@ -128,7 +294,7 @@ class RAGChain:
         # --- Step 5: Package response ---
         return RAGResponse(
             query=question,
-            answer=response.content,
+            answer=answer,
             contexts=[chunk.content for chunk in chunks],
             source_documents=chunk_dicts,
             retrieval_time_ms=retrieval_time,
