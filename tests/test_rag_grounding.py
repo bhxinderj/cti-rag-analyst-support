@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from src.cti_rag.rag.chain import RAGChain, RetrievedChunk, _assess_context_support
+from src.cti_rag.rag.prompts import build_rag_prompt
 
 
 class DummyRetriever:
@@ -169,3 +170,115 @@ def test_query_abstains_when_retrieval_is_only_weakly_related():
     assert response.abstention_reason == "The retrieved context is only weakly related to the question."
     assert response.answer.startswith("Summary: Insufficient evidence in the retrieved context")
     assert chain.llm.invocations == 0
+
+
+def test_build_rag_prompt_requires_analyst_facing_sections_and_mitigation_fallback():
+    messages = build_rag_prompt(
+        "What is CVE-2024-3094 and what should defenders do?",
+        [
+            {
+                "doc_id": "nvd_CVE-2024-3094",
+                "title": "XZ Utils vulnerability",
+                "source": "nvd",
+                "content": "CVE-2024-3094 is a supply chain backdoor in XZ Utils.",
+            }
+        ],
+    )
+
+    system_prompt = messages[0]["content"]
+    user_prompt = messages[1]["content"]
+
+    assert "Why it matters:" in system_prompt
+    assert "Recommended actions / Mitigations:" in system_prompt
+    assert "Unknowns / Gaps:" in system_prompt
+    assert "No reliable mitigation guidance is present in the retrieved context." in system_prompt
+    assert "Use the same structure for exact CVE questions and broader CTI analyst questions." in system_prompt
+    assert "Recommended actions / Mitigations" in user_prompt
+    assert "optional: Unknowns / Gaps" in user_prompt
+
+
+def test_query_keeps_only_grounded_mitigation_guidance():
+    chunks = [
+        RetrievedChunk(
+            doc_id="cisa_kev_CVE-2021-44228",
+            content="CVE-2021-44228 Required Action: Apply mitigations per vendor instructions.",
+            score=0.9,
+            metadata={"source": "cisa_kev", "title": "Log4Shell KEV"},
+        )
+    ]
+    chain = _build_chain(
+        chunks,
+        llm_content=(
+            "Summary: Log4Shell requires action. [Source: cisa_kev_CVE-2021-44228]\n"
+            "Recommended actions / Mitigations:\n"
+            "- Isolate critical systems immediately.\n"
+            "- Apply mitigations per vendor instructions. [Source: Log4Shell KEV]\n"
+            "No reliable mitigation guidance is present in the retrieved context.\n"
+            "Evidence:\n"
+            "- CISA KEV lists a required action. [Source: cisa_kev_CVE-2021-44228]"
+        ),
+    )
+
+    response = chain.query("What should defenders do about CVE-2021-44228?")
+
+    assert "- Isolate critical systems immediately." not in response.answer
+    assert "- Apply mitigations per vendor instructions. [Source: Log4Shell KEV | cisa_kev_CVE-2021-44228]" in response.answer
+    assert "No reliable mitigation guidance is present in the retrieved context." not in response.answer
+
+
+def test_query_uses_mitigation_fallback_when_no_grounded_guidance_remains():
+    chunks = [
+        RetrievedChunk(
+            doc_id="nvd_CVE-2024-3094",
+            content="CVE-2024-3094 is a supply chain backdoor in XZ Utils.",
+            score=0.9,
+            metadata={"source": "nvd", "title": "XZ Utils vulnerability"},
+        )
+    ]
+    chain = _build_chain(
+        chunks,
+        llm_content=(
+            "Summary: CVE-2024-3094 affects XZ Utils. [Source: nvd_CVE-2024-3094]\n"
+            "Recommended actions / Mitigations:\n"
+            "- Patch immediately across all systems.\n"
+            "Evidence:\n"
+            "- The context describes the vulnerability. [Source: nvd_CVE-2024-3094]"
+        ),
+    )
+
+    response = chain.query("What is CVE-2024-3094 and what should defenders do?")
+
+    assert "- Patch immediately across all systems." not in response.answer
+    assert "Recommended actions / Mitigations:\nNo reliable mitigation guidance is present in the retrieved context." in response.answer
+
+
+def test_query_formats_structured_sections_with_paragraph_breaks():
+    chunks = [
+        RetrievedChunk(
+            doc_id="nvd_CVE-2024-3094",
+            content="CVE-2024-3094 is a supply chain backdoor in XZ Utils.",
+            score=0.9,
+            metadata={"source": "nvd", "title": "XZ Utils vulnerability"},
+        )
+    ]
+    chain = _build_chain(
+        chunks,
+        llm_content=(
+            "Summary: CVE-2024-3094 affects XZ Utils. [Source: nvd_CVE-2024-3094]\n"
+            "Why it matters:\n"
+            "- The compromise is operationally significant. [Source: nvd_CVE-2024-3094]\n"
+            "Recommended actions / Mitigations:\n"
+            "- No vendor mitigation is provided. [Source: nvd_CVE-2024-3094]\n"
+            "Evidence:\n"
+            "- The context describes a supply chain backdoor. [Source: nvd_CVE-2024-3094]\n"
+            "Unknowns / Gaps:\n"
+            "- The context does not include affected versions."
+        ),
+    )
+
+    response = chain.query("What is CVE-2024-3094?")
+
+    assert "\n\nWhy it matters:" in response.answer
+    assert "\n\nRecommended actions / Mitigations:" in response.answer
+    assert "\n\nEvidence:" in response.answer
+    assert "\n\nUnknowns / Gaps:" in response.answer
