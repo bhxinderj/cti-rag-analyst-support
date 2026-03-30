@@ -222,7 +222,11 @@ def cmd_query(args):
     print(f"\n{'='*80}")
     print(f"Sources ({len(response.source_documents)}):")
     for doc in response.source_documents:
-        print(f"  - [{doc['doc_id']}] {doc.get('title', '')[:80]} (score: {doc.get('score', 0):.4f})")
+        print(
+            f"  - #{doc.get('rank', '?')} [{doc['doc_id']}] "
+            f"{doc.get('title', '')[:80]} "
+            f"(score: {doc.get('score', 0):.4f}, cited: {doc.get('cited_in_answer', False)})"
+        )
 
 
 def cmd_baseline(args):
@@ -275,6 +279,7 @@ def cmd_evaluate(args):
         rag_responses=responses,
         ground_truths=ground_truths,
         experiment_name=f"setup_{args.setup}_{args.mode}_{args.name}",
+        sample_ids=[q["id"] for q in queries],
     )
 
     print(f"\n{'='*80}")
@@ -348,7 +353,10 @@ def cmd_interactive(args):
             print(f"\n{'─'*40}")
             print(f"Sources:")
             for doc in response.source_documents:
-                print(f"  [{doc['doc_id']}] (score: {doc.get('score', 0):.3f})")
+                print(
+                    f"  #{doc.get('rank', '?')} [{doc['doc_id']}] "
+                    f"(score: {doc.get('score', 0):.3f}, cited: {doc.get('cited_in_answer', False)})"
+                )
             print()
 
 
