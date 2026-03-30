@@ -33,6 +33,18 @@ from ..utils.config import load_config, get_project_root
 
 logger = logging.getLogger(__name__)
 
+_CTI_ENTITY_PATTERNS = (
+    re.compile(r"\bCVE-\d{4}-\d{4,}\b", flags=re.IGNORECASE),
+    re.compile(r"\bCWE-\d+\b", flags=re.IGNORECASE),
+    re.compile(r"\bT\d{4}(?:\.\d{3})?\b", flags=re.IGNORECASE),
+    re.compile(r"\bTA\d{4}\b", flags=re.IGNORECASE),
+    re.compile(r"\b[GSM]\d{4}\b", flags=re.IGNORECASE),
+    re.compile(r"\bDS\d{4}\b", flags=re.IGNORECASE),
+    re.compile(r"\bDET\d{4}\b", flags=re.IGNORECASE),
+)
+
+_EXACT_ENTITY_MATCH_BOOST = 100.0
+
 
 @dataclass
 class RetrievedChunk:
@@ -115,10 +127,59 @@ class HybridRetriever:
                 cleaned.append(token)
         return cleaned
 
+    @staticmethod
+    def _extract_query_entities(query: str) -> list[str]:
+        """Extract exact CTI identifiers that should dominate generic query terms."""
+        entities = []
+        for pattern in _CTI_ENTITY_PATTERNS:
+            entities.extend(match.group(0).lower() for match in pattern.finditer(query))
+        return sorted(set(entities))
+
+    def _count_entity_matches(self, text: str, query_entities: list[str]) -> int:
+        """Count how many exact query identifiers appear in the chunk text."""
+        if not query_entities:
+            return 0
+
+        text_tokens = set(self._tokenize_cti(text))
+        return sum(1 for entity in query_entities if entity in text_tokens)
+
+    @staticmethod
+    def _infer_source_type(doc_id: str) -> str:
+        """Infer source type for BM25 results, which do not carry Chroma metadata."""
+        if doc_id.startswith("cisa_advisory_"):
+            return "cisa_advisory"
+        if doc_id.startswith("cisa_kev_"):
+            return "cisa_kev"
+        if doc_id.startswith("misp_"):
+            return "misp"
+        if doc_id.startswith("nvd_"):
+            return "nvd"
+        return "unknown"
+
+    def _build_bm25_metadata(self, idx: int) -> dict:
+        """Recover minimal metadata for BM25-only hits from stored corpus text."""
+        content = self.bm25_corpus[idx]
+        title = ""
+        first_line = content.splitlines()[0] if content else ""
+        if first_line.startswith("Title: "):
+            title = first_line.removeprefix("Title: ").strip()
+
+        return {
+            "source": self._infer_source_type(self.bm25_doc_ids[idx]),
+            "title": title,
+        }
+
     def _search_bm25(self, query: str, top_k: int) -> list[RetrievedChunk]:
         """Lexical search using BM25."""
         tokenized_query = self._tokenize_cti(query)
         scores = self.bm25.get_scores(tokenized_query)
+        query_entities = self._extract_query_entities(query)
+
+        if query_entities:
+            # A second BM25 pass over extracted CTI identifiers keeps exact
+            # entity matches from being drowned out by generic natural-language terms.
+            scores = scores + self.bm25.get_scores(query_entities)
+
         top_indices = np.argsort(scores)[::-1][:top_k]
 
         results = []
@@ -128,6 +189,7 @@ class HybridRetriever:
                     doc_id=self.bm25_doc_ids[idx],
                     content=self.bm25_corpus[idx],
                     score=float(scores[idx]),
+                    metadata=self._build_bm25_metadata(idx),
                     rank=rank,
                 ))
         return results
@@ -194,9 +256,13 @@ class HybridRetriever:
 
         pairs = [(query, chunk.content) for chunk in chunks]
         scores = self.reranker.predict(pairs)
+        query_entities = self._extract_query_entities(query)
 
         for chunk, score in zip(chunks, scores):
             chunk.score = float(score)
+            entity_matches = self._count_entity_matches(chunk.content, query_entities)
+            if entity_matches:
+                chunk.score += entity_matches * _EXACT_ENTITY_MATCH_BOOST
 
         reranked = sorted(chunks, key=lambda c: c.score, reverse=True)
 
