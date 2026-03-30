@@ -178,6 +178,46 @@ def _normalize_response_citations(answer: str, source_documents: list[dict]) -> 
     return normalized.strip()
 
 
+def _extract_citation_labels(answer: str) -> set[str]:
+    """Extract canonical citation labels that survived normalization."""
+    labels: set[str] = set()
+    for match in _CITATION_BLOCK_RE.finditer(answer):
+        raw_value = match.group(1).strip()
+        if raw_value:
+            labels.add(raw_value)
+    return labels
+
+
+def _build_chunk_dict(chunk: RetrievedChunk) -> dict:
+    """Serialize a retrieved chunk for evaluation and inspection."""
+    chunk_dict = {
+        "doc_id": chunk.doc_id,
+        "content": chunk.content,
+        "source": chunk.metadata.get("source", "unknown"),
+        "title": chunk.metadata.get("title", ""),
+        "score": chunk.score,
+        "rank": chunk.rank + 1,
+        "metadata": dict(chunk.metadata),
+    }
+    chunk_dict["citation_label"] = build_citation_label(chunk_dict)
+    chunk_dict["cited_in_answer"] = False
+    return chunk_dict
+
+
+def _log_used_chunks(question: str, chunk_dicts: list[dict]) -> None:
+    """Log the final chunks that were passed to the generation step."""
+    logger.info("Final retrieved chunks for question=%r: %d", question, len(chunk_dicts))
+    for chunk in chunk_dicts:
+        logger.info(
+            "  rank=%s score=%.4f doc_id=%s cited_in_answer=%s title=%r",
+            chunk.get("rank", "?"),
+            chunk.get("score", 0.0),
+            chunk.get("doc_id", "unknown"),
+            chunk.get("cited_in_answer", False),
+            chunk.get("title", ""),
+        )
+
+
 @dataclass
 class RAGResponse:
     """
@@ -197,6 +237,9 @@ class RAGResponse:
     generation_time_ms: float = 0.0
     total_time_ms: float = 0.0
     retrieval_mode: str = "hybrid"
+    prompt_context: str = ""
+    abstention_reason: str | None = None
+    retrieval_trace: dict = field(default_factory=dict)
 
 
 class RAGChain:
@@ -247,17 +290,7 @@ class RAGChain:
         logger.info(f"Retrieved {len(chunks)} chunks in {retrieval_time:.0f}ms")
 
         # --- Step 2: Assemble context ---
-        chunk_dicts = []
-        for chunk in chunks:
-            chunk_dict = {
-                "doc_id": chunk.doc_id,
-                "content": chunk.content,
-                "source": chunk.metadata.get("source", "unknown"),
-                "title": chunk.metadata.get("title", ""),
-                "score": chunk.score,
-            }
-            chunk_dict["citation_label"] = build_citation_label(chunk_dict)
-            chunk_dicts.append(chunk_dict)
+        chunk_dicts = [_build_chunk_dict(chunk) for chunk in chunks]
 
         context_str = format_context(chunk_dicts)
 
@@ -265,6 +298,7 @@ class RAGChain:
         if abstention_reason:
             total_time = (time.time() - total_start) * 1000
             logger.info("Abstaining before generation: %s", abstention_reason)
+            _log_used_chunks(question, chunk_dicts)
             return RAGResponse(
                 query=question,
                 answer=_build_abstention_answer(abstention_reason),
@@ -274,6 +308,9 @@ class RAGChain:
                 generation_time_ms=0.0,
                 total_time_ms=total_time,
                 retrieval_mode=self.retrieval_mode,
+                prompt_context=context_str,
+                abstention_reason=abstention_reason,
+                retrieval_trace=dict(getattr(self.retriever, "last_trace", {})),
             )
 
         # --- Step 3: Build prompt ---
@@ -287,9 +324,13 @@ class RAGChain:
         response = self.llm.invoke(messages)
         generation_time = (time.time() - generation_start) * 1000
         answer = _normalize_response_citations(response.content, chunk_dicts)
+        cited_labels = _extract_citation_labels(answer)
+        for chunk_dict in chunk_dicts:
+            chunk_dict["cited_in_answer"] = chunk_dict["citation_label"] in cited_labels
 
         total_time = (time.time() - total_start) * 1000
         logger.info(f"Generated response in {generation_time:.0f}ms (total: {total_time:.0f}ms)")
+        _log_used_chunks(question, chunk_dicts)
 
         # --- Step 5: Package response ---
         return RAGResponse(
@@ -301,6 +342,8 @@ class RAGChain:
             generation_time_ms=generation_time,
             total_time_ms=total_time,
             retrieval_mode=self.retrieval_mode,
+            prompt_context=context_str,
+            retrieval_trace=dict(getattr(self.retriever, "last_trace", {})),
         )
 
     def query_baseline(self, question: str) -> RAGResponse:
@@ -327,4 +370,5 @@ class RAGChain:
             generation_time_ms=generation_time,
             total_time_ms=total_time,
             retrieval_mode="baseline_no_retrieval",
+            retrieval_trace={},
         )
