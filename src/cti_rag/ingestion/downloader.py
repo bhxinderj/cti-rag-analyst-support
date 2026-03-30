@@ -146,25 +146,6 @@ def _extract_cisa_page_title(page_html: str) -> str:
     return "Unknown CISA Advisory"
 
 
-def _extract_cisa_published_datetime(page_html: str) -> datetime | None:
-    """Extract the advisory's Last Revised timestamp."""
-    for pattern in (
-        r'c-field--name-field-last-updated.*?<time datetime="([^"]+)"',
-        r'c-field--name-field-release-date.*?<time datetime="([^"]+)"',
-    ):
-        match = re.search(
-            pattern,
-            page_html,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        if match:
-            try:
-                return datetime.fromisoformat(match.group(1).replace("Z", "+00:00"))
-            except ValueError:
-                return None
-    return None
-
-
 def _extract_cisa_alert_code(page_html: str, fallback_url: str) -> str:
     """Extract the CISA alert/advisory code."""
     match = re.search(
@@ -229,12 +210,50 @@ def _sha256_file(filepath: Path) -> str:
     return sha256.hexdigest()
 
 
-def _save_manifest(directory: Path, files: list[dict]):
+def _parse_snapshot_cutoff(snapshot_date: str | None):
+    """Parse a YYYY-MM-DD snapshot date into a date object."""
+    if not snapshot_date:
+        return None
+    return datetime.strptime(snapshot_date, "%Y-%m-%d").date()
+
+
+def _parse_iso_datetime(value: str | None) -> datetime | None:
+    """Parse ISO 8601 timestamps used by upstream CTI sources."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _extract_cisa_temporal_field(page_html: str, field_name: str) -> datetime | None:
+    """Extract a CISA advisory datetime field from the HTML page."""
+    match = re.search(
+        rf'c-field--name-{re.escape(field_name)}.*?<time datetime="([^"]+)"',
+        page_html,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return None
+    return _parse_iso_datetime(match.group(1))
+
+
+def _save_manifest(
+    directory: Path,
+    files: list[dict],
+    snapshot_date: str | None = None,
+    extra_metadata: dict | None = None,
+):
     """Save download manifest with checksums for reproducibility."""
     manifest = {
         "download_date": datetime.now().isoformat(),
         "files": files,
     }
+    if snapshot_date:
+        manifest["snapshot_date"] = snapshot_date
+    if extra_metadata:
+        manifest.update(extra_metadata)
     manifest_path = directory / "manifest.json"
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
@@ -247,6 +266,7 @@ def download_nvd(
     year_start: int = 2020,
     year_end: int = 2025,
     api_key: str | None = None,
+    snapshot_date: str | None = None,
 ):
     """
     Download CVE data from NVD API 2.0.
@@ -265,6 +285,7 @@ def download_nvd(
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest_files = []
     headers = {}
+    snapshot_cutoff = _parse_snapshot_cutoff(snapshot_date)
     if api_key:
         headers["apiKey"] = api_key
 
@@ -342,6 +363,15 @@ def download_nvd(
         for v in unique_docs:
             cve = v.get("cve", {})
             metrics = cve.get("metrics", {})
+            published_dt = _parse_iso_datetime(cve.get("published"))
+            modified_dt = _parse_iso_datetime(cve.get("lastModified"))
+
+            if snapshot_cutoff:
+                if published_dt and published_dt.date() > snapshot_cutoff:
+                    continue
+                if modified_dt and modified_dt.date() > snapshot_cutoff:
+                    continue
+
             # Check cvssMetricV31, then cvssMetricV30
             cvss_score = 0.0
             for key in ("cvssMetricV31", "cvssMetricV30"):
@@ -363,6 +393,8 @@ def download_nvd(
             "vulnerabilities": unique_docs,
             "download_date": datetime.now().isoformat(),
         }
+        if snapshot_date:
+            output_data["snapshot_date"] = snapshot_date
 
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(output_data, f)
@@ -378,34 +410,60 @@ def download_nvd(
         logger.info(f"Saved {len(unique_docs)} CVEs for {year} -> {output_file.name}")
         time.sleep(delay)
 
-    _save_manifest(output_dir, manifest_files)
+    _save_manifest(
+        output_dir,
+        manifest_files,
+        snapshot_date=snapshot_date,
+        extra_metadata={"min_cvss": min_cvss, "year_range": [year_start, year_end]},
+    )
 
 
-def download_cisa_kev(output_dir: Path):
+def download_cisa_kev(output_dir: Path, snapshot_date: str | None = None):
     """
     Download CISA Known Exploited Vulnerabilities catalog.
     Single JSON file, straightforward download.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_cutoff = _parse_snapshot_cutoff(snapshot_date)
 
     logger.info("Downloading CISA KEV catalog...")
     response = requests.get(CISA_KEV_URL, timeout=30)
     response.raise_for_status()
+    kev_data = response.json()
+
+    if snapshot_cutoff:
+        filtered_vulnerabilities = []
+        for vuln in kev_data.get("vulnerabilities", []):
+            date_added = vuln.get("dateAdded")
+            if not date_added:
+                continue
+            try:
+                added_date = datetime.strptime(date_added, "%Y-%m-%d").date()
+            except ValueError:
+                continue
+            if added_date <= snapshot_cutoff:
+                filtered_vulnerabilities.append(vuln)
+
+        kev_data["vulnerabilities"] = filtered_vulnerabilities
+        kev_data["snapshot_date"] = snapshot_date
 
     output_file = output_dir / "known_exploited_vulnerabilities.json"
     with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(response.json(), f)
+        json.dump(kev_data, f)
 
     checksum = _sha256_file(output_file)
-    kev_data = response.json()
     count = len(kev_data.get("vulnerabilities", []))
 
-    _save_manifest(output_dir, [{
-        "filename": output_file.name,
-        "vulnerability_count": count,
-        "sha256": checksum,
-        "catalog_version": kev_data.get("catalogVersion", ""),
-    }])
+    _save_manifest(
+        output_dir,
+        [{
+            "filename": output_file.name,
+            "vulnerability_count": count,
+            "sha256": checksum,
+            "catalog_version": kev_data.get("catalogVersion", ""),
+        }],
+        snapshot_date=snapshot_date,
+    )
 
     logger.info(f"CISA KEV: {count} vulnerabilities saved to {output_file.name}")
 
@@ -438,13 +496,18 @@ def download_cisa_advisories(
 
         for link in advisory_links:
             page_html = _fetch_cisa_url_text(link)
-            published_dt = _extract_cisa_published_datetime(page_html)
-            if not published_dt:
-                logger.warning(f"Skipping advisory without parsable date: {link}")
+            release_dt = _extract_cisa_temporal_field(page_html, "field-release-date")
+            last_updated_dt = _extract_cisa_temporal_field(page_html, "field-last-updated") or release_dt
+            if not release_dt and not last_updated_dt:
+                logger.warning(f"Skipping advisory without parsable release/update date: {link}")
                 continue
+            if release_dt is None:
+                release_dt = last_updated_dt
 
-            published_date = published_dt.date()
-            if snapshot_cutoff and published_date > snapshot_cutoff:
+            release_date = release_dt.date()
+            if snapshot_cutoff and release_date > snapshot_cutoff:
+                continue
+            if snapshot_cutoff and last_updated_dt and last_updated_dt.date() > snapshot_cutoff:
                 continue
 
             advisory_id = _extract_cisa_alert_code(page_html, link)
@@ -457,12 +520,15 @@ def download_cisa_advisories(
             advisory_doc = {
                 "id": advisory_id,
                 "title": title,
-                "published": published_dt.isoformat(),
+                "published": release_dt.isoformat(),
+                "last_updated": last_updated_dt.isoformat() if last_updated_dt else "",
                 "cve_ids": _extract_cve_ids_from_text(advisory_body_html),
                 "sections": sections,
                 "metadata": {
                     "source_url": link,
                     "archive_year": year,
+                    "release_date": release_dt.isoformat(),
+                    "last_updated": last_updated_dt.isoformat() if last_updated_dt else "",
                 },
             }
 
@@ -474,7 +540,8 @@ def download_cisa_advisories(
                 {
                     "filename": output_file.name,
                     "advisory_id": advisory_id,
-                    "published": published_dt.isoformat(),
+                    "published": release_dt.isoformat(),
+                    "last_updated": last_updated_dt.isoformat() if last_updated_dt else "",
                     "source_url": link,
                     "archive_year": year,
                     "sha256": _sha256_file(output_file),
@@ -482,11 +549,16 @@ def download_cisa_advisories(
             )
             advisory_count += 1
 
-    _save_manifest(output_dir, manifest_files)
+    _save_manifest(
+        output_dir,
+        manifest_files,
+        snapshot_date=snapshot_date,
+        extra_metadata={"year_range": [year_start, year_end]},
+    )
     logger.info(f"CISA Cybersecurity Advisories: {advisory_count} advisories saved to {output_dir}")
 
 
-def download_misp_feeds(output_dir: Path, max_events: int = 500):
+def download_misp_feeds(output_dir: Path, max_events: int = 500, snapshot_date: str | None = None):
     """
     Download public MISP feeds from CIRCL.
 
@@ -498,6 +570,10 @@ def download_misp_feeds(output_dir: Path, max_events: int = 500):
         max_events: Maximum number of events to download (most recent first)
     """
     output_dir.mkdir(parents=True, exist_ok=True)
+    for stale_file in output_dir.glob("*.json"):
+        stale_file.unlink()
+
+    snapshot_cutoff = _parse_snapshot_cutoff(snapshot_date)
     manifest_url = "https://www.circl.lu/doc/misp/feed-osint/manifest.json"
 
     logger.info("Downloading CIRCL OSINT MISP feed manifest...")
@@ -509,9 +585,21 @@ def download_misp_feeds(output_dir: Path, max_events: int = 500):
         logger.error(f"Failed to fetch MISP manifest: {e}")
         return
 
+    candidate_event_ids = []
+    for event_id, event_meta in manifest.items():
+        event_timestamp = event_meta.get("timestamp")
+        if snapshot_cutoff and event_timestamp:
+            try:
+                event_date = datetime.fromtimestamp(int(event_timestamp)).date()
+            except (ValueError, TypeError, OSError):
+                continue
+            if event_date > snapshot_cutoff:
+                continue
+        candidate_event_ids.append(event_id)
+
     # Sort events by timestamp (most recent first), take max_events
     event_ids = sorted(
-        manifest.keys(),
+        candidate_event_ids,
         key=lambda eid: manifest[eid].get("timestamp", "0"),
         reverse=True,
     )[:max_events]
@@ -526,11 +614,6 @@ def download_misp_feeds(output_dir: Path, max_events: int = 500):
     for i, event_id in enumerate(tqdm(event_ids, desc="MISP events")):
         event_file = output_dir / f"{event_id}.json"
 
-        # Skip if already downloaded
-        if event_file.exists():
-            downloaded += 1
-            continue
-
         try:
             event_url = f"{base_url}{event_id}.json"
             resp = requests.get(event_url, timeout=15)
@@ -543,6 +626,7 @@ def download_misp_feeds(output_dir: Path, max_events: int = 500):
             download_manifest.append({
                 "filename": f"{event_id}.json",
                 "event_info": manifest[event_id].get("info", "")[:100],
+                "timestamp": manifest[event_id].get("timestamp", ""),
                 "sha256": _sha256_file(event_file),
             })
 
@@ -556,7 +640,16 @@ def download_misp_feeds(output_dir: Path, max_events: int = 500):
                 logger.error("Too many errors, stopping MISP download")
                 break
 
-    _save_manifest(output_dir, download_manifest)
+    _save_manifest(
+        output_dir,
+        download_manifest,
+        snapshot_date=snapshot_date,
+        extra_metadata={
+            "max_events": max_events,
+            "total_available": len(manifest),
+            "selected_events": len(event_ids),
+        },
+    )
     logger.info(f"MISP download complete: {downloaded} events saved, {errors} errors")
 
 
@@ -581,11 +674,15 @@ if __name__ == "__main__":
             year_start=nvd_config["year_range"][0],
             year_end=nvd_config["year_range"][1],
             api_key=args.nvd_api_key,
+            snapshot_date=config["data"].get("snapshot_date"),
         )
 
     if args.source in ("cisa_kev", "all"):
         kev_config = config["data"]["sources"]["cisa_kev"]
-        download_cisa_kev(output_dir=root / kev_config["raw_dir"])
+        download_cisa_kev(
+            output_dir=root / kev_config["raw_dir"],
+            snapshot_date=config["data"].get("snapshot_date"),
+        )
 
     if args.source in ("cisa_advisories", "all"):
         advisory_config = config["data"]["sources"]["cisa_advisories"]
