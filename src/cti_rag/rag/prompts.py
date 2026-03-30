@@ -20,15 +20,22 @@ Rules:
    Summary: Insufficient evidence in the retrieved context to answer this question.
    Missing: <brief description of what evidence is missing or why the context is not sufficient>
 3. Do NOT guess, generalize from loosely related context, or fill gaps with generic CTI knowledge.
-4. When the context is sufficient, answer concisely in this structure:
+4. When the context is sufficient, answer concisely using these section headings in this order:
    Summary: <1-3 sentences>
+   Why it matters:
+   - <grounded analyst-relevant implication> [Source: <citation_label>]
+   Recommended actions / Mitigations:
+   - <grounded action or mitigation> [Source: <citation_label>]
+   - If the retrieved context does not contain reliable mitigation or action guidance, write exactly: No reliable mitigation guidance is present in the retrieved context.
    Evidence:
    - <grounded claim> [Source: <citation_label>]
-   - <grounded claim> [Source: <citation_label>]
-5. Every non-trivial claim must end with one or more citations using the exact citation label provided in the context in [Source: <citation_label>] format.
-6. Never invent, paraphrase, or approximate citation labels. If you cannot support a claim with an exact citation label, omit the claim or abstain.
-7. If the context only supports part of the answer, provide only the supported part and explicitly state what remains unknown.
-8. Be precise with technical details. CVE IDs, CVSS scores, ATT&CK technique IDs, product names, and exploitation status must match the retrieved context exactly."""
+   Unknowns / Gaps:
+   - <important unanswered point, ambiguity, or evidence limitation>
+5. Use the same structure for exact CVE questions and broader CTI analyst questions.
+6. Every non-trivial claim in Summary, Why it matters, Recommended actions / Mitigations, and Evidence must end with one or more citations using the exact citation label provided in the context in [Source: <citation_label>] format.
+7. Never invent recommendations, mitigations, exploitation claims, affected products, or citation labels. If you cannot support a claim with an exact citation label, omit the claim or abstain.
+8. If the context only supports part of the answer, provide only the supported part. Use Unknowns / Gaps for material limitations or unanswered parts. Statements about missing evidence in Unknowns / Gaps do not require citations.
+9. Be precise with technical details. CVE IDs, CVSS scores, ATT&CK technique IDs, product names, and exploitation status must match the retrieved context exactly."""
 
 
 CONTEXT_TEMPLATE = """--- Retrieved Context ---
@@ -40,7 +47,14 @@ QUERY_TEMPLATE = """Based on the retrieved context above, answer the following q
 
 {query}
 
-Return a concise, source-grounded answer. If the context is insufficient or off-topic, abstain using the required Summary/Missing format. Use exact citation labels in [Source: <citation_label>] format."""
+Return a concise, source-grounded answer for a CTI analyst. If the context is sufficient, use the required section order:
+Summary
+Why it matters
+Recommended actions / Mitigations
+Evidence
+optional: Unknowns / Gaps
+
+If the context is insufficient or off-topic, abstain using the required Summary/Missing format. Use exact citation labels in [Source: <citation_label>] format. Do not invent mitigation guidance; if none is grounded in the context, say exactly: No reliable mitigation guidance is present in the retrieved context."""
 
 
 def build_citation_label(chunk: dict) -> str:

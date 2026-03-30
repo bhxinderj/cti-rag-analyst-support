@@ -46,6 +46,16 @@ _GROUNDING_STOPWORDS = {
 }
 _CITATION_BLOCK_RE = re.compile(r"\[(?:Source|Sources)\s*:\s*([^\]]+)\]")
 _ABSTENTION_SUMMARY = "Insufficient evidence in the retrieved context to answer this question."
+_MITIGATION_SECTION_HEADER = "Recommended actions / Mitigations:"
+_MITIGATION_FALLBACK = "No reliable mitigation guidance is present in the retrieved context."
+_STRUCTURED_SECTION_HEADERS = {
+    "Summary:",
+    "Why it matters:",
+    _MITIGATION_SECTION_HEADER,
+    "Evidence:",
+    "Unknowns / Gaps:",
+    "Missing:",
+}
 
 
 def _normalize_alias(text: str) -> str:
@@ -188,6 +198,75 @@ def _extract_citation_labels(answer: str) -> set[str]:
     return labels
 
 
+def _enforce_mitigation_grounding(answer: str) -> str:
+    """
+    Keep mitigation guidance only when it remains source-grounded.
+
+    This is intentionally narrow: preserve cited mitigation bullets, drop uncited
+    ones, and only show the fallback when no grounded mitigation guidance remains.
+    """
+    if _MITIGATION_SECTION_HEADER not in answer:
+        return answer
+
+    lines = answer.splitlines()
+    output_lines: list[str] = []
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        output_lines.append(line)
+
+        if line.strip() != _MITIGATION_SECTION_HEADER:
+            i += 1
+            continue
+
+        i += 1
+        section_lines: list[str] = []
+        while i < len(lines) and lines[i].strip() not in _STRUCTURED_SECTION_HEADERS:
+            section_lines.append(lines[i])
+            i += 1
+
+        grounded_lines = [
+            section_line
+            for section_line in section_lines
+            if _CITATION_BLOCK_RE.search(section_line)
+        ]
+
+        while grounded_lines and not grounded_lines[0].strip():
+            grounded_lines.pop(0)
+        while grounded_lines and not grounded_lines[-1].strip():
+            grounded_lines.pop()
+
+        if grounded_lines:
+            output_lines.extend(grounded_lines)
+        else:
+            output_lines.append(_MITIGATION_FALLBACK)
+
+        if i < len(lines):
+            continue
+
+    cleaned = "\n".join(output_lines)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
+def _format_structured_answer(answer: str) -> str:
+    """Insert clear paragraph breaks before structured section headers."""
+    lines = answer.splitlines()
+    formatted_lines: list[str] = []
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped in _STRUCTURED_SECTION_HEADERS and formatted_lines:
+            if formatted_lines[-1] != "":
+                formatted_lines.append("")
+        formatted_lines.append(line)
+
+    formatted = "\n".join(formatted_lines)
+    formatted = re.sub(r"\n{3,}", "\n\n", formatted)
+    return formatted.strip()
+
+
 def _build_chunk_dict(chunk: RetrievedChunk) -> dict:
     """Serialize a retrieved chunk for evaluation and inspection."""
     chunk_dict = {
@@ -324,6 +403,8 @@ class RAGChain:
         response = self.llm.invoke(messages)
         generation_time = (time.time() - generation_start) * 1000
         answer = _normalize_response_citations(response.content, chunk_dicts)
+        answer = _enforce_mitigation_grounding(answer)
+        answer = _format_structured_answer(answer)
         cited_labels = _extract_citation_labels(answer)
         for chunk_dict in chunk_dicts:
             chunk_dict["cited_in_answer"] = chunk_dict["citation_label"] in cited_labels
