@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 from src.cti_rag.rag.chain import RAGChain, RetrievedChunk, _assess_context_support
-from src.cti_rag.rag.prompts import build_rag_prompt
+from src.cti_rag.rag.prompts import build_rag_prompt, build_baseline_prompt
 
 
 class DummyRetriever:
@@ -195,6 +195,25 @@ def test_build_rag_prompt_requires_analyst_facing_sections_and_mitigation_fallba
     assert "Use the same structure for exact CVE questions and broader CTI analyst questions." in system_prompt
     assert "Recommended actions / Mitigations" in user_prompt
     assert "optional: Unknowns / Gaps" in user_prompt
+
+
+def test_build_baseline_prompt_uses_matching_structure_and_snapshot_guardrail():
+    messages = build_baseline_prompt(
+        "What is CVE-2024-3094 and what should defenders do?",
+        snapshot_date="2026-03-28",
+    )
+
+    system_prompt = messages[0]["content"]
+    user_prompt = messages[1]["content"]
+
+    assert "Summary:" in system_prompt
+    assert "Why it matters:" in system_prompt
+    assert "Recommended actions / Mitigations:" in system_prompt
+    assert "Evidence:" in system_prompt
+    assert "Unknowns / Gaps:" in system_prompt
+    assert "Do not use citations" in system_prompt
+    assert "Do not rely on information that would only be known after that date." in user_prompt
+    assert "2026-03-28" in user_prompt
 
 
 def test_query_keeps_only_grounded_mitigation_guidance():

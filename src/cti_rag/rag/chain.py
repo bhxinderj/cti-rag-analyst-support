@@ -22,8 +22,8 @@ from .prompts import (
     SYSTEM_PROMPT,
     format_context,
     QUERY_TEMPLATE,
-    BASELINE_SYSTEM_PROMPT,
     build_citation_label,
+    build_baseline_prompt,
 )
 
 logger = logging.getLogger(__name__)
@@ -427,25 +427,28 @@ class RAGChain:
             retrieval_trace=dict(getattr(self.retriever, "last_trace", {})),
         )
 
-    def query_baseline(self, question: str) -> RAGResponse:
+    def query_baseline(self, question: str, snapshot_date: str | None = None) -> RAGResponse:
         """
         Query LLM WITHOUT retrieval augmentation (baseline for SRQ1 comparison).
         """
         total_start = time.time()
 
         messages = [
-            SystemMessage(content=BASELINE_SYSTEM_PROMPT),
-            HumanMessage(content=question),
+            SystemMessage(content=message["content"])
+            if message["role"] == "system"
+            else HumanMessage(content=message["content"])
+            for message in build_baseline_prompt(question, snapshot_date=snapshot_date)
         ]
 
         generation_start = time.time()
         response = self.llm.invoke(messages)
         generation_time = (time.time() - generation_start) * 1000
         total_time = (time.time() - total_start) * 1000
+        answer = _format_structured_answer(response.content)
 
         return RAGResponse(
             query=question,
-            answer=response.content,
+            answer=answer,
             contexts=[],
             source_documents=[],
             generation_time_ms=generation_time,
