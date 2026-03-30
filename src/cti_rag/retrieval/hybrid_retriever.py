@@ -112,8 +112,20 @@ class HybridRetriever:
         reranker_model = retrieval_config["reranker"]["model_name"]
         logger.info(f"Loading reranker: {reranker_model}")
         self.reranker = CrossEncoder(reranker_model)
+        self.last_trace: dict = {}
 
         logger.info(f"HybridRetriever initialized (mode={self.mode})")
+
+    @staticmethod
+    def _serialize_trace_chunk(chunk: RetrievedChunk) -> dict:
+        """Capture retrieval-stage metadata without mutating the chunk."""
+        return {
+            "doc_id": chunk.doc_id,
+            "rank": chunk.rank + 1,
+            "score": chunk.score,
+            "source": chunk.metadata.get("source", "unknown"),
+            "title": chunk.metadata.get("title", ""),
+        }
 
     @staticmethod
     def _tokenize_cti(text: str) -> list[str]:
@@ -278,24 +290,38 @@ class HybridRetriever:
         Returns top-k chunks based on the configured retrieval mode.
         """
         logger.debug(f"Retrieving for query: {query[:80]}... (mode={self.mode})")
+        trace_stages: dict[str, list[dict]] = {}
 
         if self.mode == "bm25":
             results = self._search_bm25(query, self.rerank_top_k)
+            trace_stages["bm25"] = [self._serialize_trace_chunk(chunk) for chunk in results]
 
         elif self.mode == "vector":
             results = self._search_vector(query, self.rerank_top_k)
+            trace_stages["vector"] = [self._serialize_trace_chunk(chunk) for chunk in results]
 
         elif self.mode == "hybrid":
             bm25_results = self._search_bm25(query, self.bm25_top_k)
             vector_results = self._search_vector(query, self.vector_top_k)
+            trace_stages["bm25"] = [self._serialize_trace_chunk(chunk) for chunk in bm25_results]
+            trace_stages["vector"] = [self._serialize_trace_chunk(chunk) for chunk in vector_results]
 
             logger.debug(f"BM25: {len(bm25_results)} results, Vector: {len(vector_results)} results")
 
             fused = self._reciprocal_rank_fusion(bm25_results, vector_results)
+            trace_stages["fused"] = [self._serialize_trace_chunk(chunk) for chunk in fused]
             results = self._rerank(query, fused)
+            trace_stages["reranked"] = [self._serialize_trace_chunk(chunk) for chunk in results]
 
         else:
             raise ValueError(f"Unknown retrieval mode: {self.mode}")
+
+        trace_stages["final"] = [self._serialize_trace_chunk(chunk) for chunk in results]
+        self.last_trace = {
+            "query": query,
+            "mode": self.mode,
+            "stages": trace_stages,
+        }
 
         logger.info(f"Retrieved {len(results)} chunks (mode={self.mode})")
         return results
