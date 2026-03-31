@@ -18,7 +18,7 @@ llm:
 embedding:
   model_name: "BAAI/bge-small-en-v1.5"
   dimension: 384
-  device: "cpu"             # Portable default; use "mps" only on supported Apple Silicon hosts
+  device: "mps"             # Apple Silicon Metal Performance Shaders
   batch_size: 64
 
 # --- Retrieval Configuration ---
@@ -46,17 +46,16 @@ chunking:
 
 # --- Data Sources ---
 data:
-  snapshot_date: "2026-03-28"  # Global publication/addition cutoff aligned to the current raw-data snapshot
+  snapshot_date: "2025-12-31"  # Static dataset cutoff for reproducibility
   sources:
     nvd:
       raw_dir: "data/raw/nvd"
       min_cvss: 7.0            # Filter: only HIGH and CRITICAL
-      year_range: [2020, 2026]
+      year_range: [2020, 2025]
     cisa_kev:
       raw_dir: "data/raw/cisa_kev"
     cisa_advisories:
       raw_dir: "data/raw/cisa_advisories"
-      year_range: [2020, 2026]
     misp:
       raw_dir: "data/raw/misp"
 
@@ -71,9 +70,10 @@ evaluation:
     metrics:
       - faithfulness
       - answer_relevancy
+      - answer_correctness
       - context_precision
       - context_recall
-    eval_llm: "llama3.1:8b-instruct-q5_K_M"  # Same model for evaluation
+    eval_llm: "qwen2.5:7b-instruct"  # Separate model to avoid same-model eval bias
   query_set_path: "configs/eval_queries.yaml"
   results_dir: "data/evaluation_results"
 
