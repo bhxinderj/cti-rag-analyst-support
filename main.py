@@ -304,7 +304,7 @@ def cmd_interactive(args):
 
 def cmd_ablation(args):
     """Run full ablation study across all retrieval modes + baseline."""
-    print("Running ablation study: Baseline → BM25 → Vector → Hybrid")
+    print("Running ablation study: Baseline → BM25+Reranker → Vector+Reranker → Hybrid(RRF)+Reranker")
     print("=" * 80)
 
     modes = [

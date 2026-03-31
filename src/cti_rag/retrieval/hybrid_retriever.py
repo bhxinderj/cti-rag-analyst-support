@@ -62,8 +62,8 @@ class HybridRetriever:
 
     Supports three modes for ablation study:
     - "hybrid": BM25 + Vector + RRF + Reranking (default, full pipeline)
-    - "bm25": BM25 only (lexical baseline)
-    - "vector": Vector only (semantic baseline)
+    - "bm25": BM25 candidate generation + shared reranking
+    - "vector": Vector candidate generation + shared reranking
     """
 
     def __init__(self, retrieval_mode: str = "hybrid"):
@@ -228,7 +228,7 @@ class HybridRetriever:
         return "unknown"
 
     def _build_bm25_metadata(self, idx: int) -> dict:
-        """Recover minimal metadata for BM25-only hits from stored corpus text."""
+        """Recover minimal metadata for BM25-stage hits from stored corpus text."""
         content = self.bm25_corpus[idx]
         title = ""
         first_line = content.splitlines()[0] if content else ""

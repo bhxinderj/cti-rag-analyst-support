@@ -19,7 +19,7 @@ This prototype enables natural-language querying over CTI data using a hybrid re
 - Cross-encoder reranking for precision
 - Source-grounded generation with transparent citations
 - Baseline comparison mode (LLM without retrieval)
-- Ablation study support (BM25-only / vector-only / hybrid)
+- Ablation study support across BM25, vector, and hybrid candidate-generation modes under a shared reranking stage
 - RAGAS evaluation (faithfulness, context precision/recall, answer relevancy)
 - Interactive terminal mode for ad-hoc queries
 
@@ -182,6 +182,11 @@ python main.py evaluate
 ```bash
 python main.py ablation
 ```
+
+The retrieval ablation compares three candidate-generation strategies with the same final reranking stage:
+- `bm25` — BM25 candidate generation + shared reranker
+- `vector` — vector candidate generation + shared reranker
+- `hybrid` — BM25 + vector + RRF fusion + shared reranker
 
 ## Project Structure
 
