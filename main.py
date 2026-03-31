@@ -48,6 +48,31 @@ def setup_logging(verbose: bool = False):
     logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
 
 
+def _split_source_documents(source_documents: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Separate actually cited sources from merely retrieved context."""
+    cited = [doc for doc in source_documents if doc.get("cited_in_answer")]
+    retrieved_only = [doc for doc in source_documents if not doc.get("cited_in_answer")]
+    return cited, retrieved_only
+
+
+def _print_response_sources(response) -> None:
+    """Print cited sources separately from uncited retrieved context."""
+    cited_docs, retrieved_only_docs = _split_source_documents(response.source_documents)
+
+    print(f"\n{'='*80}")
+    print(f"Cited sources ({len(cited_docs)}):")
+    if cited_docs:
+        for doc in cited_docs:
+            print(f"  - [{doc['doc_id']}] {doc.get('title', '')[:80]} (score: {doc.get('score', 0):.4f})")
+    else:
+        print("  - None")
+
+    if retrieved_only_docs:
+        print(f"\nRetrieved context not cited in the answer ({len(retrieved_only_docs)}):")
+        for doc in retrieved_only_docs:
+            print(f"  - [{doc['doc_id']}] {doc.get('title', '')[:80]} (score: {doc.get('score', 0):.4f})")
+
+
 def cmd_download(args):
     """Download CTI data sources."""
     from src.cti_rag.ingestion.downloader import download_nvd, download_cisa_kev, download_misp_feeds
@@ -157,12 +182,13 @@ def cmd_query(args):
     print(f"Question: {response.query}")
     print(f"Mode: {response.retrieval_mode}")
     print(f"Retrieval: {response.retrieval_time_ms:.0f}ms | Generation: {response.generation_time_ms:.0f}ms | Total: {response.total_time_ms:.0f}ms")
+    if response.abstention_reason:
+        print(f"Grounding status: abstained ({response.abstention_reason})")
+    elif response.grounding_warnings:
+        print(f"Grounding warnings: {' | '.join(response.grounding_warnings)}")
     print(f"{'='*80}")
     print(f"\n{response.answer}")
-    print(f"\n{'='*80}")
-    print(f"Sources ({len(response.source_documents)}):")
-    for doc in response.source_documents:
-        print(f"  - [{doc['doc_id']}] {doc.get('title', '')[:80]} (score: {doc.get('score', 0):.4f})")
+    _print_response_sources(response)
 
 
 def cmd_baseline(args):
@@ -293,12 +319,24 @@ def cmd_interactive(args):
             response = chain.query(question)
             print(f"\n{'─'*80}")
             print(f"Mode: {mode} | Retrieval: {response.retrieval_time_ms:.0f}ms | Generation: {response.generation_time_ms:.0f}ms")
+            if response.abstention_reason:
+                print(f"Grounding status: abstained ({response.abstention_reason})")
+            elif response.grounding_warnings:
+                print(f"Grounding warnings: {' | '.join(response.grounding_warnings)}")
             print(f"{'─'*80}")
             print(f"\n{response.answer}")
+            cited_docs, retrieved_only_docs = _split_source_documents(response.source_documents)
             print(f"\n{'─'*40}")
-            print(f"Sources:")
-            for doc in response.source_documents:
-                print(f"  [{doc['doc_id']}] (score: {doc.get('score', 0):.3f})")
+            print(f"Cited sources:")
+            if cited_docs:
+                for doc in cited_docs:
+                    print(f"  [{doc['doc_id']}] (score: {doc.get('score', 0):.3f})")
+            else:
+                print("  None")
+            if retrieved_only_docs:
+                print("Retrieved only, not cited:")
+                for doc in retrieved_only_docs:
+                    print(f"  [{doc['doc_id']}] (score: {doc.get('score', 0):.3f})")
             print()
 
 
