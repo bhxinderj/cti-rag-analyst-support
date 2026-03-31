@@ -1,5 +1,6 @@
 param(
     [int]$MispMaxEvents = 300,
+    [ValidateSet("Default", "A", "B", "Both")][string]$Setup = "Default",
     [switch]$SkipDownload,
     [switch]$SkipIndex,
     [switch]$SkipWarmup,
@@ -34,6 +35,33 @@ function Invoke-CommandChecked {
     & $FilePath @ArgumentList
     if ($LASTEXITCODE -ne 0) {
         throw "Command failed: $FilePath $($ArgumentList -join ' ')"
+    }
+}
+
+function Invoke-IndexBuild {
+    param(
+        [Parameter(Mandatory = $true)][string]$VenvPythonPath,
+        [Parameter(Mandatory = $true)][ValidateSet("default", "a", "b")][string]$SetupName
+    )
+
+    $previousSetup = $env:CTI_RAG_SETUP
+    try {
+        if ($SetupName -eq "default") {
+            Remove-Item Env:CTI_RAG_SETUP -ErrorAction SilentlyContinue
+            Write-Host "Building indexes for default setup..."
+        } else {
+            $env:CTI_RAG_SETUP = $SetupName
+            Write-Host "Building indexes for setup $($SetupName.ToUpper())..."
+        }
+
+        Invoke-CommandChecked -FilePath $VenvPythonPath -ArgumentList @("main.py", "index", "--clear")
+    }
+    finally {
+        if ([string]::IsNullOrEmpty($previousSetup)) {
+            Remove-Item Env:CTI_RAG_SETUP -ErrorAction SilentlyContinue
+        } else {
+            $env:CTI_RAG_SETUP = $previousSetup
+        }
     }
 }
 
@@ -76,7 +104,15 @@ if (-not $SkipDownload) {
 }
 
 if (-not $SkipIndex) {
-    Invoke-CommandChecked -FilePath $VenvPython -ArgumentList @("main.py", "index", "--clear")
+    switch ($Setup.ToLowerInvariant()) {
+        "default" { Invoke-IndexBuild -VenvPythonPath $VenvPython -SetupName "default" }
+        "a" { Invoke-IndexBuild -VenvPythonPath $VenvPython -SetupName "a" }
+        "b" { Invoke-IndexBuild -VenvPythonPath $VenvPython -SetupName "b" }
+        "both" {
+            Invoke-IndexBuild -VenvPythonPath $VenvPython -SetupName "a"
+            Invoke-IndexBuild -VenvPythonPath $VenvPython -SetupName "b"
+        }
+    }
 }
 
 Write-Host ""
