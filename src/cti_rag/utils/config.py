@@ -4,6 +4,7 @@ Loads settings.yaml and provides typed access to all parameters.
 """
 
 import copy
+import logging
 import os
 from pathlib import Path
 from functools import lru_cache
@@ -56,3 +57,43 @@ def load_config() -> dict:
 
 def get_project_root() -> Path:
     return PROJECT_ROOT
+
+
+def suppress_noisy_third_party_logs() -> None:
+    """Silence known low-signal library warnings in local prototype runs."""
+    for logger_name in (
+        "chromadb.telemetry.product.posthog",
+        "posthog",
+    ):
+        logger = logging.getLogger(logger_name)
+        logger.disabled = True
+        logger.propagate = False
+
+
+def resolve_local_hf_snapshot(model_name: str) -> Path | None:
+    """Return the newest local Hugging Face snapshot for the model, if present."""
+    model_dir = Path.home() / ".cache" / "huggingface" / "hub" / f"models--{model_name.replace('/', '--')}"
+    snapshots_dir = model_dir / "snapshots"
+    if not snapshots_dir.exists():
+        return None
+
+    ref_path = model_dir / "refs" / "main"
+    if ref_path.exists():
+        snapshot_id = ref_path.read_text().strip()
+        if snapshot_id:
+            snapshot_path = snapshots_dir / snapshot_id
+            if snapshot_path.exists():
+                return snapshot_path
+
+    snapshots = sorted((path for path in snapshots_dir.iterdir() if path.is_dir()))
+    return snapshots[-1] if snapshots else None
+
+
+def require_local_hf_snapshot(model_name: str, *, artifact_label: str) -> Path:
+    """Fail fast when a runtime model artifact is not available locally."""
+    snapshot_path = resolve_local_hf_snapshot(model_name)
+    if snapshot_path is None:
+        raise FileNotFoundError(
+            f"{artifact_label} '{model_name}' is not available in the local Hugging Face cache."
+        )
+    return snapshot_path

@@ -28,10 +28,18 @@ import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
+import torch
 
-from ..utils.config import load_config, get_project_root
+from ..utils.config import (
+    get_project_root,
+    load_config,
+    require_local_hf_snapshot,
+    resolve_local_hf_snapshot,
+    suppress_noisy_third_party_logs,
+)
 
 logger = logging.getLogger(__name__)
+suppress_noisy_third_party_logs()
 
 _CTI_ENTITY_PATTERNS = (
     re.compile(r"\bCVE-\d{4}-\d{4,}\b", flags=re.IGNORECASE),
@@ -45,6 +53,18 @@ _CTI_ENTITY_PATTERNS = (
 
 _DEFAULT_ENTITY_MATCH_BOOST = 1.0
 _DEFAULT_QUALITY_SIGNAL_BOOST = 0.15
+
+
+def _resolve_embedding_device(requested_device: str) -> str:
+    """Fall back to CPU when the configured accelerator is unavailable."""
+    if requested_device != "mps":
+        return requested_device
+
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return requested_device
+
+    logger.warning("Configured embedding device 'mps' is unavailable on this host. Falling back to 'cpu'.")
+    return "cpu"
 
 
 @dataclass
@@ -79,9 +99,14 @@ class HybridRetriever:
         persist_dir = self.root / chroma_config["persist_directory"]
 
         emb_config = config["embedding"]
+        embedding_device = _resolve_embedding_device(emb_config["device"])
+        embedding_model_path = require_local_hf_snapshot(
+            emb_config["model_name"],
+            artifact_label="Embedding model",
+        )
         self.embedding_fn = SentenceTransformerEmbeddingFunction(
-            model_name=emb_config["model_name"],
-            device=emb_config["device"],
+            model_name=str(embedding_model_path),
+            device=embedding_device,
         )
 
         self.chroma_client = chromadb.PersistentClient(
@@ -125,21 +150,7 @@ class HybridRetriever:
     @staticmethod
     def _resolve_local_hf_snapshot(model_name: str) -> Path | None:
         """Return the newest local Hugging Face snapshot for the model, if present."""
-        model_dir = Path.home() / ".cache" / "huggingface" / "hub" / f"models--{model_name.replace('/', '--')}"
-        snapshots_dir = model_dir / "snapshots"
-        if not snapshots_dir.exists():
-            return None
-
-        ref_path = model_dir / "refs" / "main"
-        if ref_path.exists():
-            snapshot_id = ref_path.read_text().strip()
-            if snapshot_id:
-                snapshot_path = snapshots_dir / snapshot_id
-                if snapshot_path.exists():
-                    return snapshot_path
-
-        snapshots = sorted((path for path in snapshots_dir.iterdir() if path.is_dir()))
-        return snapshots[-1] if snapshots else None
+        return resolve_local_hf_snapshot(model_name)
 
     def _load_reranker(self, model_name: str) -> CrossEncoder:
         """
@@ -246,8 +257,9 @@ class HybridRetriever:
 
     def _build_bm25_metadata(self, idx: int) -> dict:
         """Recover minimal metadata for BM25-stage hits from stored corpus text."""
-        if idx < len(self.bm25_metadatas):
-            return dict(self.bm25_metadatas[idx])
+        bm25_metadatas = getattr(self, "bm25_metadatas", [])
+        if idx < len(bm25_metadatas):
+            return dict(bm25_metadatas[idx])
 
         content = self.bm25_corpus[idx]
         title = ""

@@ -10,7 +10,7 @@ Author: Joben Preet Bhinder | Advisor: Wolfgang Rogner, BSc. MSc
 This prototype enables natural-language querying over CTI data using a hybrid retrieval pipeline (BM25 + vector search) combined with a locally running LLM (Llama 3.1 via Ollama). It retrieves relevant vulnerability and threat intelligence context, generates source-grounded answers with citations, and supports systematic evaluation via the RAGAS framework.
 
 ### Data Sources
-- **NVD/CVE** — National Vulnerability Database (CVSS >= 7.0, 2020–2026; filtered by the configured `snapshot_date`)
+- **NVD/CVE** — National Vulnerability Database (CVSS >= 7.0, 2020–2025; filtered by the configured `snapshot_date`)
 - **CISA KEV** — Known Exploited Vulnerabilities catalog (entries added on or before the configured `snapshot_date`)
 - **CISA Advisories** — Cybersecurity Advisories with narrative TTP/mitigation context (included in Setup B)
 - **MISP** — CIRCL OSINT feed (threat events, IOCs, ATT&CK mappings; events published on or before the configured `snapshot_date`)
@@ -88,6 +88,7 @@ For a reproducible local setup with the expected cached models:
 make bootstrap
 make download
 make index SETUP=both
+make smoke
 make run
 ```
 
@@ -97,6 +98,9 @@ Useful targets:
 - `make run QUERY="What is CVE-2024-3094?" MODE=hybrid SETUP=b`
 - `make evaluate MODE=hybrid SETUP=a`
 - `make ablation`
+- `make smoke`
+- `make e2e-smoke`
+- `make e2e-eval-smoke`
 - `make test-retrieval`
 
 Note:
@@ -137,12 +141,15 @@ Note:
 ```bash
 # Download all sources (NVD takes ~10 min, MISP ~5 min, CISA KEV ~5 sec)
 python main.py download --source cisa_kev
+python main.py download --source cisa_advisories
 python main.py download --source nvd
 python main.py download --source misp --misp-max-events 300
 
 # Or download everything at once:
 python main.py download --source all
 ```
+
+`download --source all` now includes `cisa_advisories`, so Setup B can be reproduced from the documented CLI path.
 
 ### 4. Build search indexes
 
@@ -198,6 +205,36 @@ python main.py evaluate
 CTI_RAG_SETUP=a python main.py evaluate --mode hybrid
 CTI_RAG_SETUP=b python main.py evaluate --mode hybrid
 ```
+
+### Run smoke checks
+
+```bash
+make smoke
+```
+
+The smoke target runs CLI help plus narrow repository tests that verify snapshot handling, setup-aware indexing, retrieval trace behavior, and evaluation artifact structure without requiring external services.
+
+### Run a live local end-to-end smoke check
+
+```bash
+make e2e-smoke
+```
+
+This check is intentionally preflighted. It fails fast unless all of the following are already available locally:
+- `ollama serve` is reachable
+- the configured Ollama generation model exists locally
+- Setup B retrieval artifacts exist locally
+- embedding and reranker models exist in the local Hugging Face cache
+
+If those prerequisites hold, it runs one real baseline query and one real RAG query against the local stack.
+
+For a heavier one-sample local evaluation run on top of the same preflight:
+
+```bash
+make e2e-eval-smoke
+```
+
+`e2e-eval-smoke` intentionally uses a reduced smoke metric set (`answer_relevancy` by default) so the live evaluation path stays fast and less timeout-prone. It is a runtime sanity check, not a replacement for the full evaluation run.
 
 ### Run ablation study
 
@@ -255,6 +292,15 @@ Environment-based experiment setup:
 - leave `CTI_RAG_SETUP` unset for the default single-index layout
 - set `CTI_RAG_SETUP=a` for Setup A
 - set `CTI_RAG_SETUP=b` for Setup B
+
+## Runtime Assumptions
+
+- Python `3.12` is the supported interpreter. `.python-version` pins the expected major/minor version for local env managers.
+- `ollama serve` must be running at `http://localhost:11434` before `query`, `baseline`, `interactive`, or `evaluate`.
+- Retrieval and evaluation expect the embedding model and reranker to be present locally. Run `make warmup-models` once on a fresh machine.
+- Runtime retrieval/indexing now expects the embedding model to resolve from the local Hugging Face cache instead of silently attempting a network fetch.
+- `download` and `warmup-models` require network access. Re-running `index`, `query`, `baseline`, `evaluate`, and `make smoke` does not.
+- The default embedding device in `configs/settings.yaml` is `mps`. On non-Apple-Silicon hosts, switch it to `cpu` or `cuda`.
 
 BM25 persistence:
 - BM25 artifacts are stored as transparent JSON inputs and reconstructed at load time
