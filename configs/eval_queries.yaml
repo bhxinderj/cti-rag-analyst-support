@@ -12,84 +12,217 @@
 #   - difficulty: simple | moderate | complex
 #
 # Design decisions (document in thesis section 2.3.3):
-#   - 12 queries: 3 per task type (vuln, ioc, ttp) + 3 cross-source
+#   - 28 queries: 7 per task type (vuln, ioc, ttp, cross-source)
 #   - Ground truths are fact-checkable against indexed data (NVD, CISA KEV, MISP)
 #   - Temporal references use absolute dates aligned with data snapshot (2025-12-31)
-#   - All CVEs referenced exist in the NVD year_range [2020, 2025]
+#   - All CVEs referenced verified present in NVD year_range [2020, 2025] and/or CISA KEV
+#   - CVSS scores match NVD cvssMetricV31 values from indexed data
 
 queries:
-  # --- Task Type 1: Vulnerability Analysis (CVE/CWE) ---
+  # ===========================================================================
+  # Task Type 1: Vulnerability Analysis (7 queries)
+  # ===========================================================================
   - id: vuln_001
     question: "What is CVE-2024-3094 and what is its impact?"
     task_type: vulnerability_analysis
-    ground_truth: "CVE-2024-3094 is a critical vulnerability in XZ Utils (liblzma) involving a supply chain compromise that inserted a backdoor allowing unauthorized remote access through SSH authentication bypass. It has a CVSS score of 10.0."
+    ground_truth: "CVE-2024-3094 is a critical vulnerability in XZ Utils (liblzma) involving a supply chain compromise (CWE-506) that inserted a backdoor allowing unauthorized remote access through SSH authentication bypass. It has a CVSS score of 10.0."
     difficulty: simple
+    # Verified: NVD ✓ (CVSS 10.0, CWE-506)
 
   - id: vuln_002
     question: "Which critical vulnerabilities affect Apache Log4j and what are the recommended mitigations?"
     task_type: vulnerability_analysis
-    ground_truth: "CVE-2021-44228 (Log4Shell) is a critical RCE vulnerability in Apache Log4j2 with CVSS 10.0. Mitigations include upgrading to Log4j 2.17.0+, removing JndiLookup class, and setting log4j2.formatMsgNoLookups=true."
+    ground_truth: "CVE-2021-44228 (Log4Shell) is a critical RCE vulnerability in Apache Log4j2 (CWE-20) with CVSS 10.0. It affects versions 2.0-beta9 through 2.15.0. Mitigations include upgrading to Log4j 2.17.0+, removing JndiLookup class, and setting log4j2.formatMsgNoLookups=true. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
     difficulty: moderate
+    # Verified: NVD ✓ (CVSS 10.0, CWE-20) | KEV ✓ (ransomware: Known)
 
   - id: vuln_003
     question: "Compare the severity and attack vectors of recent Microsoft Exchange Server vulnerabilities."
     task_type: vulnerability_analysis
-    ground_truth: "Key Exchange vulnerabilities include ProxyLogon (CVE-2021-26855, CVSS 9.8, network-based SSRF), ProxyShell (CVE-2021-34473, CVSS 9.8, pre-auth RCE), and ProxyNotShell (CVE-2022-41040/41082). All are actively exploited and listed in CISA KEV."
+    ground_truth: "Key Exchange vulnerabilities include ProxyLogon (CVE-2021-26855, CVSS 9.1, SSRF via CWE-918), ProxyShell (CVE-2021-34473, CVSS 9.1, SSRF via CWE-918), and ProxyNotShell (CVE-2022-41040, CVSS 8.8/CVE-2022-41082, CVSS 8.0). All are listed in CISA KEV as actively exploited with known ransomware campaign use."
     difficulty: complex
+    # Verified: NVD ✓ (scores: 9.1, 9.1, 8.8, 8.0) | KEV ✓ (all ransomware: Known)
 
-  # --- Task Type 2: IOC Enrichment ---
-  - id: ioc_001
-    question: "What threat intelligence is available for Fortinet VPN vulnerabilities, particularly CVE-2018-13379?"
-    task_type: ioc_enrichment
-    ground_truth: "CVE-2018-13379 is a path traversal vulnerability in Fortinet FortiOS SSL VPN (CVSS 9.8) allowing unauthenticated attackers to download system files including session tokens. It is listed in CISA KEV as actively exploited and has been used by APT groups for initial access to government and critical infrastructure networks."
+  - id: vuln_004
+    question: "What is CVE-2023-4966 (Citrix Bleed) and how severe is it?"
+    task_type: vulnerability_analysis
+    ground_truth: "CVE-2023-4966 (Citrix Bleed) is a critical information disclosure vulnerability in Citrix NetScaler ADC and NetScaler Gateway (CWE-119, CVSS 9.4). It allows unauthenticated attackers to extract sensitive information including session tokens from device memory. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: simple
+    # Verified: NVD ✓ (CVSS 9.4, CWE-119) | KEV ✓ (ransomware: Known)
+
+  - id: vuln_005
+    question: "Describe the Ivanti Connect Secure vulnerabilities CVE-2023-46805 and CVE-2024-21887 and their combined impact."
+    task_type: vulnerability_analysis
+    ground_truth: "CVE-2023-46805 is an authentication bypass vulnerability (CWE-287, CVSS 8.2) and CVE-2024-21887 is a command injection vulnerability (CWE-77, CVSS 9.1) in Ivanti Connect Secure and Policy Secure. When chained, they allow unauthenticated remote code execution. Both are listed in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: complex
+    # Verified: NVD ✓ (CVSS 8.2, 9.1) | KEV ✓ (both ransomware: Known)
+
+  - id: vuln_006
+    question: "What is the Confluence OGNL injection vulnerability CVE-2022-26134?"
+    task_type: vulnerability_analysis
+    ground_truth: "CVE-2022-26134 is a critical OGNL injection vulnerability (CWE-917, CVSS 9.8) in Atlassian Confluence Server and Data Center that allows unauthenticated remote code execution. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: simple
+    # Verified: NVD ✓ (CVSS 9.8, CWE-917) | KEV ✓ (ransomware: Known)
+
+  - id: vuln_007
+    question: "What is the VMware vCenter Server vulnerability CVE-2021-21972 and what is its severity?"
+    task_type: vulnerability_analysis
+    ground_truth: "CVE-2021-21972 is a critical remote code execution vulnerability (CWE-22, CVSS 9.8) in the vSphere Client (HTML5) vCenter Server plugin. It allows unauthenticated attackers to execute arbitrary commands. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
     difficulty: moderate
+    # Verified: NVD ✓ (CVSS 9.8, CWE-22) | KEV ✓ (ransomware: Known)
+
+  # ===========================================================================
+  # Task Type 2: IOC Enrichment (7 queries)
+  # ===========================================================================
+  - id: ioc_001
+    question: "What threat intelligence is available for Fortinet FortiOS vulnerabilities, particularly CVE-2023-27997?"
+    task_type: ioc_enrichment
+    ground_truth: "CVE-2023-27997 is a critical heap-based buffer overflow vulnerability (CWE-122, CVSS 9.8) in Fortinet FortiOS and FortiProxy SSL-VPN. It allows unauthenticated remote code execution. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: moderate
+    # Verified: NVD ✓ (CVSS 9.8, CWE-122) | KEV ✓ (ransomware: Known)
 
   - id: ioc_002
     question: "Which specific vulnerabilities listed in the CISA KEV catalog are flagged as used in ransomware campaigns?"
     task_type: ioc_enrichment
     ground_truth: "CISA KEV tracks vulnerabilities with confirmed ransomware use via the knownRansomwareCampaignUse field. Examples include CVE-2021-44228 (Log4Shell, Apache Log4j), CVE-2021-34527 (PrintNightmare, Windows Print Spooler), CVE-2021-34473 (ProxyShell, Microsoft Exchange), and CVE-2023-34362 (MOVEit Transfer, SQL injection, CVSS 9.8)."
     difficulty: moderate
+    # Verified: KEV ✓ (all ransomware: Known)
 
   - id: ioc_003
     question: "What is known about the MOVEit Transfer vulnerability CVE-2023-34362 and its exploitation?"
     task_type: ioc_enrichment
-    ground_truth: "CVE-2023-34362 is a critical SQL injection vulnerability in Progress MOVEit Transfer (CVSS 9.8) that allows unauthenticated attackers to access the database. It is listed in CISA KEV as actively exploited and was used in mass data exfiltration campaigns. CISA KEV flags it as associated with known ransomware campaigns."
+    ground_truth: "CVE-2023-34362 is a critical SQL injection vulnerability (CWE-89, CVSS 9.8) in Progress MOVEit Transfer that allows unauthenticated attackers to access the database. It is listed in CISA KEV as actively exploited and flagged for known ransomware campaign use."
     difficulty: moderate
+    # Verified: NVD ✓ (CVSS 9.8, CWE-89) | KEV ✓ (ransomware: Known)
 
-  # --- Task Type 3: TTP Correlation (ATT&CK) ---
+  - id: ioc_004
+    question: "What is known about the exploitation of GoAnywhere MFT vulnerability CVE-2023-0669?"
+    task_type: ioc_enrichment
+    ground_truth: "CVE-2023-0669 is a pre-authentication command injection vulnerability (CWE-502, CVSS 7.2) in Fortra GoAnywhere MFT. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: moderate
+    # Verified: NVD ✓ (CVSS 7.2, CWE-502) | KEV ✓ (ransomware: Known)
+
+  - id: ioc_005
+    question: "What threat intelligence exists for the ConnectWise ScreenConnect vulnerability CVE-2024-1709?"
+    task_type: ioc_enrichment
+    ground_truth: "CVE-2024-1709 is a critical authentication bypass vulnerability (CWE-288, CVSS 10.0) in ConnectWise ScreenConnect 23.9.7 and prior. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: moderate
+    # Verified: NVD ✓ (CVSS 10.0, CWE-288) | KEV ✓ (ransomware: Known) | MISP ✓
+
+  - id: ioc_006
+    question: "What vulnerabilities affect Zoho ManageEngine products and what is their exploitation status?"
+    task_type: ioc_enrichment
+    ground_truth: "Key Zoho ManageEngine vulnerabilities include CVE-2021-40539 (authentication bypass, CWE-706, CVSS 9.8) and CVE-2022-47966 (remote code execution, CVSS 9.8). Both are listed in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: complex
+    # Verified: NVD ✓ (both CVSS 9.8) | KEV ✓ (both ransomware: Known)
+
+  - id: ioc_007
+    question: "What is CVE-2023-20198 affecting Cisco IOS XE and what is its exploitation status?"
+    task_type: ioc_enrichment
+    ground_truth: "CVE-2023-20198 is a critical privilege escalation vulnerability (CWE-420, CVSS 10.0) in the Cisco IOS XE Web UI. It allows unauthenticated attackers to create privileged accounts. It is listed in CISA KEV as actively exploited."
+    difficulty: moderate
+    # Verified: NVD ✓ (CVSS 10.0, CWE-420) | KEV ✓ | MISP ✓
+
+  # ===========================================================================
+  # Task Type 3: TTP Correlation (7 queries)
+  # ===========================================================================
   - id: ttp_001
     question: "What initial access techniques (MITRE ATT&CK) are commonly associated with the exploitation of public-facing application vulnerabilities?"
     task_type: ttp_correlation
     ground_truth: "Exploitation of public-facing applications maps to MITRE ATT&CK technique T1190 under Initial Access (TA0001). This technique is commonly used by threat actors leveraging vulnerabilities in web servers, VPN appliances, and email servers for initial access."
     difficulty: moderate
+    # Verified: MISP ✓ (T1190 in 10 events, most frequent technique)
 
   - id: ttp_002
     question: "Which CVEs disclosed between 2021 and 2024 are associated with lateral movement techniques in MITRE ATT&CK?"
     task_type: ttp_correlation
     ground_truth: "Lateral movement (TA0008) is associated with vulnerabilities enabling remote code execution and privilege escalation, such as PrintNightmare (CVE-2021-34527) mapped to T1210 Exploitation of Remote Services, and Microsoft Exchange ProxyShell/ProxyLogon vulnerabilities used for T1210. These enable attackers to move from compromised Exchange servers to internal systems."
     difficulty: complex
+    # Verified: NVD ✓ (CVE-2021-34527) | KEV ✓
 
   - id: ttp_003
     question: "Which privilege escalation techniques (MITRE ATT&CK TA0004) are associated with Windows Print Spooler vulnerabilities?"
     task_type: ttp_correlation
     ground_truth: "Windows Print Spooler vulnerabilities including PrintNightmare (CVE-2021-34527, CVSS 8.8) enable both remote code execution and local privilege escalation, mapped to MITRE ATT&CK T1068 (Exploitation for Privilege Escalation). CVE-2021-34527 is listed in CISA KEV as actively exploited and flagged for known ransomware campaign use."
     difficulty: moderate
+    # Verified: NVD ✓ (CVSS 8.8) | KEV ✓ (ransomware: Known)
 
-  # --- Task Type 4: Cross-Source Correlation ---
+  - id: ttp_004
+    question: "What phishing-related techniques (MITRE ATT&CK T1566) are documented in MISP threat intelligence events?"
+    task_type: ttp_correlation
+    ground_truth: "MITRE ATT&CK T1566 (Phishing) and its sub-techniques T1566.001 (Spearphishing Attachment) and T1566.002 (Spearphishing Link) are documented in MISP events. These initial access techniques are used by threat actors to deliver malware through targeted email campaigns."
+    difficulty: moderate
+    # Verified: MISP ✓ (T1566: 4 events, T1566.001: 4, T1566.002: 2)
+
+  - id: ttp_005
+    question: "Which MITRE ATT&CK techniques relate to ransomware impact, specifically data encryption for impact?"
+    task_type: ttp_correlation
+    ground_truth: "MITRE ATT&CK T1486 (Data Encrypted for Impact) is the primary technique used by ransomware operators to encrypt victim data. T1490 (Inhibit System Recovery) is commonly used alongside T1486, where attackers delete volume shadow copies and backups before encrypting data."
+    difficulty: moderate
+    # Verified: MISP ✓ (T1486: 2 events, T1490: 2 events)
+
+  - id: ttp_006
+    question: "What command and scripting techniques (MITRE ATT&CK T1059) are observed in threat intelligence data?"
+    task_type: ttp_correlation
+    ground_truth: "MITRE ATT&CK T1059 (Command and Scripting Interpreter) and its sub-technique T1059.001 (PowerShell) are observed in MISP threat intelligence events. PowerShell is commonly used by threat actors for execution, downloading additional payloads, and lateral movement."
+    difficulty: moderate
+    # Verified: MISP ✓ (T1059.001: 3 events)
+
+  - id: ttp_007
+    question: "Which MITRE ATT&CK techniques are associated with VPN and remote service exploitation for persistent access?"
+    task_type: ttp_correlation
+    ground_truth: "T1133 (External Remote Services) is used by threat actors who exploit VPN appliance vulnerabilities like those in Fortinet FortiOS and Ivanti Connect Secure for persistent access. Combined with T1190 (Exploit Public-Facing Application) for initial access, these techniques represent a common pattern in campaigns targeting network perimeter devices."
+    difficulty: complex
+    # Verified: MISP ✓ (T1133: 2 events, T1190: 10 events)
+
+  # ===========================================================================
+  # Task Type 4: Cross-Source Correlation (7 queries)
+  # ===========================================================================
   - id: cross_001
     question: "For CVE-2023-22515, what is the vulnerability, which products are affected, is it in the CISA KEV, and what threat intelligence is available?"
     task_type: cross_source
-    ground_truth: "CVE-2023-22515 is a critical broken access control vulnerability in Atlassian Confluence Data Center and Server (CVSS 10.0) allowing unauthenticated privilege escalation to admin. It is listed in CISA KEV as actively exploited."
+    ground_truth: "CVE-2023-22515 is a critical broken access control vulnerability in Atlassian Confluence Data Center and Server (CVSS 9.8) allowing unauthenticated privilege escalation to admin. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
     difficulty: complex
+    # Verified: NVD ✓ (CVSS 9.8) | KEV ✓ (ransomware: Known) | MISP ✓
 
   - id: cross_002
     question: "What are the most critical vulnerabilities that appear in both the NVD with CVSS >= 9.0 and the CISA KEV with confirmed ransomware use?"
     task_type: cross_source
-    ground_truth: "Vulnerabilities meeting both criteria include CVE-2021-44228 (Log4Shell, CVSS 10.0), CVE-2021-34473 (ProxyShell, CVSS 9.8), CVE-2023-34362 (MOVEit Transfer, CVSS 9.8), and CVE-2021-26855 (ProxyLogon, CVSS 9.8). All are listed in CISA KEV with known ransomware campaign use."
+    ground_truth: "Vulnerabilities meeting both criteria include CVE-2021-44228 (Log4Shell, CVSS 10.0), CVE-2021-34473 (ProxyShell, CVSS 9.1), CVE-2023-34362 (MOVEit Transfer, CVSS 9.8), and CVE-2021-26855 (ProxyLogon, CVSS 9.1). All are listed in CISA KEV with known ransomware campaign use."
     difficulty: complex
+    # Verified: NVD ✓ | KEV ✓ (all ransomware: Known)
 
   - id: cross_003
     question: "Which vulnerabilities from 2023-2024 are present in both NVD and CISA KEV, and what are their severity ratings and exploitation status?"
     task_type: cross_source
-    ground_truth: "Recent high-profile examples include CVE-2023-22515 (Atlassian Confluence, CVSS 10.0, actively exploited), CVE-2023-34362 (MOVEit Transfer, CVSS 9.8, ransomware use), and CVE-2024-3094 (XZ Utils, CVSS 10.0, supply chain compromise). All are listed in CISA KEV as actively exploited with NVD providing detailed CVSS scoring."
+    ground_truth: "Recent high-profile examples include CVE-2023-22515 (Atlassian Confluence, CVSS 9.8, actively exploited), CVE-2023-34362 (MOVEit Transfer, CVSS 9.8, ransomware use), and CVE-2023-3519 (Citrix NetScaler, CVSS 9.8, ransomware use). All are listed in CISA KEV as actively exploited with NVD providing detailed CVSS scoring."
     difficulty: complex
+    # Verified: NVD ✓ (all CVSS 9.8) | KEV ✓ (all ransomware: Known)
+
+  - id: cross_004
+    question: "What Fortinet vulnerabilities appear across NVD, CISA KEV, and MISP, and how do these sources complement each other?"
+    task_type: cross_source
+    ground_truth: "Fortinet vulnerabilities span multiple sources: CVE-2023-27997 (FortiOS heap overflow, CVSS 9.8) and CVE-2023-48788 (FortiClient EMS SQL injection, CVSS 9.8) appear in NVD with technical details and CVSS scoring, and in CISA KEV as actively exploited with known ransomware campaign use. NVD provides CWE classification (CWE-122, CWE-89), while KEV confirms active exploitation status."
+    difficulty: complex
+    # Verified: NVD ✓ (both CVSS 9.8) | KEV ✓ (both ransomware: Known)
+
+  - id: cross_005
+    question: "What is CVE-2023-42793 and what information is available from NVD and CISA KEV?"
+    task_type: cross_source
+    ground_truth: "CVE-2023-42793 is an authentication bypass vulnerability (CWE-288, CVSS 9.8) in JetBrains TeamCity before 2023.05.4 leading to remote code execution. NVD provides the CVSS scoring and CWE classification, while CISA KEV lists it as actively exploited with known ransomware campaign use."
+    difficulty: moderate
+    # Verified: NVD ✓ (CVSS 9.8, CWE-288) | KEV ✓ (ransomware: Known)
+
+  - id: cross_006
+    question: "What Ivanti vulnerabilities from 2023-2024 are tracked across NVD and CISA KEV, and what patterns emerge?"
+    task_type: cross_source
+    ground_truth: "Ivanti Connect Secure and Policy Secure were affected by CVE-2023-46805 (authentication bypass, CVSS 8.2) and CVE-2024-21887 (command injection, CVSS 9.1). Both appear in NVD with CWE classifications (CWE-287, CWE-77) and in CISA KEV as actively exploited with known ransomware campaign use. The chained exploitation pattern suggests coordinated targeting of network perimeter appliances."
+    difficulty: complex
+    # Verified: NVD ✓ (CVSS 8.2, 9.1) | KEV ✓ (both ransomware: Known)
+
+  - id: cross_007
+    question: "What VMware vulnerabilities are documented across NVD and CISA KEV, and what is their ransomware association?"
+    task_type: cross_source
+    ground_truth: "VMware vulnerabilities include CVE-2021-21972 (vCenter RCE, CWE-22, CVSS 9.8) and CVE-2022-22954 (Workspace ONE Access code injection, CWE-94, CVSS 9.8). Both appear in NVD with detailed CWE and CVSS data, and in CISA KEV as actively exploited with known ransomware campaign use."
+    difficulty: complex
+    # Verified: NVD ✓ (both CVSS 9.8) | KEV ✓ (both ransomware: Known)
