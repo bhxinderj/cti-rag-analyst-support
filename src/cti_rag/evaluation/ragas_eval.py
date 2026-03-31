@@ -7,6 +7,12 @@ Evaluates the RAG pipeline using the RAGAS framework with four core metrics:
 - Context Precision: Are the retrieved chunks relevant and well-ranked?
 - Context Recall: Does the retrieved context cover the ground truth?
 
+Baseline mode:
+  When is_baseline=True, only answer_relevancy is computed (the other three
+  metrics require non-empty retrieval contexts). This is the methodologically
+  correct approach: retrieval-dependent metrics characterize the RAG pipeline
+  alone, while answer_relevancy enables direct RAG-vs-baseline comparison.
+
 The evaluator uses the same local Ollama LLM as the generator.
 This is a known limitation documented in thesis section 4.3.
 """
@@ -16,17 +22,18 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from ragas import evaluate, EvaluationDataset, SingleTurnSample, RunConfig
+from datasets import Dataset
+from ragas import evaluate
 from ragas.metrics import (
-    Faithfulness,
-    AnswerRelevancy,
-    LLMContextPrecisionWithReference,
-    LLMContextRecall,
+    faithfulness,
+    answer_relevancy,
+    context_precision,
+    context_recall,
 )
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_ollama import ChatOllama
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
 from ..rag.chain import RAGResponse
 from ..utils.config import load_config, get_project_root
@@ -40,7 +47,10 @@ class RAGASEvaluator:
 
     Usage:
         evaluator = RAGASEvaluator()
-        results = evaluator.evaluate(rag_responses, ground_truths)
+        # RAG evaluation (all 4 metrics)
+        results = evaluator.evaluate(rag_responses, ground_truths, query_metadata=metadata)
+        # Baseline evaluation (answer_relevancy only)
+        results = evaluator.evaluate(baseline_responses, ground_truths, is_baseline=True)
     """
 
     def __init__(self):
@@ -65,147 +75,28 @@ class RAGASEvaluator:
             )
         )
 
-        # RAGAS 0.2.x: instantiate metric classes
-        self.metrics = [
-            Faithfulness(llm=self.eval_llm),
-            AnswerRelevancy(llm=self.eval_llm, embeddings=self.eval_embeddings),
-            LLMContextPrecisionWithReference(llm=self.eval_llm),
-            LLMContextRecall(llm=self.eval_llm),
+        self.rag_metrics = [
+            faithfulness,
+            answer_relevancy,
+            context_precision,
+            context_recall,
+        ]
+
+        # Baseline: only answer_relevancy (no contexts available)
+        self.baseline_metrics = [
+            answer_relevancy,
         ]
 
         self.results_dir = get_project_root() / config["evaluation"]["results_dir"]
         self.results_dir.mkdir(parents=True, exist_ok=True)
-
-    @staticmethod
-    def build_response_trace(
-        resp: RAGResponse,
-        ground_truth: str,
-        sample_id: str | None = None,
-        sample_metadata: dict | None = None,
-        ragas_metrics: dict | None = None,
-    ) -> dict:
-        """Serialize one pipeline run for later inspection and analysis."""
-        used_chunks = list(resp.source_documents)
-        trace = {
-            "sample_id": sample_id,
-            "query": resp.query,
-            "ground_truth": ground_truth,
-            "answer": resp.answer,
-            "retrieval_mode": resp.retrieval_mode,
-            "retrieval_time_ms": resp.retrieval_time_ms,
-            "generation_time_ms": resp.generation_time_ms,
-            "total_time_ms": resp.total_time_ms,
-            "abstention_reason": resp.abstention_reason,
-            "prompt_context": resp.prompt_context,
-            "retrieved_contexts": resp.contexts if resp.contexts else ["No context retrieved."],
-            "retrieved_doc_ids": [chunk.get("doc_id") for chunk in used_chunks],
-            "used_chunks": used_chunks,
-            "cited_doc_ids": [
-                chunk.get("doc_id")
-                for chunk in used_chunks
-                if chunk.get("cited_in_answer")
-            ],
-            "retrieval_trace": dict(resp.retrieval_trace),
-        }
-        if sample_metadata:
-            trace["task_type"] = sample_metadata.get("task_type")
-            trace["difficulty"] = sample_metadata.get("difficulty")
-            trace["ground_truth_points"] = sample_metadata.get("ground_truth_points", [])
-        if ragas_metrics is not None:
-            trace["ragas_metrics"] = ragas_metrics
-        return trace
-
-    @staticmethod
-    def _timing_summary(responses: list[RAGResponse]) -> dict:
-        """Aggregate timing metadata for the run."""
-        if not responses:
-            return {
-                "avg_retrieval_time_ms": 0.0,
-                "avg_generation_time_ms": 0.0,
-                "avg_total_time_ms": 0.0,
-            }
-
-        count = len(responses)
-        return {
-            "avg_retrieval_time_ms": sum(resp.retrieval_time_ms for resp in responses) / count,
-            "avg_generation_time_ms": sum(resp.generation_time_ms for resp in responses) / count,
-            "avg_total_time_ms": sum(resp.total_time_ms for resp in responses) / count,
-        }
-
-    def save_run_artifacts(
-        self,
-        responses: list[RAGResponse],
-        ground_truths: list[str],
-        experiment_name: str,
-        sample_ids: list[str] | None = None,
-        sample_metadata: list[dict] | None = None,
-        run_metadata: dict | None = None,
-        metrics: dict | None = None,
-        per_sample_metric_records: list[dict] | None = None,
-        result_prefix: str = "ragas",
-    ) -> dict:
-        """Persist comparable evaluation artifacts for one run."""
-        if len(responses) != len(ground_truths):
-            raise ValueError(
-                f"Mismatch: {len(responses)} responses vs {len(ground_truths)} ground truths"
-            )
-        if sample_ids is not None and len(sample_ids) != len(responses):
-            raise ValueError(
-                f"Mismatch: {len(sample_ids)} sample IDs vs {len(responses)} responses"
-            )
-        if sample_metadata is not None and len(sample_metadata) != len(responses):
-            raise ValueError(
-                f"Mismatch: {len(sample_metadata)} sample metadata rows vs {len(responses)} responses"
-            )
-
-        per_sample = []
-        for idx, (resp, gt) in enumerate(zip(responses, ground_truths)):
-            raw_metrics = per_sample_metric_records[idx] if per_sample_metric_records and idx < len(per_sample_metric_records) else {}
-            metric_values = {
-                key: value
-                for key, value in raw_metrics.items()
-                if key not in ("user_input", "response", "retrieved_contexts", "reference")
-            }
-            trace = self.build_response_trace(
-                resp=resp,
-                ground_truth=gt,
-                sample_id=sample_ids[idx] if sample_ids is not None else None,
-                sample_metadata=sample_metadata[idx] if sample_metadata is not None else None,
-                ragas_metrics=metric_values if per_sample_metric_records is not None else None,
-            )
-            per_sample.append(trace)
-
-        timestamp = datetime.now()
-        output_path = self.results_dir / f"{result_prefix}_{experiment_name}_{timestamp.strftime('%Y%m%d_%H%M%S')}.json"
-        result_dict = {
-            "experiment_name": experiment_name,
-            "timestamp": timestamp.isoformat(),
-            "num_samples": len(responses),
-            "retrieval_mode": responses[0].retrieval_mode if responses else "unknown",
-            "metrics": metrics or {},
-            "timing": self._timing_summary(responses),
-            "run_metadata": run_metadata or {},
-            "per_sample": per_sample,
-            "output_path": str(output_path),
-        }
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(result_dict, f, indent=2, default=str)
-
-        logger.info("%s results saved: %s", result_prefix.upper(), output_path)
-        if metrics:
-            logger.info("Metrics: %s", metrics)
-
-        return result_dict
 
     def evaluate(
         self,
         rag_responses: list[RAGResponse],
         ground_truths: list[str],
         experiment_name: str = "default",
-        sample_ids: list[str] | None = None,
-        sample_metadata: list[dict] | None = None,
-        run_metadata: dict | None = None,
+        query_metadata: list[dict] | None = None,
+        is_baseline: bool = False,
     ) -> dict:
         """
         Run RAGAS evaluation on a set of RAG responses.
@@ -214,6 +105,8 @@ class RAGASEvaluator:
             rag_responses: List of RAGResponse objects from the pipeline
             ground_truths: List of ground truth answers (one per query)
             experiment_name: Name for this evaluation run
+            query_metadata: Optional list of dicts with {id, task_type, difficulty}
+            is_baseline: If True, only compute answer_relevancy (no context-dependent metrics)
 
         Returns:
             Dictionary with metric scores and per-sample results
@@ -222,76 +115,87 @@ class RAGASEvaluator:
             raise ValueError(
                 f"Mismatch: {len(rag_responses)} responses vs {len(ground_truths)} ground truths"
             )
-        if sample_ids is not None and len(sample_ids) != len(rag_responses):
-            raise ValueError(
-                f"Mismatch: {len(sample_ids)} sample IDs vs {len(rag_responses)} responses"
-            )
-        if sample_metadata is not None and len(sample_metadata) != len(rag_responses):
-            raise ValueError(
-                f"Mismatch: {len(sample_metadata)} sample metadata rows vs {len(rag_responses)} responses"
-            )
 
-        # Build RAGAS 0.2.x EvaluationDataset using SingleTurnSample
-        samples = []
-        for resp, gt in zip(rag_responses, ground_truths):
-            sample = SingleTurnSample(
-                user_input=resp.query,
-                response=resp.answer,
-                retrieved_contexts=resp.contexts if resp.contexts else ["No context retrieved."],
-                reference=gt,
-            )
-            samples.append(sample)
+        metrics = self.baseline_metrics if is_baseline else self.rag_metrics
+        mode_label = "baseline" if is_baseline else rag_responses[0].retrieval_mode if rag_responses else "unknown"
 
-        dataset = EvaluationDataset(samples=samples)
+        # Build RAGAS dataset
+        # For baseline: contexts are empty lists, but RAGAS Dataset requires the field.
+        # answer_relevancy does not use contexts, so empty lists are safe.
+        eval_data = {
+            "question": [r.query for r in rag_responses],
+            "answer": [r.answer for r in rag_responses],
+            "contexts": [r.contexts if r.contexts else ["N/A"] for r in rag_responses],
+            "ground_truth": ground_truths,
+        }
 
-        logger.info(f"Running RAGAS evaluation on {len(dataset)} samples...")
+        dataset = Dataset.from_dict(eval_data)
 
-        # Run evaluation with extended timeout for local Ollama model.
-        # max_workers=1 because Ollama processes requests sequentially.
-        run_config = RunConfig(
-            timeout=600,        # 10 min per LLM call (8B model is slow on complex prompts)
-            max_retries=3,
-            max_workers=1,      # Sequential: local Ollama cannot parallelize
-            seed=42,            # Reproducibility
+        logger.info(
+            f"Running RAGAS evaluation on {len(dataset)} samples "
+            f"(mode={mode_label}, metrics={[m.name for m in metrics]})"
         )
 
+        # Run evaluation
         results = evaluate(
             dataset=dataset,
-            metrics=self.metrics,
+            metrics=metrics,
             llm=self.eval_llm,
             embeddings=self.eval_embeddings,
-            run_config=run_config,
-            raise_exceptions=False,
-            show_progress=True,
         )
 
-        # Extract aggregate metrics
-        metrics_dict = {}
-        if hasattr(results, "scores"):
-            # RAGAS 0.2.x returns scores as list of dicts
-            scores_df = results.to_pandas()
-            for col in scores_df.columns:
-                if col not in ("user_input", "response", "retrieved_contexts", "reference"):
-                    values = scores_df[col].dropna()
-                    if len(values) > 0:
-                        metrics_dict[col] = float(values.mean())
-        else:
-            # Fallback: iterate result dict
-            for k, v in results.items():
-                if isinstance(v, (int, float)):
-                    metrics_dict[k] = float(v)
+        # Build per-sample results with metadata
+        per_sample = []
+        results_df = results.to_pandas() if hasattr(results, "to_pandas") else None
 
-        per_sample_metric_records = []
-        if hasattr(results, "to_pandas"):
-            per_sample_metric_records = results.to_pandas().to_dict(orient="records")
-        return self.save_run_artifacts(
-            responses=rag_responses,
-            ground_truths=ground_truths,
-            experiment_name=experiment_name,
-            sample_ids=sample_ids,
-            sample_metadata=sample_metadata,
-            run_metadata=run_metadata,
-            metrics=metrics_dict,
-            per_sample_metric_records=per_sample_metric_records,
-            result_prefix="ragas",
-        )
+        for i, resp in enumerate(rag_responses):
+            sample = {
+                "question": resp.query,
+                "answer": resp.answer,
+                "ground_truth": ground_truths[i],
+                "retrieval_mode": resp.retrieval_mode,
+                "retrieval_time_ms": resp.retrieval_time_ms,
+                "generation_time_ms": resp.generation_time_ms,
+                "num_contexts": len(resp.contexts),
+            }
+
+            # Add query metadata if provided
+            if query_metadata and i < len(query_metadata):
+                sample["query_id"] = query_metadata[i].get("id", f"q_{i}")
+                sample["task_type"] = query_metadata[i].get("task_type", "unknown")
+                sample["difficulty"] = query_metadata[i].get("difficulty", "unknown")
+
+            # Add per-sample metric scores from RAGAS
+            if results_df is not None and i < len(results_df):
+                for m in metrics:
+                    col = m.name
+                    if col in results_df.columns:
+                        sample[col] = float(results_df.iloc[i][col])
+
+            # Add source document IDs for traceability
+            if resp.source_documents:
+                sample["source_doc_ids"] = [d.get("doc_id", "") for d in resp.source_documents]
+
+            per_sample.append(sample)
+
+        # Build result dict
+        result_dict = {
+            "experiment_name": experiment_name,
+            "timestamp": datetime.now().isoformat(),
+            "num_samples": len(rag_responses),
+            "retrieval_mode": mode_label,
+            "is_baseline": is_baseline,
+            "metrics_used": [m.name for m in metrics],
+            "metrics": {k: float(v) for k, v in results.items() if isinstance(v, (int, float))},
+            "per_sample": per_sample,
+        }
+
+        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = self.results_dir / f"ragas_{experiment_name}_{timestamp_str}.json"
+        with open(output_path, "w") as f:
+            json.dump(result_dict, f, indent=2, default=str)
+
+        logger.info(f"RAGAS results saved: {output_path}")
+        logger.info(f"Metrics: {result_dict['metrics']}")
+
+        return result_dict

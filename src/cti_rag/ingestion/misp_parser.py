@@ -14,6 +14,7 @@ and tags that provide rich context for threat intelligence.
 
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,33 +38,52 @@ _IOC_TYPES = {
     "mutex", "regkey", "pattern-in-file",
 }
 
+_ATTACK_TECHNIQUE_ID_RE = re.compile(r"\b(T\d{4}(?:\.\d{3})?)\b", re.IGNORECASE)
+
+
+def _extract_attack_ids_from_value(value: str | list[str] | None) -> list[str]:
+    """Extract normalized ATT&CK technique IDs from a text value or string list."""
+    if isinstance(value, str):
+        return [match.upper() for match in _ATTACK_TECHNIQUE_ID_RE.findall(value)]
+
+    if isinstance(value, list):
+        attack_ids = []
+        for item in value:
+            if isinstance(item, str):
+                attack_ids.extend(_extract_attack_ids_from_value(item))
+        return attack_ids
+
+    return []
+
 
 def _extract_attack_techniques(event: dict) -> list[str]:
     """Extract MITRE ATT&CK technique IDs from MISP galaxies and tags."""
     techniques = []
 
     # From Galaxy clusters
-    for galaxy in event.get("Galaxy", []):
+    for galaxy in event.get("Galaxy") or []:
         if "attack" in galaxy.get("type", "").lower():
             for cluster in galaxy.get("GalaxyCluster", []):
-                # ATT&CK technique IDs are in the tag name or meta
-                tag = cluster.get("tag_name", "")
-                if "attack-pattern" in tag.lower():
-                    # Extract technique ID like T1059
-                    meta = cluster.get("meta", {})
-                    ext_ids = meta.get("external_id", [])
-                    techniques.extend(ext_ids)
+                techniques.extend(_extract_attack_ids_from_value(cluster.get("tag_name")))
+                techniques.extend(_extract_attack_ids_from_value(cluster.get("value")))
 
-    # From tags (e.g., "misp-galaxy:mitre-attack-pattern=\"T1059\"")
+                meta = cluster.get("meta") or {}
+                techniques.extend(_extract_attack_ids_from_value(meta.get("external_id")))
+
+    # From tags (e.g., "misp-galaxy:mitre-attack-pattern=\"Exploit Public-Facing Application - T1190\"")
     for tag in event.get("Tag", []):
         tag_name = tag.get("name", "")
-        if "mitre-attack" in tag_name.lower():
-            # Try to extract technique ID
-            for part in tag_name.split("\""):
-                if part.startswith("T") and len(part) >= 5:
-                    techniques.append(part.split(" -")[0].strip())
+        if "attack-pattern" in tag_name.lower():
+            techniques.extend(_extract_attack_ids_from_value(tag_name))
 
-    return list(set(techniques))
+    seen = set()
+    deduped = []
+    for technique in techniques:
+        if technique not in seen:
+            seen.add(technique)
+            deduped.append(technique)
+
+    return deduped
 
 
 def _extract_cve_ids(event: dict) -> list[str]:
