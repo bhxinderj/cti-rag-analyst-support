@@ -12,6 +12,7 @@ This prototype enables natural-language querying over CTI data using a hybrid re
 ### Data Sources
 - **NVD/CVE** — National Vulnerability Database (CVSS >= 7.0, 2020–2026; filtered by the configured `snapshot_date`)
 - **CISA KEV** — Known Exploited Vulnerabilities catalog (entries added on or before the configured `snapshot_date`)
+- **CISA Advisories** — Cybersecurity Advisories with narrative TTP/mitigation context (included in Setup B)
 - **MISP** — CIRCL OSINT feed (threat events, IOCs, ATT&CK mappings; events published on or before the configured `snapshot_date`)
 
 ### Key Features
@@ -86,14 +87,15 @@ For a reproducible local setup with the expected cached models:
 ```bash
 make bootstrap
 make download
-make index
+make index SETUP=both
 make run
 ```
 
 Useful targets:
 - `make warmup-models` — download/cache the embedding and reranker models locally
-- `make run QUERY="What is CVE-2024-3094?" MODE=hybrid`
-- `make evaluate MODE=hybrid`
+- `make index-a` / `make index-b` / `make index-both`
+- `make run QUERY="What is CVE-2024-3094?" MODE=hybrid SETUP=b`
+- `make evaluate MODE=hybrid SETUP=a`
 - `make ablation`
 - `make test-retrieval`
 
@@ -107,8 +109,8 @@ Note:
 For native Windows use, prefer the PowerShell entry points instead of the `Makefile`:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1
-powershell -ExecutionPolicy Bypass -File .\start.ps1
+powershell -ExecutionPolicy Bypass -File .\setup.ps1 -Setup Both
+powershell -ExecutionPolicy Bypass -File .\start.ps1 -Setup B
 ```
 
 What the scripts do:
@@ -117,9 +119,13 @@ What the scripts do:
 
 Useful options:
 - `.\setup.ps1 -SkipDownload -SkipIndex` — reuse existing data and indexes
+- `.\setup.ps1 -Setup A` — build Setup A indexes only
+- `.\setup.ps1 -Setup B` — build Setup B indexes only
+- `.\setup.ps1 -Setup Both` — build Setup A and Setup B indexes
 - `.\setup.ps1 -MispMaxEvents 100`
-- `.\start.ps1 -Mode bm25`
-- `.\start.ps1 -Mode hybrid -Question "What is CVE-2024-3094?"`
+- `.\start.ps1 -Setup A -Mode bm25`
+- `.\start.ps1 -Setup B -Mode hybrid`
+- `.\start.ps1 -Setup B -Mode hybrid -Question "What is CVE-2024-3094?"`
 
 Note:
 - `setup.ps1` expects Python 3.12 on PATH via `py -3.12`, `python3.12`, or `python`
@@ -144,6 +150,19 @@ python main.py download --source all
 python main.py index --clear
 ```
 
+For setup-specific indexes:
+
+```bash
+CTI_RAG_SETUP=a python main.py index --clear
+CTI_RAG_SETUP=b python main.py index --clear
+```
+
+Setup semantics:
+- **Setup A** — `NVD + CISA KEV + MISP`
+- **Setup B** — `NVD + CISA KEV + MISP + CISA Advisories`
+
+Baseline mode does not use retrieval and therefore does not require reindexing.
+
 ## Usage
 
 ### Interactive mode (recommended for exploration)
@@ -163,6 +182,7 @@ Commands inside interactive mode:
 ```bash
 python main.py query "What is CVE-2021-44228 and how has it been exploited?"
 python main.py query "What ransomware campaigns exploit CISA KEV vulnerabilities?" --mode bm25
+CTI_RAG_SETUP=b python main.py query "Which ATT&CK techniques are described in CISA advisories?" --mode hybrid
 ```
 
 ### Baseline comparison (no retrieval)
@@ -175,6 +195,8 @@ python main.py baseline "What is CVE-2021-44228?"
 
 ```bash
 python main.py evaluate
+CTI_RAG_SETUP=a python main.py evaluate --mode hybrid
+CTI_RAG_SETUP=b python main.py evaluate --mode hybrid
 ```
 
 ### Run ablation study
@@ -228,6 +250,15 @@ All parameters are centralized in `configs/settings.yaml` for reproducibility:
 - Retrieval parameters (top-k, RRF constant, reranking)
 - Data source filters (CVSS threshold, year range, global `snapshot_date` cutoff on publication/addition date)
 - RAGAS evaluation metrics
+
+Environment-based experiment setup:
+- leave `CTI_RAG_SETUP` unset for the default single-index layout
+- set `CTI_RAG_SETUP=a` for Setup A
+- set `CTI_RAG_SETUP=b` for Setup B
+
+BM25 persistence:
+- BM25 artifacts are stored as transparent JSON inputs and reconstructed at load time
+- setup-specific artifacts live under `data/indexes/setup_a/` and `data/indexes/setup_b/`
 
 Recommended embedding device values:
 - **Apple Silicon macOS**: `mps`

@@ -30,7 +30,7 @@ retrieval:
     similarity_metric: "cosine"
   bm25:
     top_k: 20                # Initial retrieval candidates
-    index_path: "data/indexes/bm25_index.pkl"
+    index_path: "data/indexes/bm25_index.json"
   fusion:
     method: "rrf"            # Reciprocal Rank Fusion
     rrf_k: 60                # Standard RRF constant
