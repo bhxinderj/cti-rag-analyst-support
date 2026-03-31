@@ -460,9 +460,8 @@ class RAGChain:
             num_predict=llm_config["max_tokens"],
         )
 
-        # Initialize retriever
-        self.retriever = HybridRetriever(retrieval_mode=retrieval_mode)
         self.retrieval_mode = retrieval_mode
+        self.retriever: HybridRetriever | None = None
 
         logger.info(f"RAGChain initialized (mode={retrieval_mode})")
 
@@ -475,6 +474,9 @@ class RAGChain:
         total_start = time.time()
 
         # --- Step 1: Retrieve ---
+        if self.retriever is None:
+            self.retriever = HybridRetriever(retrieval_mode=self.retrieval_mode)
+
         retrieval_start = time.time()
         chunks: list[RetrievedChunk] = self.retriever.retrieve(question)
         retrieval_time = (time.time() - retrieval_start) * 1000

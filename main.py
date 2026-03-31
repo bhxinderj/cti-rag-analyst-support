@@ -27,6 +27,7 @@ import argparse
 import json
 import logging
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -34,7 +35,7 @@ import yaml
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.cti_rag.utils.config import load_config, get_project_root
+from src.cti_rag.utils.config import get_project_root, load_config, suppress_noisy_third_party_logs
 
 
 def setup_logging(verbose: bool = False):
@@ -44,8 +45,57 @@ def setup_logging(verbose: bool = False):
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-    # Suppress harmless ChromaDB telemetry errors (known bug in 0.6.x)
-    logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
+    suppress_noisy_third_party_logs()
+
+
+def _parse_snapshot_cutoff(snapshot_date: str | None):
+    """Parse the configured YYYY-MM-DD snapshot date."""
+    if not snapshot_date:
+        return None
+    return datetime.strptime(snapshot_date, "%Y-%m-%d").date()
+
+
+def _filter_documents_by_snapshot(documents: list, snapshot_date: str | None):
+    """Keep only documents whose publication/update state fits the snapshot cutoff."""
+    snapshot_cutoff = _parse_snapshot_cutoff(snapshot_date)
+    if snapshot_cutoff is None:
+        return list(documents), []
+
+    kept = []
+    dropped = []
+    for document in documents:
+        timestamps = [
+            timestamp.date()
+            for timestamp in (document.published_date, document.modified_date)
+            if timestamp is not None
+        ]
+        if any(timestamp > snapshot_cutoff for timestamp in timestamps):
+            dropped.append(document)
+        else:
+            kept.append(document)
+
+    return kept, dropped
+
+
+def _load_eval_queries(query_file: Path) -> list[dict]:
+    """Load evaluation queries with small reproducibility-focused validation."""
+    with open(query_file, "r", encoding="utf-8") as f:
+        eval_data = yaml.safe_load(f) or {}
+
+    queries = eval_data.get("queries", [])
+    seen_ids: set[str] = set()
+
+    for query in queries:
+        query_id = query.get("id")
+        if query_id in seen_ids:
+            raise ValueError(f"Duplicate evaluation query id: {query_id}")
+        seen_ids.add(query_id)
+
+        ground_truth_points = query.get("ground_truth_points") or []
+        if ground_truth_points and "ground_truth" not in query:
+            query["ground_truth"] = " ".join(point.strip() for point in ground_truth_points if point.strip())
+
+    return queries
 
 
 def _split_source_documents(source_documents: list[dict]) -> tuple[list[dict], list[dict]]:
@@ -75,10 +125,16 @@ def _print_response_sources(response) -> None:
 
 def cmd_download(args):
     """Download CTI data sources."""
-    from src.cti_rag.ingestion.downloader import download_nvd, download_cisa_kev, download_misp_feeds
+    from src.cti_rag.ingestion.downloader import (
+        download_cisa_advisories,
+        download_cisa_kev,
+        download_misp_feeds,
+        download_nvd,
+    )
 
     config = load_config()
     root = get_project_root()
+    snapshot_date = config["data"].get("snapshot_date")
 
     if args.source in ("nvd", "all"):
         nvd_config = config["data"]["sources"]["nvd"]
@@ -88,17 +144,29 @@ def cmd_download(args):
             year_start=nvd_config["year_range"][0],
             year_end=nvd_config["year_range"][1],
             api_key=args.nvd_api_key,
+            snapshot_date=snapshot_date,
         )
 
     if args.source in ("cisa_kev", "all"):
         kev_config = config["data"]["sources"]["cisa_kev"]
-        download_cisa_kev(output_dir=root / kev_config["raw_dir"])
+        download_cisa_kev(output_dir=root / kev_config["raw_dir"], snapshot_date=snapshot_date)
+
+    if args.source in ("cisa_advisories", "all"):
+        advisory_config = config["data"]["sources"]["cisa_advisories"]
+        advisory_year_range = advisory_config.get("year_range", [2020, datetime.now().year])
+        download_cisa_advisories(
+            output_dir=root / advisory_config["raw_dir"],
+            year_start=advisory_year_range[0],
+            year_end=advisory_year_range[1],
+            snapshot_date=snapshot_date,
+        )
 
     if args.source in ("misp", "all"):
         misp_config = config["data"]["sources"]["misp"]
         download_misp_feeds(
             output_dir=root / misp_config["raw_dir"],
             max_events=args.misp_max_events,
+            snapshot_date=snapshot_date,
         )
 
     print("\nDownload complete. Check data/raw/ for files.")
@@ -116,6 +184,7 @@ def cmd_index(args):
     all_docs = []
     active_setup = config["data"].get("active_setup", "default")
     include_cisa_advisories = config["data"].get("include_cisa_advisories", True)
+    snapshot_date = config["data"].get("snapshot_date")
 
     print(f"Building indexes for setup: {active_setup}")
 
@@ -153,6 +222,13 @@ def cmd_index(args):
 
     if not all_docs:
         print("\nNo documents found. Run 'python main.py download' first.")
+        return
+
+    all_docs, dropped_docs = _filter_documents_by_snapshot(all_docs, snapshot_date)
+    if dropped_docs:
+        print(f"  Snapshot filter dropped {len(dropped_docs)} document(s) newer than {snapshot_date}")
+    if not all_docs:
+        print(f"\nNo documents remain after applying snapshot_date={snapshot_date}.")
         return
 
     print(f"\nTotal documents to index: {len(all_docs)}")
@@ -201,8 +277,9 @@ def cmd_baseline(args):
     """Run a query without retrieval (baseline comparison)."""
     from src.cti_rag.rag.chain import RAGChain
 
+    config = load_config()
     chain = RAGChain()
-    response = chain.query_baseline(args.question)
+    response = chain.query_baseline(args.question, snapshot_date=config["data"].get("snapshot_date"))
 
     print(f"\n{'='*80}")
     print(f"Question: {response.query}")
@@ -220,12 +297,8 @@ def cmd_evaluate(args):
     config = load_config()
     root = get_project_root()
 
-    # Load evaluation queries
     query_file = root / config["evaluation"]["query_set_path"]
-    with open(query_file, "r") as f:
-        eval_data = yaml.safe_load(f)
-
-    queries = eval_data["queries"]
+    queries = _load_eval_queries(query_file)
     is_baseline = getattr(args, "baseline", False)
     mode_label = "baseline" if is_baseline else args.mode
     print(f"Loaded {len(queries)} evaluation queries (mode: {mode_label})")
@@ -237,16 +310,28 @@ def cmd_evaluate(args):
     for q in queries:
         print(f"  Processing: {q['id']} - {q['question'][:60]}...")
         if is_baseline:
-            resp = chain.query_baseline(q["question"])
+            resp = chain.query_baseline(
+                q["question"],
+                snapshot_date=config["data"].get("snapshot_date"),
+            )
         else:
             resp = chain.query(q["question"])
         responses.append(resp)
 
     ground_truths = [q["ground_truth"] for q in queries]
     query_metadata = [
-        {"id": q["id"], "task_type": q["task_type"], "difficulty": q["difficulty"]}
+        {
+            "id": q["id"],
+            "task_type": q["task_type"],
+            "difficulty": q["difficulty"],
+            "ground_truth_points": q.get("ground_truth_points", []),
+        }
         for q in queries
     ]
+    run_metadata = {
+        "snapshot_date": config["data"].get("snapshot_date"),
+        "active_setup": config["data"].get("active_setup", "default"),
+    }
 
     # Evaluate
     evaluator = RAGASEvaluator()
@@ -257,6 +342,9 @@ def cmd_evaluate(args):
         experiment_name=experiment_name,
         query_metadata=query_metadata,
         is_baseline=is_baseline,
+        sample_ids=[q["id"] for q in queries],
+        sample_metadata=query_metadata,
+        run_metadata=run_metadata,
     )
 
     print(f"\n{'='*80}")
@@ -271,6 +359,8 @@ def cmd_interactive(args):
     """Interactive query session – type questions, get RAG answers."""
     from src.cti_rag.rag.chain import RAGChain
 
+    config = load_config()
+    snapshot_date = config["data"].get("snapshot_date")
     mode = args.mode
     print(f"\n{'='*80}")
     print(f"  CTI-RAG Interactive Mode (retrieval: {mode})")
@@ -316,7 +406,7 @@ def cmd_interactive(args):
 
         # Run query
         if use_baseline:
-            response = chain.query_baseline(question)
+            response = chain.query_baseline(question, snapshot_date=snapshot_date)
             print(f"\n{'─'*80}")
             print(f"Mode: BASELINE | Time: {response.generation_time_ms:.0f}ms")
             print(f"{'─'*80}")
@@ -379,7 +469,7 @@ def main():
 
     # Download
     dl = subparsers.add_parser("download", help="Download CTI data")
-    dl.add_argument("--source", choices=["nvd", "cisa_kev", "misp", "all"], default="all")
+    dl.add_argument("--source", choices=["nvd", "cisa_kev", "cisa_advisories", "misp", "all"], default="all")
     dl.add_argument("--nvd-api-key", type=str, default=None)
     dl.add_argument("--misp-max-events", type=int, default=500, help="Max MISP events to download")
 

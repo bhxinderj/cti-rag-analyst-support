@@ -1,14 +1,16 @@
+import unittest
 from pathlib import Path
-
-import pytest
+from tempfile import TemporaryDirectory
 
 from main import _load_eval_queries
 
 
-def test_load_eval_queries_builds_reference_from_ground_truth_points(tmp_path: Path):
-    query_file = tmp_path / "eval_queries.yaml"
-    query_file.write_text(
-        """
+class TestEvalQueryLoading(unittest.TestCase):
+    def test_load_eval_queries_builds_reference_from_ground_truth_points(self):
+        with TemporaryDirectory() as tmp_dir:
+            query_file = Path(tmp_dir) / "eval_queries.yaml"
+            query_file.write_text(
+                """
 queries:
   - id: sample_001
     question: "What is CVE-2024-3094?"
@@ -18,25 +20,29 @@ queries:
       - "CVE-2024-3094 is an XZ Utils backdoor."
       - "It affects SSH authentication."
 """,
-        encoding="utf-8",
-    )
+                encoding="utf-8",
+            )
 
-    queries = _load_eval_queries(query_file)
+            queries = _load_eval_queries(query_file)
 
-    assert len(queries) == 1
-    assert queries[0]["ground_truth"] == (
-        "CVE-2024-3094 is an XZ Utils backdoor. It affects SSH authentication."
-    )
-    assert queries[0]["ground_truth_points"] == [
-        "CVE-2024-3094 is an XZ Utils backdoor.",
-        "It affects SSH authentication.",
-    ]
+        self.assertEqual(len(queries), 1)
+        self.assertEqual(
+            queries[0]["ground_truth"],
+            "CVE-2024-3094 is an XZ Utils backdoor. It affects SSH authentication.",
+        )
+        self.assertEqual(
+            queries[0]["ground_truth_points"],
+            [
+                "CVE-2024-3094 is an XZ Utils backdoor.",
+                "It affects SSH authentication.",
+            ],
+        )
 
-
-def test_load_eval_queries_rejects_duplicate_ids(tmp_path: Path):
-    query_file = tmp_path / "eval_queries.yaml"
-    query_file.write_text(
-        """
+    def test_load_eval_queries_rejects_duplicate_ids(self):
+        with TemporaryDirectory() as tmp_dir:
+            query_file = Path(tmp_dir) / "eval_queries.yaml"
+            query_file.write_text(
+                """
 queries:
   - id: duplicate_id
     question: "Q1"
@@ -49,8 +55,12 @@ queries:
     difficulty: moderate
     ground_truth: "A2"
 """,
-        encoding="utf-8",
-    )
+                encoding="utf-8",
+            )
 
-    with pytest.raises(ValueError, match="Duplicate evaluation query id"):
-        _load_eval_queries(query_file)
+            with self.assertRaisesRegex(ValueError, "Duplicate evaluation query id"):
+                _load_eval_queries(query_file)
+
+
+if __name__ == "__main__":
+    unittest.main()
