@@ -114,6 +114,10 @@ def cmd_index(args):
     config = load_config()
     root = get_project_root()
     all_docs = []
+    active_setup = config["data"].get("active_setup", "default")
+    include_cisa_advisories = config["data"].get("include_cisa_advisories", True)
+
+    print(f"Building indexes for setup: {active_setup}")
 
     # Parse NVD
     nvd_dir = root / config["data"]["sources"]["nvd"]["raw_dir"]
@@ -133,10 +137,12 @@ def cmd_index(args):
 
     # Parse CISA Advisories
     advisory_dir = root / config["data"]["sources"]["cisa_advisories"]["raw_dir"]
-    if advisory_dir.exists() and list(advisory_dir.glob("*.json")):
+    if include_cisa_advisories and advisory_dir.exists() and list(advisory_dir.glob("*.json")):
         advisory_docs = parse_cisa_advisories_directory(advisory_dir)
         all_docs.extend(advisory_docs)
         print(f"  CISA Advisories: {len(advisory_docs)} documents")
+    elif not include_cisa_advisories:
+        print("  CISA Advisories: skipped for this setup")
 
     # Parse MISP
     misp_dir = root / config["data"]["sources"]["misp"]["raw_dir"]
@@ -152,9 +158,9 @@ def cmd_index(args):
     print(f"\nTotal documents to index: {len(all_docs)}")
 
     # Save processed documents for inspection
-    processed_dir = root / "data" / "processed"
-    processed_dir.mkdir(parents=True, exist_ok=True)
-    processed_file = processed_dir / "all_documents.json"
+    processed_path = config["data"].get("processed_path", "data/processed/all_documents.json")
+    processed_file = root / processed_path
+    processed_file.parent.mkdir(parents=True, exist_ok=True)
     with open(processed_file, "w") as f:
         json.dump([doc.model_dump(mode="json") for doc in all_docs], f, indent=2, default=str)
     print(f"Processed documents saved: {processed_file}")
