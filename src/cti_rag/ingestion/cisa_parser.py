@@ -11,12 +11,143 @@ KEV catalog: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 
-from .models import CTIDocument, CTISourceType, SeverityLevel
+from .models import CTIDocument, CTISourceType, IOCEntry, SeverityLevel
 
 logger = logging.getLogger(__name__)
+
+_ATTACK_TECHNIQUE_ID_RE = re.compile(r"\b(T\d{4}(?:\.\d{3})?)\b", re.IGNORECASE)
+_CVE_ID_RE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
+_URL_RE = re.compile(r"\bhttps?://[^\s<>\"]+", re.IGNORECASE)
+_IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+_DOMAIN_RE = re.compile(r"\b(?:(?:[a-z0-9-]+\.)+[a-z]{2,})(?:/[^\s]*)?\b", re.IGNORECASE)
+_SHA256_RE = re.compile(r"\b[a-f0-9]{64}\b", re.IGNORECASE)
+_SHA1_RE = re.compile(r"\b[a-f0-9]{40}\b", re.IGNORECASE)
+_MD5_RE = re.compile(r"\b[a-f0-9]{32}\b", re.IGNORECASE)
+_NOISY_SECTION_NAMES = {
+    "contact",
+    "disclaimer_of_endorsement",
+    "purpose",
+    "works_cited",
+    "references",
+}
+_PRODUCT_SUFFIX_RE = re.compile(
+    r"\s+(?:"
+    r"remote code execution|"
+    r"authentication bypass|"
+    r"privilege escalation|"
+    r"command injection|"
+    r"sql injection|"
+    r"information disclosure|"
+    r"arbitrary file upload|"
+    r"arbitrary file read|"
+    r"directory traversal|"
+    r"path traversal|"
+    r"denial of service|"
+    r"cross-site scripting|"
+    r"vulnerabilit(?:y|ies)"
+    r")\b.*$",
+    re.IGNORECASE,
+)
+
+
+def _dedupe_preserve_order(values: list[str]) -> list[str]:
+    seen = set()
+    deduped = []
+    for value in values:
+        if value not in seen:
+            seen.add(value)
+            deduped.append(value)
+    return deduped
+
+
+def _extract_attack_techniques(text: str) -> list[str]:
+    return _dedupe_preserve_order([match.upper() for match in _ATTACK_TECHNIQUE_ID_RE.findall(text or "")])
+
+
+def _extract_cve_ids(text: str) -> list[str]:
+    return _dedupe_preserve_order([match.upper() for match in _CVE_ID_RE.findall(text or "")])
+
+
+def _extract_iocs(text: str) -> list[IOCEntry]:
+    iocs = []
+    seen = set()
+
+    def add_ioc(ioc_type: str, value: str):
+        key = (ioc_type, value.lower())
+        if value and key not in seen:
+            seen.add(key)
+            iocs.append(IOCEntry(type=ioc_type, value=value))
+
+    for match in _URL_RE.findall(text or ""):
+        add_ioc("url", match.rstrip(".,);]"))
+
+    masked_text = _URL_RE.sub(" ", text or "")
+    for match in _SHA256_RE.findall(masked_text):
+        add_ioc("sha256", match)
+    for match in _SHA1_RE.findall(masked_text):
+        add_ioc("sha1", match)
+    for match in _MD5_RE.findall(masked_text):
+        add_ioc("md5", match)
+    for match in _IPV4_RE.findall(masked_text):
+        add_ioc("ip-dst", match)
+    for match in _DOMAIN_RE.findall(masked_text):
+        lowered = match.lower()
+        if lowered.startswith("http"):
+            continue
+        if lowered.count(".") < 1:
+            continue
+        add_ioc("domain", match.rstrip(".,);]"))
+
+    return iocs[:15]
+
+
+def _extract_products(title: str, section_text: str) -> list[str]:
+    products = []
+
+    title_candidate = title or ""
+    if "vulnerabil" in title_candidate.lower():
+        title_candidate = _PRODUCT_SUFFIX_RE.sub("", title_candidate).strip(" -:;,.'\"")
+        if title_candidate and len(title_candidate) > 4:
+            products.append(title_candidate)
+
+    text = " ".join((section_text or "").split())
+    for match in re.finditer(
+        r"\bCVE-\d{4}-\d{4,}\b[^.]{0,160}?\bin\s+([A-Z][A-Za-z0-9.+/_&() -]{3,80})",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        candidate = _PRODUCT_SUFFIX_RE.sub("", match.group(1)).strip(" -:;,.'\"")
+        if candidate and len(candidate) > 4:
+            products.append(candidate)
+
+    cleaned = []
+    seen = set()
+    for product in products:
+        normalized = product.lower()
+        if normalized not in seen:
+            seen.add(normalized)
+            cleaned.append(product)
+    return cleaned[:5]
+
+
+def _infer_severity(text: str) -> SeverityLevel:
+    matches = set(
+        level.lower()
+        for level in re.findall(
+            r"\b(critical|high|medium|low)(?:[- ]severity)?\s+vulnerab",
+            text or "",
+            flags=re.IGNORECASE,
+        )
+    )
+    if len(matches) != 1:
+        return SeverityLevel.UNKNOWN
+
+    level = matches.pop()
+    return SeverityLevel(level)
 
 
 def parse_cisa_kev(filepath: Path) -> list[CTIDocument]:
@@ -136,15 +267,47 @@ def parse_cisa_advisory(filepath: Path) -> list[CTIDocument]:
             sections = {"full_advisory": body}
 
     for section_name, section_text in sections.items():
+        if section_name.lower() in _NOISY_SECTION_NAMES:
+            continue
         if not section_text or len(section_text.strip()) < 50:
             continue
+
+        combined_text = f"{title}\n{section_text}"
+        section_cve_ids = _extract_cve_ids(combined_text)
+        attack_techniques = _extract_attack_techniques(combined_text)
+        iocs = _extract_iocs(section_text)
+        affected_products = _extract_products(title, section_text)
+        severity = _infer_severity(combined_text)
+
+        content_parts = [
+            f"Advisory: {title}",
+            f"Section: {section_name}",
+        ]
+        if severity != SeverityLevel.UNKNOWN:
+            content_parts.append(f"Severity: {severity.value.upper()}")
+        if section_cve_ids:
+            content_parts.append(f"Related CVEs: {', '.join(section_cve_ids)}")
+        if attack_techniques:
+            content_parts.append(f"ATT&CK Techniques: {', '.join(attack_techniques)}")
+        if affected_products:
+            content_parts.append(f"Affected Products: {', '.join(affected_products)}")
+        if iocs:
+            content_parts.append(
+                "Key IOCs: " + "; ".join(f"{ioc.type}: {ioc.value}" for ioc in iocs[:8])
+            )
+        content_parts.append("")
+        content_parts.append(section_text)
 
         doc = CTIDocument(
             doc_id=f"cisa_advisory_{advisory_id}_{section_name}",
             source=CTISourceType.CISA_ADVISORY,
             title=f"CISA Advisory {advisory_id}: {title} [{section_name}]",
-            content=f"Advisory: {title}\nSection: {section_name}\n\n{section_text}",
-            cve_ids=cve_ids,
+            content="\n".join(content_parts),
+            severity=severity,
+            cve_ids=section_cve_ids or cve_ids,
+            attack_techniques=attack_techniques,
+            iocs=iocs,
+            affected_products=affected_products,
             published_date=pub_date,
             modified_date=mod_date,
             metadata={

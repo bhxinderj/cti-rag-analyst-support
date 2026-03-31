@@ -39,6 +39,54 @@ _IOC_TYPES = {
 }
 
 _ATTACK_TECHNIQUE_ID_RE = re.compile(r"\b(T\d{4}(?:\.\d{3})?)\b", re.IGNORECASE)
+_CVE_ID_RE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
+_IOC_TYPE_PRIORITY = {
+    "domain": 0,
+    "hostname": 1,
+    "url": 2,
+    "sha256": 3,
+    "sha1": 4,
+    "md5": 5,
+    "filename": 6,
+    "ip-src": 7,
+    "ip-dst": 8,
+    "email-src": 9,
+    "email-dst": 10,
+    "email-subject": 11,
+    "mutex": 12,
+    "regkey": 13,
+    "pattern-in-file": 14,
+}
+_PRODUCT_SUFFIX_RE = re.compile(
+    r"\s+(?:"
+    r"remote code execution|"
+    r"authentication bypass|"
+    r"privilege escalation|"
+    r"command injection|"
+    r"sql injection|"
+    r"information disclosure|"
+    r"denial of service|"
+    r"arbitrary file upload|"
+    r"arbitrary file read|"
+    r"directory traversal|"
+    r"path traversal|"
+    r"unsafe flight protocol property access|"
+    r"vulnerabilit(?:y|ies)|"
+    r"exploit(?:ation)?"
+    r")\b.*$",
+    re.IGNORECASE,
+)
+_SIGNAL_TAG_PREFIXES = ("misp-galaxy:", "kill-chain:", "tlp:", "misp:threat-level")
+
+
+def _iter_event_attributes(event: dict):
+    """Yield top-level and object-level MISP attributes."""
+    for attr in event.get("Attribute", []):
+        yield attr
+
+    for obj in event.get("Object", []):
+        for attr in obj.get("Attribute", []):
+            yield attr
 
 
 def _extract_attack_ids_from_value(value: str | list[str] | None) -> list[str]:
@@ -76,6 +124,14 @@ def _extract_attack_techniques(event: dict) -> list[str]:
         if "attack-pattern" in tag_name.lower():
             techniques.extend(_extract_attack_ids_from_value(tag_name))
 
+    for attr in _iter_event_attributes(event):
+        techniques.extend(_extract_attack_ids_from_value(attr.get("comment")))
+        for tag in attr.get("Tag", []):
+            techniques.extend(_extract_attack_ids_from_value(tag.get("name")))
+
+    for obj in event.get("Object", []):
+        techniques.extend(_extract_attack_ids_from_value(obj.get("comment")))
+
     seen = set()
     deduped = []
     for technique in techniques:
@@ -88,19 +144,31 @@ def _extract_attack_techniques(event: dict) -> list[str]:
 
 def _extract_cve_ids(event: dict) -> list[str]:
     """Extract CVE IDs from MISP attributes."""
+    candidates = [event.get("info", "")]
+
+    for attr in _iter_event_attributes(event):
+        candidates.append(attr.get("value", ""))
+        candidates.append(attr.get("comment", ""))
+
+    for obj in event.get("Object", []):
+        candidates.append(obj.get("comment", ""))
+
+    seen = set()
     cve_ids = []
-    for attr in event.get("Attribute", []):
-        if attr.get("type") == "vulnerability":
-            value = attr.get("value", "")
-            if value.upper().startswith("CVE-"):
-                cve_ids.append(value.upper())
-    return list(set(cve_ids))
+    for value in candidates:
+        for match in _CVE_ID_RE.findall(value or ""):
+            cve_id = match.upper()
+            if cve_id not in seen:
+                seen.add(cve_id)
+                cve_ids.append(cve_id)
+
+    return cve_ids
 
 
 def _extract_iocs(event: dict) -> list[IOCEntry]:
     """Extract IOC entries from MISP attributes."""
     iocs = []
-    for attr in event.get("Attribute", []):
+    for attr in _iter_event_attributes(event):
         attr_type = attr.get("type", "")
         if attr_type in _IOC_TYPES:
             iocs.append(IOCEntry(
@@ -108,17 +176,99 @@ def _extract_iocs(event: dict) -> list[IOCEntry]:
                 value=attr.get("value", ""),
                 category=attr.get("category"),
             ))
-    # Also check Object attributes
-    for obj in event.get("Object", []):
-        for attr in obj.get("Attribute", []):
-            attr_type = attr.get("type", "")
-            if attr_type in _IOC_TYPES:
-                iocs.append(IOCEntry(
-                    type=attr_type,
-                    value=attr.get("value", ""),
-                    category=attr.get("category"),
-                ))
     return iocs
+
+
+def _select_key_iocs(event: dict, iocs: list[IOCEntry], limit: int = 10) -> list[IOCEntry]:
+    """Prioritize higher-value, unique IOC entries for analyst-facing summaries."""
+    attr_lookup: dict[tuple[str, str], dict] = {}
+    for attr in _iter_event_attributes(event):
+        key = (attr.get("type", ""), attr.get("value", ""))
+        attr_lookup.setdefault(key, attr)
+
+    seen = set()
+    ranked = []
+    for ioc in iocs:
+        key = (ioc.type, ioc.value)
+        if key in seen or not ioc.value:
+            continue
+        seen.add(key)
+
+        attr = attr_lookup.get(key, {})
+        ranked.append((
+            0 if attr.get("to_ids") else 1,
+            _IOC_TYPE_PRIORITY.get(ioc.type, 99),
+            ioc.value.lower(),
+            ioc,
+        ))
+
+    ranked.sort()
+    return [item[-1] for item in ranked[:limit]]
+
+
+def _extract_products_from_snippets(snippets: list[str]) -> list[str]:
+    """Infer product names from CVE/vulnerability-bearing snippets."""
+    products = []
+    seen = set()
+
+    for snippet in snippets:
+        if not snippet:
+            continue
+
+        candidate = " ".join(snippet.split())
+        if not candidate:
+            continue
+
+        lowered_candidate = candidate.lower()
+        if not (
+            _CVE_ID_RE.search(candidate)
+            or any(keyword in lowered_candidate for keyword in ("vulnerab", "exploit", "rce", "authentication bypass"))
+        ):
+            continue
+
+        candidate = re.sub(r"^[A-Z0-9][A-Z0-9_./-]*(?:\s+[A-Z0-9][A-Z0-9_./-]*){0,4}\s+", "", candidate)
+        candidate = re.sub(r"\(?(CVE-\d{4}-\d{4,}).*$", "", candidate, flags=re.IGNORECASE)
+        candidate = candidate.split(" - ", 1)[0]
+        candidate = _PRODUCT_SUFFIX_RE.sub("", candidate).strip(" -:;,.'\"")
+
+        if len(candidate) < 4:
+            continue
+
+        if candidate.lower() in {"osint", "threat brief", "security alert advisory"}:
+            continue
+
+        normalized = candidate.lower()
+        if normalized not in seen:
+            seen.add(normalized)
+            products.append(candidate)
+
+    return products[:5]
+
+
+def _extract_context_snippets(event: dict) -> list[str]:
+    """Keep a few high-signal analyst context snippets from comments."""
+    snippets = []
+    seen = set()
+
+    for attr in _iter_event_attributes(event):
+        comment = " ".join((attr.get("comment") or "").split())
+        if not comment:
+            continue
+
+        has_cti_signal = (
+            bool(_CVE_ID_RE.search(comment))
+            or bool(_ATTACK_TECHNIQUE_ID_RE.search(comment))
+            or attr.get("to_ids")
+        )
+        if not has_cti_signal:
+            continue
+
+        lowered = comment.lower()
+        if lowered not in seen:
+            seen.add(lowered)
+            snippets.append(comment)
+
+    return snippets[:5]
 
 
 def _parse_misp_timestamp(value) -> datetime | None:
@@ -160,27 +310,37 @@ def parse_misp_event(event: dict) -> CTIDocument | None:
     attack_techniques = _extract_attack_techniques(event)
     cve_ids = _extract_cve_ids(event)
     iocs = _extract_iocs(event)
+    key_iocs = _select_key_iocs(event, iocs)
+    context_snippets = _extract_context_snippets(event)
+    affected_products = _extract_products_from_snippets([event_info, *context_snippets])
 
     # Build content text
     content_parts = [f"Event: {event_info}"]
 
+    if severity != SeverityLevel.UNKNOWN:
+        content_parts.append(f"Severity: {severity.value.upper()}")
+
     # Add tag context
-    tags = [tag.get("name", "") for tag in event.get("Tag", []) if tag.get("name")]
+    tags = [
+        tag.get("name", "")
+        for tag in event.get("Tag", [])
+        if tag.get("name") and tag.get("name", "").lower().startswith(_SIGNAL_TAG_PREFIXES)
+    ]
     if tags:
-        content_parts.append(f"Tags: {', '.join(tags[:15])}")
+        content_parts.append(f"Signal Tags: {', '.join(tags[:12])}")
 
     # Summarize attributes
     attr_summary = {}
-    for attr in event.get("Attribute", []):
+    for attr in _iter_event_attributes(event):
         t = attr.get("type", "other")
         attr_summary[t] = attr_summary.get(t, 0) + 1
 
     if attr_summary:
-        summary_str = ", ".join(f"{count}x {atype}" for atype, count in attr_summary.items())
+        summary_items = sorted(attr_summary.items(), key=lambda item: (-item[1], item[0]))
+        summary_str = ", ".join(f"{count}x {atype}" for atype, count in summary_items[:10])
         content_parts.append(f"Indicators: {summary_str}")
 
     # Add key IOC values (limited to avoid chunk bloat)
-    key_iocs = iocs[:10]
     if key_iocs:
         ioc_text = "; ".join(f"{ioc.type}: {ioc.value}" for ioc in key_iocs)
         content_parts.append(f"Key IOCs: {ioc_text}")
@@ -190,6 +350,12 @@ def parse_misp_event(event: dict) -> CTIDocument | None:
 
     if cve_ids:
         content_parts.append(f"Related CVEs: {', '.join(cve_ids)}")
+
+    if affected_products:
+        content_parts.append(f"Related Products: {', '.join(affected_products)}")
+
+    if context_snippets:
+        content_parts.append(f"Observed Context: {'; '.join(context_snippets[:3])}")
 
     content = "\n".join(content_parts)
 
@@ -210,6 +376,7 @@ def parse_misp_event(event: dict) -> CTIDocument | None:
         cve_ids=cve_ids,
         attack_techniques=attack_techniques,
         iocs=iocs,
+        affected_products=affected_products,
         published_date=pub_date,
         modified_date=mod_date,
         metadata={

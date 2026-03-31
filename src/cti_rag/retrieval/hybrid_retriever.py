@@ -17,8 +17,8 @@ This module implements the core retrieval pipeline described in the thesis:
 For ablation study: set retrieval_mode to "bm25", "vector", or "hybrid".
 """
 
+import json
 import logging
-import pickle
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -44,6 +44,7 @@ _CTI_ENTITY_PATTERNS = (
 )
 
 _DEFAULT_ENTITY_MATCH_BOOST = 1.0
+_DEFAULT_QUALITY_SIGNAL_BOOST = 0.15
 
 
 @dataclass
@@ -94,12 +95,12 @@ class HybridRetriever:
 
         # --- Load BM25 ---
         bm25_path = self.root / retrieval_config["bm25"]["index_path"]
-        with open(bm25_path, "rb") as f:
-            bm25_data = pickle.load(f)
+        bm25_data = self._load_bm25_artifact(bm25_path)
 
-        self.bm25: BM25Okapi = bm25_data["bm25"]
+        self.bm25: BM25Okapi = BM25Okapi(bm25_data["tokenized_corpus"])
         self.bm25_doc_ids: list[str] = bm25_data["doc_ids"]
         self.bm25_corpus: list[str] = bm25_data["corpus_texts"]
+        self.bm25_metadatas: list[dict] = bm25_data.get("metadatas", [])
 
         # --- Config values ---
         self.bm25_top_k = retrieval_config["bm25"]["top_k"]
@@ -108,6 +109,10 @@ class HybridRetriever:
         self.rrf_k = retrieval_config["fusion"]["rrf_k"]
         self.rerank_top_k = retrieval_config["reranker"]["top_k"]
         self.entity_match_boost = retrieval_config.get("entity_match_boost", _DEFAULT_ENTITY_MATCH_BOOST)
+        self.quality_signal_boost = retrieval_config.get(
+            "quality_signal_boost",
+            _DEFAULT_QUALITY_SIGNAL_BOOST,
+        )
 
         # --- Load Reranker ---
         reranker_model = retrieval_config["reranker"]["model_name"]
@@ -176,6 +181,17 @@ class HybridRetriever:
         return snapshot_path
 
     @staticmethod
+    def _load_bm25_artifact(path: Path) -> dict:
+        """Load BM25 corpus inputs from a JSON artifact."""
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if "tokenized_corpus" not in data:
+            data["tokenized_corpus"] = [HybridRetriever._tokenize_cti(text) for text in data["corpus_texts"]]
+
+        return data
+
+    @staticmethod
     def _serialize_trace_chunk(chunk: RetrievedChunk) -> dict:
         """Capture retrieval-stage metadata without mutating the chunk."""
         return {
@@ -184,6 +200,7 @@ class HybridRetriever:
             "score": chunk.score,
             "source": chunk.metadata.get("source", "unknown"),
             "title": chunk.metadata.get("title", ""),
+            "cti_signal_score": float(chunk.metadata.get("cti_signal_score", 0.0) or 0.0),
         }
 
     @staticmethod
@@ -229,6 +246,9 @@ class HybridRetriever:
 
     def _build_bm25_metadata(self, idx: int) -> dict:
         """Recover minimal metadata for BM25-stage hits from stored corpus text."""
+        if idx < len(self.bm25_metadatas):
+            return dict(self.bm25_metadatas[idx])
+
         content = self.bm25_corpus[idx]
         title = ""
         first_line = content.splitlines()[0] if content else ""
@@ -239,6 +259,20 @@ class HybridRetriever:
             "source": self._infer_source_type(self.bm25_doc_ids[idx]),
             "title": title,
         }
+
+    @staticmethod
+    def _coerce_float(value) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _quality_signal_bonus(self, metadata: dict) -> float:
+        """Return a small retrieval bonus for documents with richer CTI structure."""
+        signal_score = self._coerce_float(metadata.get("cti_signal_score", 0.0))
+        if signal_score <= 0:
+            return 0.0
+        return signal_score * self.quality_signal_boost
 
     def _search_bm25(self, query: str, top_k: int) -> list[RetrievedChunk]:
         """Lexical search using BM25."""
@@ -330,6 +364,7 @@ class HybridRetriever:
                 # Exact CTI identifiers matter operationally, but the bonus must
                 # stay small enough that the cross-encoder still decides the order.
                 chunk.score += entity_matches * self.entity_match_boost
+            chunk.score += self._quality_signal_bonus(chunk.metadata)
 
         reranked = sorted(chunks, key=lambda c: c.score, reverse=True)
 

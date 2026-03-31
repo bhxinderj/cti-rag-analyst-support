@@ -8,14 +8,13 @@ Takes normalized CTIDocuments and builds both search indexes:
 Both indexes are persisted to disk for reproducibility.
 """
 
+import json
 import logging
-import pickle
 import re
 from pathlib import Path
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
-from rank_bm25 import BM25Okapi
 from tqdm import tqdm
 
 from ..ingestion.models import CTIDocument
@@ -43,6 +42,31 @@ def _tokenize_cti(text: str) -> list[str]:
         if token:
             cleaned.append(token)
     return cleaned
+
+
+def _write_bm25_artifact(
+    path: Path,
+    *,
+    doc_ids: list[str],
+    corpus_texts: list[str],
+    tokenized_corpus: list[list[str]],
+    metadatas: list[dict],
+) -> None:
+    """Persist BM25 inputs as transparent JSON for reproducible rebuilds."""
+    payload = {
+        "doc_ids": doc_ids,
+        "corpus_texts": corpus_texts,
+        "tokenized_corpus": tokenized_corpus,
+        "metadatas": metadatas,
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+
+def _read_bm25_artifact(path: Path) -> dict:
+    """Load a persisted BM25 JSON artifact."""
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 class CTIIndexer:
@@ -116,16 +140,13 @@ class CTIIndexer:
         # - Preserve hyphenated identifiers (CVE-IDs, CWE-IDs, ATT&CK IDs)
         tokenized_corpus = [_tokenize_cti(text) for text in corpus_texts]
 
-        bm25 = BM25Okapi(tokenized_corpus)
-
-        # Persist BM25 index + mapping
-        bm25_data = {
-            "bm25": bm25,
-            "doc_ids": doc_ids,
-            "corpus_texts": corpus_texts,
-        }
-        with open(self.bm25_index_path, "wb") as f:
-            pickle.dump(bm25_data, f)
+        _write_bm25_artifact(
+            self.bm25_index_path,
+            doc_ids=doc_ids,
+            corpus_texts=corpus_texts,
+            tokenized_corpus=tokenized_corpus,
+            metadatas=[doc.to_chromadb_metadata() for doc in documents],
+        )
 
         logger.info(f"BM25 index saved: {self.bm25_index_path}")
         logger.info(f"Indexing complete: {len(documents)} documents in both indexes")
@@ -151,7 +172,6 @@ class CTIIndexer:
             "bm25_exists": self.bm25_index_path.exists(),
         }
         if self.bm25_index_path.exists():
-            with open(self.bm25_index_path, "rb") as f:
-                bm25_data = pickle.load(f)
+            bm25_data = _read_bm25_artifact(self.bm25_index_path)
             stats["bm25_count"] = len(bm25_data["doc_ids"])
         return stats

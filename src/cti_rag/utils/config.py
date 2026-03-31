@@ -46,7 +46,7 @@ def load_config() -> dict:
     config["data"]["active_setup"] = active_setup
     config["data"]["include_cisa_advisories"] = include_cisa_advisories
     config["data"]["processed_path"] = f"data/processed/{setup_suffix}/all_documents.json"
-    config["retrieval"]["bm25"]["index_path"] = f"data/indexes/{setup_suffix}/bm25_index.pkl"
+    config["retrieval"]["bm25"]["index_path"] = f"data/indexes/{setup_suffix}/bm25_index.json"
     config["retrieval"]["vector"]["collection_name"] = f"{config['retrieval']['vector']['collection_name']}_{setup_suffix}"
     config["chromadb"]["persist_directory"] = f"data/indexes/{setup_suffix}/chromadb"
     config["evaluation"]["results_dir"] = f"data/evaluation_results/{setup_suffix}"

@@ -6,8 +6,9 @@ VENV_PIP := .venv/bin/pip
 MISP_MAX_EVENTS ?= 300
 QUERY ?= What is CVE-2021-44228 and how has it been exploited?
 MODE ?= hybrid
+SETUP ?= default
 
-.PHONY: help venv install bootstrap pull-llm warmup-models download index run evaluate ablation test-retrieval
+.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation test-retrieval
 
 help:
 	@echo "Available targets:"
@@ -17,9 +18,12 @@ help:
 	@echo "  make warmup-models   Cache embedding and reranker models locally"
 	@echo "  make bootstrap       venv + install + pull-llm + warmup-models"
 	@echo "  make download        Download all CTI sources"
-	@echo "  make index           Rebuild retrieval indexes"
-	@echo "  make run             Run one query (override QUERY=... MODE=...)"
-	@echo "  make evaluate        Run evaluation (override MODE=...)"
+	@echo "  make index           Rebuild retrieval indexes (SETUP=default|a|b|both)"
+	@echo "  make index-a         Rebuild Setup A indexes"
+	@echo "  make index-b         Rebuild Setup B indexes"
+	@echo "  make index-both      Rebuild both Setup A and Setup B indexes"
+	@echo "  make run             Run one query (override QUERY=... MODE=... SETUP=default|a|b)"
+	@echo "  make evaluate        Run evaluation (override MODE=... SETUP=default|a|b)"
 	@echo "  make ablation        Run the ablation study"
 	@echo "  make test-retrieval  Run narrow retrieval checks"
 
@@ -52,13 +56,47 @@ download: install
 	$(VENV_PY) main.py download --source misp --misp-max-events $(MISP_MAX_EVENTS)
 
 index: install
-	$(VENV_PY) main.py index --clear
+	@if [ "$(SETUP)" = "default" ]; then \
+		$(VENV_PY) main.py index --clear; \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) main.py index --clear; \
+	elif [ "$(SETUP)" = "both" ]; then \
+		CTI_RAG_SETUP=a $(VENV_PY) main.py index --clear; \
+		CTI_RAG_SETUP=b $(VENV_PY) main.py index --clear; \
+	else \
+		echo "Unsupported SETUP=$(SETUP). Use default, a, b, or both."; \
+		exit 1; \
+	fi
+
+index-a: install
+	CTI_RAG_SETUP=a $(VENV_PY) main.py index --clear
+
+index-b: install
+	CTI_RAG_SETUP=b $(VENV_PY) main.py index --clear
+
+index-both: install
+	CTI_RAG_SETUP=a $(VENV_PY) main.py index --clear
+	CTI_RAG_SETUP=b $(VENV_PY) main.py index --clear
 
 run: install
-	$(VENV_PY) main.py query "$(QUERY)" --mode $(MODE)
+	@if [ "$(SETUP)" = "default" ]; then \
+		$(VENV_PY) main.py query "$(QUERY)" --mode $(MODE); \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) main.py query "$(QUERY)" --mode $(MODE); \
+	else \
+		echo "SETUP=$(SETUP) is not valid for make run. Use default, a, or b."; \
+		exit 1; \
+	fi
 
 evaluate: install
-	$(VENV_PY) main.py evaluate --mode $(MODE)
+	@if [ "$(SETUP)" = "default" ]; then \
+		$(VENV_PY) main.py evaluate --mode $(MODE); \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) main.py evaluate --mode $(MODE); \
+	else \
+		echo "SETUP=$(SETUP) is not valid for make evaluate. Use default, a, or b."; \
+		exit 1; \
+	fi
 
 ablation: install
 	$(VENV_PY) main.py ablation
