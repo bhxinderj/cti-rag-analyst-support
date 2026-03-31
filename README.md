@@ -91,7 +91,7 @@ make run
 ```
 
 Useful targets:
-- `make warmup-models` — cache the embedding and reranker models locally
+- `make warmup-models` — download/cache the embedding and reranker models locally
 - `make run QUERY="What is CVE-2024-3094?" MODE=hybrid`
 - `make evaluate MODE=hybrid`
 - `make ablation`
@@ -101,6 +101,30 @@ Note:
 - the `Makefile` assumes `python3.12`, `ollama`, and `make` are available
 - the reranker now loads from the local Hugging Face cache for reproducible offline retrieval runs
 - on a fresh machine, run `make warmup-models` once before retrieval or evaluation
+
+### Quickstart via PowerShell (Windows)
+
+For native Windows use, prefer the PowerShell entry points instead of the `Makefile`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+What the scripts do:
+- `setup.ps1` creates `.venv`, installs dependencies, pulls the configured Ollama model when available, warms up the embedding/reranker models, downloads CTI data, and rebuilds the indexes
+- `start.ps1` starts the prototype in interactive mode
+
+Useful options:
+- `.\setup.ps1 -SkipDownload -SkipIndex` — reuse existing data and indexes
+- `.\setup.ps1 -MispMaxEvents 100`
+- `.\start.ps1 -Mode bm25`
+- `.\start.ps1 -Mode hybrid -Question "What is CVE-2024-3094?"`
+
+Note:
+- `setup.ps1` expects Python 3.12 on PATH via `py -3.12`, `python3.12`, or `python`
+- `setup.ps1` expects `ollama` on PATH if you want the LLM pulled automatically
+- if native Windows dependency issues appear, WSL remains a reasonable fallback, but it is not the primary path documented for this prototype
 
 ### 3. Download CTI data
 

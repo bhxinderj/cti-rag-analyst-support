@@ -241,3 +241,15 @@ def test_load_reranker_fails_fast_when_local_snapshot_is_missing():
             assert "local Hugging Face cache" in str(exc)
         else:
             raise AssertionError("Expected FileNotFoundError when local reranker snapshot is missing")
+
+
+def test_ensure_local_reranker_snapshot_downloads_when_cache_is_missing():
+    with patch.object(
+        HybridRetriever,
+        "_resolve_local_hf_snapshot",
+        side_effect=[None, "/tmp/local-model"],
+    ), patch("src.cti_rag.retrieval.hybrid_retriever.CrossEncoder") as mock_cross_encoder:
+        snapshot = HybridRetriever._ensure_local_reranker_snapshot("cross-encoder/ms-marco-MiniLM-L-6-v2")
+
+    assert snapshot == "/tmp/local-model"
+    mock_cross_encoder.assert_called_once_with("cross-encoder/ms-marco-MiniLM-L-6-v2")
