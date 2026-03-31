@@ -1,20 +1,21 @@
 """
 RAGAS Evaluation Module.
 
-Evaluates the RAG pipeline using the RAGAS framework with four core metrics:
+Evaluates the RAG pipeline using the RAGAS framework with five metrics:
 - Faithfulness: Is the answer grounded in the retrieved context?
 - Answer Relevancy: Is the answer relevant to the question?
+- Answer Correctness: How factually correct is the answer vs. ground truth?
 - Context Precision: Are the retrieved chunks relevant and well-ranked?
 - Context Recall: Does the retrieved context cover the ground truth?
 
 Baseline mode:
-  When is_baseline=True, only answer_relevancy is computed (the other three
-  metrics require non-empty retrieval contexts). This is the methodologically
-  correct approach: retrieval-dependent metrics characterize the RAG pipeline
-  alone, while answer_relevancy enables direct RAG-vs-baseline comparison.
+  When is_baseline=True, only context-independent metrics are computed
+  (answer_relevancy, answer_correctness). This enables direct RAG-vs-baseline
+  comparison on two axes while retrieval-dependent metrics (faithfulness,
+  context_precision, context_recall) characterize the RAG pipeline alone.
 
-The evaluator uses the same local Ollama LLM as the generator.
-This is a known limitation documented in thesis section 4.3.
+The evaluator uses a separate LLM (evaluation.ragas.eval_llm in settings.yaml)
+from the generator LLM to avoid same-model evaluation bias.
 """
 
 import json
@@ -27,6 +28,7 @@ from ragas import evaluate
 from ragas.metrics import (
     faithfulness,
     answer_relevancy,
+    answer_correctness,
     context_precision,
     context_recall,
 )
@@ -55,19 +57,20 @@ class RAGASEvaluator:
 
     def __init__(self):
         config = load_config()
+        eval_config = config["evaluation"]["ragas"]
         llm_config = config["llm"]
         emb_config = config["embedding"]
 
-        # Use same Ollama LLM as evaluator
+        # Use separate eval LLM to avoid same-model evaluation bias
+        eval_model = eval_config.get("eval_llm", llm_config["model_name"])
         self.eval_llm = LangchainLLMWrapper(
             ChatOllama(
-                model=llm_config["model_name"],
+                model=eval_model,
                 base_url=llm_config["base_url"],
                 temperature=0.0,  # Deterministic for evaluation
             )
         )
 
-        # Use same embedding model
         self.eval_embeddings = LangchainEmbeddingsWrapper(
             HuggingFaceEmbeddings(
                 model_name=emb_config["model_name"],
@@ -78,14 +81,18 @@ class RAGASEvaluator:
         self.rag_metrics = [
             faithfulness,
             answer_relevancy,
+            answer_correctness,
             context_precision,
             context_recall,
         ]
 
-        # Baseline: only answer_relevancy (no contexts available)
+        # Baseline: only context-independent metrics
         self.baseline_metrics = [
             answer_relevancy,
+            answer_correctness,
         ]
+
+        logger.info(f"RAGASEvaluator initialized (eval_llm={eval_model})")
 
         self.results_dir = get_project_root() / config["evaluation"]["results_dir"]
         self.results_dir.mkdir(parents=True, exist_ok=True)
