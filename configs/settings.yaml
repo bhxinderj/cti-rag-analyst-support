@@ -23,6 +23,7 @@ embedding:
 
 # --- Retrieval Configuration ---
 retrieval:
+  entity_match_boost: 1.0    # Small exact-ID bonus after reranking; keeps CTI identifiers visible without dominating base scores
   vector:
     collection_name: "cti_documents"
     top_k: 20                # Initial retrieval candidates

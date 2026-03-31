@@ -79,6 +79,29 @@ ollama serve
 ollama pull llama3.1:8b-instruct-q5_K_M
 ```
 
+### Quickstart via Makefile (macOS / Linux)
+
+For a reproducible local setup with the expected cached models:
+
+```bash
+make bootstrap
+make download
+make index
+make run
+```
+
+Useful targets:
+- `make warmup-models` — cache the embedding and reranker models locally
+- `make run QUERY="What is CVE-2024-3094?" MODE=hybrid`
+- `make evaluate MODE=hybrid`
+- `make ablation`
+- `make test-retrieval`
+
+Note:
+- the `Makefile` assumes `python3.12`, `ollama`, and `make` are available
+- the reranker now loads from the local Hugging Face cache for reproducible offline retrieval runs
+- on a fresh machine, run `make warmup-models` once before retrieval or evaluation
+
 ### 3. Download CTI data
 
 ```bash
