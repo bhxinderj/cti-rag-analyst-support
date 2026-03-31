@@ -152,6 +152,29 @@ class HybridRetriever:
         logger.info("Loading reranker from local cache: %s", snapshot_path)
         return CrossEncoder(str(snapshot_path), local_files_only=True)
 
+    @classmethod
+    def _ensure_local_reranker_snapshot(cls, model_name: str) -> Path:
+        """
+        Ensure the reranker exists in the local HF cache.
+
+        This is intended for explicit setup/bootstrap steps. Runtime retrieval should
+        continue to load from local files only.
+        """
+        snapshot_path = cls._resolve_local_hf_snapshot(model_name)
+        if snapshot_path is not None:
+            return snapshot_path
+
+        logger.info("Downloading reranker into local cache: %s", model_name)
+        CrossEncoder(model_name)
+
+        snapshot_path = cls._resolve_local_hf_snapshot(model_name)
+        if snapshot_path is None:
+            raise FileNotFoundError(
+                f"Reranker model '{model_name}' could not be prepared in the local Hugging Face cache."
+            )
+
+        return snapshot_path
+
     @staticmethod
     def _serialize_trace_chunk(chunk: RetrievedChunk) -> dict:
         """Capture retrieval-stage metadata without mutating the chunk."""
