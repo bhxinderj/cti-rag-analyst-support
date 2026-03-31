@@ -62,8 +62,8 @@ class HybridRetriever:
 
     Supports three modes for ablation study:
     - "hybrid": BM25 + Vector + RRF + Reranking (default, full pipeline)
-    - "bm25": BM25 only (lexical baseline)
-    - "vector": Vector only (semantic baseline)
+    - "bm25": BM25 candidate generation + shared reranking
+    - "vector": Vector candidate generation + shared reranking
     """
 
     def __init__(self, retrieval_mode: str = "hybrid"):
@@ -152,6 +152,29 @@ class HybridRetriever:
         logger.info("Loading reranker from local cache: %s", snapshot_path)
         return CrossEncoder(str(snapshot_path), local_files_only=True)
 
+    @classmethod
+    def _ensure_local_reranker_snapshot(cls, model_name: str) -> Path:
+        """
+        Ensure the reranker exists in the local HF cache.
+
+        This is intended for explicit setup/bootstrap steps. Runtime retrieval should
+        continue to load from local files only.
+        """
+        snapshot_path = cls._resolve_local_hf_snapshot(model_name)
+        if snapshot_path is not None:
+            return snapshot_path
+
+        logger.info("Downloading reranker into local cache: %s", model_name)
+        CrossEncoder(model_name)
+
+        snapshot_path = cls._resolve_local_hf_snapshot(model_name)
+        if snapshot_path is None:
+            raise FileNotFoundError(
+                f"Reranker model '{model_name}' could not be prepared in the local Hugging Face cache."
+            )
+
+        return snapshot_path
+
     @staticmethod
     def _serialize_trace_chunk(chunk: RetrievedChunk) -> dict:
         """Capture retrieval-stage metadata without mutating the chunk."""
@@ -205,7 +228,7 @@ class HybridRetriever:
         return "unknown"
 
     def _build_bm25_metadata(self, idx: int) -> dict:
-        """Recover minimal metadata for BM25-only hits from stored corpus text."""
+        """Recover minimal metadata for BM25-stage hits from stored corpus text."""
         content = self.bm25_corpus[idx]
         title = ""
         first_line = content.splitlines()[0] if content else ""
