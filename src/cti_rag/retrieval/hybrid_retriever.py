@@ -43,7 +43,7 @@ _CTI_ENTITY_PATTERNS = (
     re.compile(r"\bDET\d{4}\b", flags=re.IGNORECASE),
 )
 
-_EXACT_ENTITY_MATCH_BOOST = 100.0
+_DEFAULT_ENTITY_MATCH_BOOST = 1.0
 
 
 @dataclass
@@ -107,14 +107,50 @@ class HybridRetriever:
         self.fusion_top_k = retrieval_config["fusion"]["top_k"]
         self.rrf_k = retrieval_config["fusion"]["rrf_k"]
         self.rerank_top_k = retrieval_config["reranker"]["top_k"]
+        self.entity_match_boost = retrieval_config.get("entity_match_boost", _DEFAULT_ENTITY_MATCH_BOOST)
 
         # --- Load Reranker ---
         reranker_model = retrieval_config["reranker"]["model_name"]
         logger.info(f"Loading reranker: {reranker_model}")
-        self.reranker = CrossEncoder(reranker_model)
+        self.reranker = self._load_reranker(reranker_model)
         self.last_trace: dict = {}
 
         logger.info(f"HybridRetriever initialized (mode={self.mode})")
+
+    @staticmethod
+    def _resolve_local_hf_snapshot(model_name: str) -> Path | None:
+        """Return the newest local Hugging Face snapshot for the model, if present."""
+        model_dir = Path.home() / ".cache" / "huggingface" / "hub" / f"models--{model_name.replace('/', '--')}"
+        snapshots_dir = model_dir / "snapshots"
+        if not snapshots_dir.exists():
+            return None
+
+        ref_path = model_dir / "refs" / "main"
+        if ref_path.exists():
+            snapshot_id = ref_path.read_text().strip()
+            if snapshot_id:
+                snapshot_path = snapshots_dir / snapshot_id
+                if snapshot_path.exists():
+                    return snapshot_path
+
+        snapshots = sorted((path for path in snapshots_dir.iterdir() if path.is_dir()))
+        return snapshots[-1] if snapshots else None
+
+    def _load_reranker(self, model_name: str) -> CrossEncoder:
+        """
+        Load reranker from a local HF snapshot to keep retrieval runs reproducible offline.
+
+        Fail fast if the configured model is not available locally instead of falling back
+        to an implicit network download during evaluation.
+        """
+        snapshot_path = self._resolve_local_hf_snapshot(model_name)
+        if snapshot_path is None:
+            raise FileNotFoundError(
+                f"Reranker model '{model_name}' is not available in the local Hugging Face cache."
+            )
+
+        logger.info("Loading reranker from local cache: %s", snapshot_path)
+        return CrossEncoder(str(snapshot_path), local_files_only=True)
 
     @staticmethod
     def _serialize_trace_chunk(chunk: RetrievedChunk) -> dict:
@@ -185,12 +221,6 @@ class HybridRetriever:
         """Lexical search using BM25."""
         tokenized_query = self._tokenize_cti(query)
         scores = self.bm25.get_scores(tokenized_query)
-        query_entities = self._extract_query_entities(query)
-
-        if query_entities:
-            # A second BM25 pass over extracted CTI identifiers keeps exact
-            # entity matches from being drowned out by generic natural-language terms.
-            scores = scores + self.bm25.get_scores(query_entities)
 
         top_indices = np.argsort(scores)[::-1][:top_k]
 
@@ -274,7 +304,9 @@ class HybridRetriever:
             chunk.score = float(score)
             entity_matches = self._count_entity_matches(chunk.content, query_entities)
             if entity_matches:
-                chunk.score += entity_matches * _EXACT_ENTITY_MATCH_BOOST
+                # Exact CTI identifiers matter operationally, but the bonus must
+                # stay small enough that the cross-encoder still decides the order.
+                chunk.score += entity_matches * self.entity_match_boost
 
         reranked = sorted(chunks, key=lambda c: c.score, reverse=True)
 
@@ -293,12 +325,16 @@ class HybridRetriever:
         trace_stages: dict[str, list[dict]] = {}
 
         if self.mode == "bm25":
-            results = self._search_bm25(query, self.rerank_top_k)
-            trace_stages["bm25"] = [self._serialize_trace_chunk(chunk) for chunk in results]
+            bm25_results = self._search_bm25(query, self.bm25_top_k)
+            trace_stages["bm25"] = [self._serialize_trace_chunk(chunk) for chunk in bm25_results]
+            results = self._rerank(query, bm25_results)
+            trace_stages["reranked"] = [self._serialize_trace_chunk(chunk) for chunk in results]
 
         elif self.mode == "vector":
-            results = self._search_vector(query, self.rerank_top_k)
-            trace_stages["vector"] = [self._serialize_trace_chunk(chunk) for chunk in results]
+            vector_results = self._search_vector(query, self.vector_top_k)
+            trace_stages["vector"] = [self._serialize_trace_chunk(chunk) for chunk in vector_results]
+            results = self._rerank(query, vector_results)
+            trace_stages["reranked"] = [self._serialize_trace_chunk(chunk) for chunk in results]
 
         elif self.mode == "hybrid":
             bm25_results = self._search_bm25(query, self.bm25_top_k)
