@@ -8,7 +8,7 @@ QUERY ?= What is CVE-2021-44228 and how has it been exploited?
 MODE ?= hybrid
 SETUP ?= default
 
-.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation test-retrieval
+.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test-retrieval
 
 help:
 	@echo "Available targets:"
@@ -25,6 +25,9 @@ help:
 	@echo "  make run             Run one query (override QUERY=... MODE=... SETUP=default|a|b)"
 	@echo "  make evaluate        Run evaluation (override MODE=... SETUP=default|a|b)"
 	@echo "  make ablation        Run the ablation study"
+	@echo "  make smoke           Run narrow reproducibility and traceability checks"
+	@echo "  make e2e-smoke       Run a live local smoke check against Ollama and real artifacts"
+	@echo "  make e2e-eval-smoke  Run the live smoke check plus a reduced one-sample local evaluation"
 	@echo "  make test-retrieval  Run narrow retrieval checks"
 
 .venv/bin/python:
@@ -52,6 +55,7 @@ bootstrap:
 
 download: install
 	$(VENV_PY) main.py download --source cisa_kev
+	$(VENV_PY) main.py download --source cisa_advisories
 	$(VENV_PY) main.py download --source nvd
 	$(VENV_PY) main.py download --source misp --misp-max-events $(MISP_MAX_EVENTS)
 
@@ -100,6 +104,16 @@ evaluate: install
 
 ablation: install
 	$(VENV_PY) main.py ablation
+
+smoke: install
+	$(VENV_PY) main.py --help
+	$(VENV_PY) tests/run_smoke_checks.py
+
+e2e-smoke: install
+	CTI_RAG_SETUP=b $(VENV_PY) tests/run_live_e2e_smoke.py --setup b --mode $(MODE) --question "$(QUERY)"
+
+e2e-eval-smoke: install
+	CTI_RAG_SETUP=b $(VENV_PY) tests/run_live_e2e_smoke.py --setup b --mode $(MODE) --question "$(QUERY)" --with-eval
 
 test-retrieval: install
 	$(VENV_PY) -c 'import importlib; module = importlib.import_module("tests.test_retrieval_trace"); executed = []; [getattr(module, name)() or executed.append(name) for name in sorted(dir(module)) if name.startswith("test_")]; print(f"Executed {len(executed)} retrieval checks"); [print(f"- {name}") for name in executed]'

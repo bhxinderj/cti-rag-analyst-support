@@ -15,12 +15,31 @@ from pathlib import Path
 
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+import torch
 from tqdm import tqdm
 
 from ..ingestion.models import CTIDocument
-from ..utils.config import load_config, get_project_root
+from ..utils.config import (
+    get_project_root,
+    load_config,
+    require_local_hf_snapshot,
+    suppress_noisy_third_party_logs,
+)
 
 logger = logging.getLogger(__name__)
+suppress_noisy_third_party_logs()
+
+
+def _resolve_embedding_device(requested_device: str) -> str:
+    """Fall back to CPU when the configured accelerator is unavailable."""
+    if requested_device != "mps":
+        return requested_device
+
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return requested_device
+
+    logger.warning("Configured embedding device 'mps' is unavailable on this host. Falling back to 'cpu'.")
+    return "cpu"
 
 
 def _tokenize_cti(text: str) -> list[str]:
@@ -78,9 +97,14 @@ class CTIIndexer:
 
         # Embedding config
         emb_config = config["embedding"]
+        embedding_device = _resolve_embedding_device(emb_config["device"])
+        embedding_model_path = require_local_hf_snapshot(
+            emb_config["model_name"],
+            artifact_label="Embedding model",
+        )
         self.embedding_fn = SentenceTransformerEmbeddingFunction(
-            model_name=emb_config["model_name"],
-            device=emb_config["device"],
+            model_name=str(embedding_model_path),
+            device=embedding_device,
         )
 
         # ChromaDB config

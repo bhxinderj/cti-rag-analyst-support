@@ -99,6 +99,7 @@ if (-not $SkipWarmup) {
 
 if (-not $SkipDownload) {
     Invoke-CommandChecked -FilePath $VenvPython -ArgumentList @("main.py", "download", "--source", "cisa_kev")
+    Invoke-CommandChecked -FilePath $VenvPython -ArgumentList @("main.py", "download", "--source", "cisa_advisories")
     Invoke-CommandChecked -FilePath $VenvPython -ArgumentList @("main.py", "download", "--source", "nvd")
     Invoke-CommandChecked -FilePath $VenvPython -ArgumentList @("main.py", "download", "--source", "misp", "--misp-max-events", $MispMaxEvents.ToString())
 }
