@@ -301,3 +301,83 @@ def test_query_formats_structured_sections_with_paragraph_breaks():
     assert "\n\nRecommended actions / Mitigations:" in response.answer
     assert "\n\nEvidence:" in response.answer
     assert "\n\nUnknowns / Gaps:" in response.answer
+
+
+def test_query_abstains_after_generation_when_no_verifiable_citation_survives():
+    chunks = [
+        RetrievedChunk(
+            doc_id="nvd_CVE-2024-3094",
+            content="CVE-2024-3094 is a supply chain backdoor in XZ Utils.",
+            score=0.9,
+            metadata={"source": "nvd", "title": "XZ Utils vulnerability"},
+        )
+    ]
+    chain = _build_chain(
+        chunks,
+        llm_content=(
+            "Summary: CVE-2024-3094 affects XZ Utils.\n"
+            "Evidence:\n"
+            "- The vulnerability is severe."
+        ),
+    )
+
+    response = chain.query("What is CVE-2024-3094?")
+
+    assert response.abstention_reason == (
+        "The generated answer did not retain any verifiable citations after normalization."
+    )
+    assert response.answer.startswith("Summary: Insufficient evidence in the retrieved context")
+
+
+def test_query_marks_uncited_supported_lines_as_uncertain():
+    chunks = [
+        RetrievedChunk(
+            doc_id="nvd_CVE-2024-3094",
+            content="CVE-2024-3094 is a supply chain backdoor in XZ Utils.",
+            score=0.9,
+            metadata={"source": "nvd", "title": "XZ Utils vulnerability"},
+        )
+    ]
+    chain = _build_chain(
+        chunks,
+        llm_content=(
+            "Summary: CVE-2024-3094 affects XZ Utils. [Source: nvd_CVE-2024-3094]\n"
+            "Why it matters:\n"
+            "- Operationally important.\n"
+            "Evidence:\n"
+            "- The context describes a supply chain backdoor. [Source: XZ Utils vulnerability]"
+        ),
+    )
+
+    response = chain.query("What is CVE-2024-3094?")
+
+    assert response.grounding_warnings == []
+    assert "No clearly source-grounded impact statement could be preserved from the generated answer." in response.answer
+
+
+def test_query_replaces_uncited_summary_and_impact_with_transparent_fallbacks():
+    chunks = [
+        RetrievedChunk(
+            doc_id="nvd_CVE-2024-3094",
+            content="CVE-2024-3094 is a supply chain backdoor in XZ Utils.",
+            score=0.9,
+            metadata={"source": "nvd", "title": "XZ Utils vulnerability"},
+        )
+    ]
+    chain = _build_chain(
+        chunks,
+        llm_content=(
+            "Summary: CVE-2024-3094 affects XZ Utils.\n"
+            "Why it matters:\n"
+            "- The compromise is operationally significant.\n"
+            "Evidence:\n"
+            "- The context describes a supply chain backdoor. [Source: nvd_CVE-2024-3094]"
+        ),
+    )
+
+    response = chain.query("What is CVE-2024-3094?")
+
+    assert "Summary: Source-grounded summary could not be preserved after citation checks." in response.answer
+    assert "No clearly source-grounded impact statement could be preserved from the generated answer." in response.answer
+    assert "Summary: CVE-2024-3094 affects XZ Utils." not in response.answer
+    assert "- The compromise is operationally significant." not in response.answer

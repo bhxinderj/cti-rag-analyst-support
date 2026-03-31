@@ -46,13 +46,19 @@ _GROUNDING_STOPWORDS = {
 }
 _CITATION_BLOCK_RE = re.compile(r"\[(?:Source|Sources)\s*:\s*([^\]]+)\]")
 _ABSTENTION_SUMMARY = "Insufficient evidence in the retrieved context to answer this question."
+_SUMMARY_PREFIX = "Summary:"
+_WHY_SECTION_HEADER = "Why it matters:"
 _MITIGATION_SECTION_HEADER = "Recommended actions / Mitigations:"
+_EVIDENCE_SECTION_HEADER = "Evidence:"
+_SUMMARY_FALLBACK = "Source-grounded summary could not be preserved after citation checks."
+_WHY_FALLBACK = "No clearly source-grounded impact statement could be preserved from the generated answer."
 _MITIGATION_FALLBACK = "No reliable mitigation guidance is present in the retrieved context."
+_EVIDENCE_FALLBACK = "No clearly source-grounded evidence statements could be preserved from the generated answer."
 _STRUCTURED_SECTION_HEADERS = {
-    "Summary:",
-    "Why it matters:",
+    _SUMMARY_PREFIX,
+    _WHY_SECTION_HEADER,
     _MITIGATION_SECTION_HEADER,
-    "Evidence:",
+    _EVIDENCE_SECTION_HEADER,
     "Unknowns / Gaps:",
     "Missing:",
 }
@@ -198,14 +204,34 @@ def _extract_citation_labels(answer: str) -> set[str]:
     return labels
 
 
-def _enforce_mitigation_grounding(answer: str) -> str:
-    """
-    Keep mitigation guidance only when it remains source-grounded.
+def _enforce_summary_grounding(answer: str) -> str:
+    """Replace an uncited inline summary with a transparent fallback."""
+    lines = answer.splitlines()
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith(_SUMMARY_PREFIX):
+            continue
 
-    This is intentionally narrow: preserve cited mitigation bullets, drop uncited
-    ones, and only show the fallback when no grounded mitigation guidance remains.
+        summary_content = stripped[len(_SUMMARY_PREFIX):].strip()
+        if not summary_content:
+            return answer
+        if _CITATION_BLOCK_RE.search(line):
+            return answer
+
+        lines[index] = f"{_SUMMARY_PREFIX} {_SUMMARY_FALLBACK}"
+        return "\n".join(lines).strip()
+
+    return answer
+
+
+def _filter_section_to_cited_lines(answer: str, section_header: str, fallback_line: str) -> str:
     """
-    if _MITIGATION_SECTION_HEADER not in answer:
+    Keep only cited lines in a structured section.
+
+    This is intentionally conservative: uncited lines are removed instead of being
+    left in place with misleading source confidence.
+    """
+    if section_header not in answer:
         return answer
 
     lines = answer.splitlines()
@@ -216,7 +242,7 @@ def _enforce_mitigation_grounding(answer: str) -> str:
         line = lines[i]
         output_lines.append(line)
 
-        if line.strip() != _MITIGATION_SECTION_HEADER:
+        if line.strip() != section_header:
             i += 1
             continue
 
@@ -240,7 +266,7 @@ def _enforce_mitigation_grounding(answer: str) -> str:
         if grounded_lines:
             output_lines.extend(grounded_lines)
         else:
-            output_lines.append(_MITIGATION_FALLBACK)
+            output_lines.append(fallback_line)
 
         if i < len(lines):
             continue
@@ -248,6 +274,92 @@ def _enforce_mitigation_grounding(answer: str) -> str:
     cleaned = "\n".join(output_lines)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
+
+
+def _enforce_mitigation_grounding(answer: str) -> str:
+    """Keep mitigation guidance only when it remains source-grounded."""
+    return _filter_section_to_cited_lines(answer, _MITIGATION_SECTION_HEADER, _MITIGATION_FALLBACK)
+
+
+def _enforce_why_grounding(answer: str) -> str:
+    """Keep only cited impact lines in the Why it matters section."""
+    return _filter_section_to_cited_lines(answer, _WHY_SECTION_HEADER, _WHY_FALLBACK)
+
+
+def _enforce_evidence_grounding(answer: str) -> str:
+    """Keep only cited evidence bullets so the Evidence section stays meaningful."""
+    return _filter_section_to_cited_lines(answer, _EVIDENCE_SECTION_HEADER, _EVIDENCE_FALLBACK)
+
+
+def _analyze_citation_compliance(answer: str) -> dict[str, int | bool]:
+    """Collect lightweight citation-compliance signals from the final answer."""
+    current_section: str | None = None
+    cited_lines = 0
+    uncited_lines = 0
+    evidence_cited_lines = 0
+    has_evidence_section = False
+
+    for line in answer.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if stripped in _STRUCTURED_SECTION_HEADERS:
+            current_section = stripped
+            if stripped == _EVIDENCE_SECTION_HEADER:
+                has_evidence_section = True
+            continue
+
+        if current_section == "Unknowns / Gaps:":
+            continue
+        if stripped in {_SUMMARY_FALLBACK, _WHY_FALLBACK, _MITIGATION_FALLBACK, _EVIDENCE_FALLBACK}:
+            continue
+
+        has_citation = bool(_CITATION_BLOCK_RE.search(line))
+        if has_citation:
+            cited_lines += 1
+            if current_section == _EVIDENCE_SECTION_HEADER:
+                evidence_cited_lines += 1
+        else:
+            uncited_lines += 1
+
+    return {
+        "cited_lines": cited_lines,
+        "uncited_lines": uncited_lines,
+        "evidence_cited_lines": evidence_cited_lines,
+        "has_evidence_section": has_evidence_section,
+    }
+
+
+def _append_grounding_notes(answer: str, notes: list[str]) -> str:
+    """Append transparency notes to Unknowns / Gaps without duplicating them."""
+    unique_notes: list[str] = []
+    for note in notes:
+        if note and note not in unique_notes and note not in answer:
+            unique_notes.append(note)
+
+    if not unique_notes:
+        return answer
+
+    lines = answer.splitlines()
+    header_index = next(
+        (index for index, line in enumerate(lines) if line.strip() == "Unknowns / Gaps:"),
+        None,
+    )
+    note_lines = [f"- Grounding note: {note}" for note in unique_notes]
+
+    if header_index is None:
+        if lines and lines[-1].strip():
+            lines.append("")
+        lines.append("Unknowns / Gaps:")
+        lines.extend(note_lines)
+    else:
+        insert_at = header_index + 1
+        while insert_at < len(lines) and lines[insert_at].strip() not in _STRUCTURED_SECTION_HEADERS:
+            insert_at += 1
+        lines[insert_at:insert_at] = note_lines
+
+    return "\n".join(lines).strip()
 
 
 def _format_structured_answer(answer: str) -> str:
@@ -318,6 +430,7 @@ class RAGResponse:
     retrieval_mode: str = "hybrid"
     prompt_context: str = ""
     abstention_reason: str | None = None
+    grounding_warnings: list[str] = field(default_factory=list)
     retrieval_trace: dict = field(default_factory=dict)
 
 
@@ -403,7 +516,39 @@ class RAGChain:
         response = self.llm.invoke(messages)
         generation_time = (time.time() - generation_start) * 1000
         answer = _normalize_response_citations(response.content, chunk_dicts)
+        answer = _enforce_summary_grounding(answer)
+        answer = _enforce_why_grounding(answer)
+        answer = _enforce_evidence_grounding(answer)
         answer = _enforce_mitigation_grounding(answer)
+        compliance = _analyze_citation_compliance(answer)
+        grounding_warnings: list[str] = []
+        if compliance["cited_lines"] == 0:
+            abstention_reason = "The generated answer did not retain any verifiable citations after normalization."
+            total_time = (time.time() - total_start) * 1000
+            logger.info("Abstaining after generation: %s", abstention_reason)
+            _log_used_chunks(question, chunk_dicts)
+            return RAGResponse(
+                query=question,
+                answer=_build_abstention_answer(abstention_reason),
+                contexts=[chunk.content for chunk in chunks],
+                source_documents=chunk_dicts,
+                retrieval_time_ms=retrieval_time,
+                generation_time_ms=generation_time,
+                total_time_ms=total_time,
+                retrieval_mode=self.retrieval_mode,
+                prompt_context=context_str,
+                abstention_reason=abstention_reason,
+                retrieval_trace=dict(getattr(self.retriever, "last_trace", {})),
+            )
+
+        if not compliance["has_evidence_section"] or compliance["evidence_cited_lines"] == 0:
+            grounding_warnings.append("The answer lacks a clearly source-grounded evidence section.")
+        if compliance["uncited_lines"] > 0:
+            grounding_warnings.append(
+                f"{compliance['uncited_lines']} response line(s) are not directly backed by surviving citations."
+            )
+
+        answer = _append_grounding_notes(answer, grounding_warnings)
         answer = _format_structured_answer(answer)
         cited_labels = _extract_citation_labels(answer)
         for chunk_dict in chunk_dicts:
@@ -424,6 +569,7 @@ class RAGChain:
             total_time_ms=total_time,
             retrieval_mode=self.retrieval_mode,
             prompt_context=context_str,
+            grounding_warnings=grounding_warnings,
             retrieval_trace=dict(getattr(self.retriever, "last_trace", {})),
         )
 

@@ -39,7 +39,7 @@ pull-llm: install
 	ollama pull $$OLLAMA_MODEL
 
 warmup-models: install
-	$(VENV_PY) -c 'from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction; from src.cti_rag.retrieval.hybrid_retriever import HybridRetriever; from src.cti_rag.utils.config import load_config; config = load_config(); emb_config = config["embedding"]; reranker_model = config["retrieval"]["reranker"]["model_name"]; embedding_fn = SentenceTransformerEmbeddingFunction(model_name=emb_config["model_name"], device=emb_config["device"]); embedding_fn(["warmup"]); retriever = object.__new__(HybridRetriever); HybridRetriever._load_reranker(retriever, reranker_model); print(f"Cached embedding model: {emb_config[\"model_name\"]}"); print(f"Cached reranker model: {reranker_model}")'
+	$(VENV_PY) -c 'from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction; from src.cti_rag.retrieval.hybrid_retriever import HybridRetriever; from src.cti_rag.utils.config import load_config; config = load_config(); emb_config = config["embedding"]; reranker_model = config["retrieval"]["reranker"]["model_name"]; embedding_fn = SentenceTransformerEmbeddingFunction(model_name=emb_config["model_name"], device=emb_config["device"]); embedding_fn(["warmup"]); HybridRetriever._ensure_local_reranker_snapshot(reranker_model); print(f"Cached embedding model: {emb_config[\"model_name\"]}"); print(f"Cached reranker model: {reranker_model}")'
 
 bootstrap:
 	$(MAKE) install
