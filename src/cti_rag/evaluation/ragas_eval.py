@@ -21,13 +21,20 @@ from ragas.metrics import (
     context_recall,
     faithfulness,
 )
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
+import torch
 
 from ..rag.chain import RAGResponse
-from ..utils.config import get_project_root, load_config
+from ..utils.config import (
+    get_project_root,
+    load_config,
+    require_local_hf_snapshot,
+    suppress_noisy_third_party_logs,
+)
 
 logger = logging.getLogger(__name__)
+suppress_noisy_third_party_logs()
 
 # Compatibility shims for tests and earlier artifact-building code paths.
 SingleTurnSample = object
@@ -46,6 +53,18 @@ _NON_CLAIM_LINES = {
     "No reliable mitigation guidance is present in the retrieved context.",
     "No clearly source-grounded evidence statements could be preserved from the generated answer.",
 }
+
+
+def _resolve_embedding_device(requested_device: str) -> str:
+    """Fall back to CPU when the configured accelerator is unavailable."""
+    if requested_device != "mps":
+        return requested_device
+
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return requested_device
+
+    logger.warning("Configured embedding device 'mps' is unavailable on this host. Falling back to 'cpu'.")
+    return "cpu"
 
 
 def _results_records(results) -> list[dict]:
@@ -140,8 +159,13 @@ class RAGASEvaluator:
 
         self.eval_embeddings = LangchainEmbeddingsWrapper(
             HuggingFaceEmbeddings(
-                model_name=emb_config["model_name"],
-                model_kwargs={"device": emb_config["device"]},
+                model_name=str(
+                    require_local_hf_snapshot(
+                        emb_config["model_name"],
+                        artifact_label="Embedding model",
+                    )
+                ),
+                model_kwargs={"device": _resolve_embedding_device(emb_config["device"])},
             )
         )
 

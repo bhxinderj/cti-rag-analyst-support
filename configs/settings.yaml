@@ -57,6 +57,7 @@ data:
       raw_dir: "data/raw/cisa_kev"
     cisa_advisories:
       raw_dir: "data/raw/cisa_advisories"
+      year_range: [2020, 2025]
     misp:
       raw_dir: "data/raw/misp"
 

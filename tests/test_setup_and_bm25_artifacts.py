@@ -163,5 +163,57 @@ class TestBM25Artifacts(unittest.TestCase):
         self.assertIn("cve-2024-3094", loaded["tokenized_corpus"][0])
 
 
+class TestDownloadConfiguration(unittest.TestCase):
+    def test_cmd_download_uses_snapshot_date_for_all_sources(self):
+        with TemporaryDirectory() as tmp_dir:
+            root = Path(tmp_dir)
+            config = {
+                "data": {
+                    "snapshot_date": "2025-12-31",
+                    "sources": {
+                        "nvd": {"raw_dir": "data/raw/nvd", "min_cvss": 7.0, "year_range": [2020, 2025]},
+                        "cisa_kev": {"raw_dir": "data/raw/cisa_kev"},
+                        "cisa_advisories": {"raw_dir": "data/raw/cisa_advisories", "year_range": [2020, 2026]},
+                        "misp": {"raw_dir": "data/raw/misp"},
+                    },
+                }
+            }
+
+            with patch("main.load_config", return_value=config), patch(
+                "main.get_project_root", return_value=root
+            ), patch("src.cti_rag.ingestion.downloader.download_nvd") as mock_nvd, patch(
+                "src.cti_rag.ingestion.downloader.download_cisa_kev"
+            ) as mock_kev, patch(
+                "src.cti_rag.ingestion.downloader.download_cisa_advisories"
+            ) as mock_advisories, patch(
+                "src.cti_rag.ingestion.downloader.download_misp_feeds"
+            ) as mock_misp:
+                main.cmd_download(SimpleNamespace(source="all", nvd_api_key="demo-key", misp_max_events=42))
+
+            mock_nvd.assert_called_once_with(
+                output_dir=root / "data/raw/nvd",
+                min_cvss=7.0,
+                year_start=2020,
+                year_end=2025,
+                api_key="demo-key",
+                snapshot_date="2025-12-31",
+            )
+            mock_kev.assert_called_once_with(
+                output_dir=root / "data/raw/cisa_kev",
+                snapshot_date="2025-12-31",
+            )
+            mock_advisories.assert_called_once_with(
+                output_dir=root / "data/raw/cisa_advisories",
+                year_start=2020,
+                year_end=2026,
+                snapshot_date="2025-12-31",
+            )
+            mock_misp.assert_called_once_with(
+                output_dir=root / "data/raw/misp",
+                max_events=42,
+                snapshot_date="2025-12-31",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

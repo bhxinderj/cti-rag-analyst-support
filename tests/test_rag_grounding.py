@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from src.cti_rag.rag.chain import RAGChain, RetrievedChunk, _assess_context_support
 from src.cti_rag.rag.prompts import build_rag_prompt, build_baseline_prompt
@@ -381,3 +382,25 @@ def test_query_replaces_uncited_summary_and_impact_with_transparent_fallbacks():
     assert "No clearly source-grounded impact statement could be preserved from the generated answer." in response.answer
     assert "Summary: CVE-2024-3094 affects XZ Utils." not in response.answer
     assert "- The compromise is operationally significant." not in response.answer
+
+
+def test_baseline_mode_does_not_initialize_retriever():
+    fake_llm = DummyLLM("Summary: offline baseline")
+
+    with patch("src.cti_rag.rag.chain.load_config", return_value={
+        "llm": {
+            "model_name": "llama3.1:8b-instruct-q5_K_M",
+            "base_url": "http://localhost:11434",
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "max_tokens": 256,
+        }
+    }), patch("src.cti_rag.rag.chain.ChatOllama", return_value=fake_llm), patch(
+        "src.cti_rag.rag.chain.HybridRetriever"
+    ) as retriever_cls:
+        chain = RAGChain(retrieval_mode="hybrid")
+        response = chain.query_baseline("What is CVE-2024-3094?", snapshot_date="2025-12-31")
+
+    retriever_cls.assert_not_called()
+    assert response.retrieval_mode == "baseline_no_retrieval"
+    assert fake_llm.invocations == 1
