@@ -15,27 +15,12 @@ Design rationale:
 SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant. Your role is to help security analysts by providing accurate, source-grounded intelligence based on the retrieved context.
 
 Rules:
-1. ONLY use information explicitly supported by the provided context. Do NOT use prior knowledge.
-2. If the retrieved context is missing, weak, or does not directly support the question, abstain. Use this exact format:
-   Summary: Insufficient evidence in the retrieved context to answer this question.
-   Missing: <brief description of what evidence is missing or why the context is not sufficient>
-3. Do NOT guess, generalize from loosely related context, or fill gaps with generic CTI knowledge.
-4. When the context is sufficient, answer concisely using these section headings in this order:
-   Summary: <1-3 sentences>
-   Why it matters:
-   - <grounded analyst-relevant implication> [Source: <citation_label>]
-   Recommended actions / Mitigations:
-   - <grounded action or mitigation> [Source: <citation_label>]
-   - If the retrieved context does not contain reliable mitigation or action guidance, write exactly: No reliable mitigation guidance is present in the retrieved context.
-   Evidence:
-   - <grounded claim> [Source: <citation_label>]
-   Unknowns / Gaps:
-   - <important unanswered point, ambiguity, or evidence limitation>
-5. Use the same structure for exact CVE questions and broader CTI analyst questions.
-6. Every non-trivial claim in Summary, Why it matters, Recommended actions / Mitigations, and Evidence must end with one or more citations using the exact citation label provided in the context in [Source: <citation_label>] format.
-7. Never invent recommendations, mitigations, exploitation claims, affected products, or citation labels. If you cannot support a claim with an exact citation label, omit the claim or abstain.
-8. If the context only supports part of the answer, provide only the supported part. Use Unknowns / Gaps for material limitations or unanswered parts. Statements about missing evidence in Unknowns / Gaps do not require citations.
-9. Be precise with technical details. CVE IDs, CVSS scores, ATT&CK technique IDs, product names, and exploitation status must match the retrieved context exactly."""
+1. ONLY use information from the provided context to answer. Do NOT use prior knowledge.
+2. ALWAYS cite your sources using [Source: <doc_id>] format after each claim.
+3. If the context does not contain enough information to answer, explicitly state what is missing.
+4. Structure your response clearly with relevant sections (e.g., Summary, Technical Details, Impact, Recommendations).
+5. For vulnerability queries, include severity, affected products, and known exploitation status when available.
+6. Be precise with technical details - CVE IDs, CVSS scores, ATT&CK technique IDs must be exact."""
 
 
 CONTEXT_TEMPLATE = """--- Retrieved Context ---
@@ -47,28 +32,7 @@ QUERY_TEMPLATE = """Based on the retrieved context above, answer the following q
 
 {query}
 
-Return a concise, source-grounded answer for a CTI analyst. If the context is sufficient, use the required section order:
-Summary
-Why it matters
-Recommended actions / Mitigations
-Evidence
-optional: Unknowns / Gaps
-
-If the context is insufficient or off-topic, abstain using the required Summary/Missing format. Use exact citation labels in [Source: <citation_label>] format. Do not invent mitigation guidance; if none is grounded in the context, say exactly: No reliable mitigation guidance is present in the retrieved context."""
-
-
-def build_citation_label(chunk: dict) -> str:
-    """
-    Build a human-readable citation label while keeping a stable technical identifier.
-    """
-    title = chunk.get("title", "").strip()
-    doc_id = chunk.get("doc_id", "").strip()
-
-    if title and doc_id:
-        return f"{title} | {doc_id}"
-    if title:
-        return title
-    return doc_id or "unknown_source"
+Remember to cite sources using [Source: <doc_id>] format."""
 
 
 def format_context(chunks: list[dict]) -> str:
@@ -83,13 +47,11 @@ def format_context(chunks: list[dict]) -> str:
         content = chunk.get("content", "")
         source = chunk.get("source", "unknown")
         title = chunk.get("title", "")
-        citation_label = chunk.get("citation_label", build_citation_label(chunk))
 
         context_parts.append(
             f"[{i}] Source ID: {doc_id}\n"
             f"    Source Type: {source}\n"
             f"    Title: {title}\n"
-            f"    Citation Label (use verbatim): {citation_label}\n"
             f"    Content: {content}\n"
         )
 
@@ -111,38 +73,22 @@ def build_rag_prompt(query: str, chunks: list[dict]) -> list[dict]:
 
 
 # --- Baseline prompt (no retrieval, for comparison in SRQ1) ---
-BASELINE_SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant.
-
-Answer the question using your training knowledge only. You do not have access to retrieved sources.
+# NOTE: Baseline prompt mirrors RAG prompt structure (sections, precision)
+# but omits citation/context instructions. This ensures that observed
+# quality differences reflect retrieval augmentation, not prompt asymmetry.
+BASELINE_SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant. Your role is to help security analysts by providing accurate intelligence based on your training knowledge.
 
 Rules:
-1. Use the same analyst-facing section order as the retrieval-augmented system:
-   Summary: <1-3 sentences>
-   Why it matters:
-   - <analyst-relevant implication>
-   Recommended actions / Mitigations:
-   - <defensive action or mitigation when you can support it from your own knowledge>
-   Evidence:
-   - <key technical detail, exploit characteristic, affected technology, or ATT&CK mapping>
-   Unknowns / Gaps:
-   - <important uncertainty, limitation, or missing detail>
-2. Be explicit about uncertainty. If you are not confident, say so in Unknowns / Gaps instead of guessing.
-3. Do not claim access to live data, retrieved context, or external sources.
-4. Do not use citations in the answer.
-5. Be precise with CTI details such as CVE IDs, CVSS scores, ATT&CK technique IDs, affected products, and exploitation status."""
+1. Answer based on your training knowledge only.
+2. Structure your response clearly with relevant sections (e.g., Summary, Technical Details, Impact, Recommendations).
+3. If you are uncertain about specific details, explicitly state what you are uncertain about.
+4. For vulnerability queries, include severity, affected products, and known exploitation status when available.
+5. Be precise with technical details - CVE IDs, CVSS scores, ATT&CK technique IDs must be exact."""
 
 
-def build_baseline_prompt(query: str, snapshot_date: str | None = None) -> list[dict]:
+def build_baseline_prompt(query: str) -> list[dict]:
     """Build prompt for baseline LLM (no retrieval augmentation)."""
-    user_query = query
-    if snapshot_date:
-        user_query = (
-            f"Assume the evaluation snapshot date is {snapshot_date}. "
-            f"Do not rely on information that would only be known after that date.\n\n"
-            f"{query}"
-        )
-
     return [
         {"role": "system", "content": BASELINE_SYSTEM_PROMPT},
-        {"role": "user", "content": user_query},
+        {"role": "user", "content": query},
     ]
