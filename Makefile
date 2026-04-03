@@ -8,7 +8,7 @@ QUERY ?= What is CVE-2021-44228 and how has it been exploited?
 MODE ?= hybrid
 SETUP ?= default
 
-.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test-retrieval
+.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test-retrieval thesis thesis-force
 
 help:
 	@echo "Available targets:"
@@ -29,6 +29,8 @@ help:
 	@echo "  make e2e-smoke       Run a live local smoke check against Ollama and real artifacts"
 	@echo "  make e2e-eval-smoke  Run the live smoke check plus a reduced one-sample local evaluation"
 	@echo "  make test-retrieval  Run narrow retrieval checks"
+	@echo "  make thesis          Build the LaTeX thesis if sources changed"
+	@echo "  make thesis-force    Force a full LaTeX rebuild of the thesis"
 
 .venv/bin/python:
 	$(PYTHON) -m venv .venv
@@ -117,3 +119,9 @@ e2e-eval-smoke: install
 
 test-retrieval: install
 	$(VENV_PY) -c 'import importlib; module = importlib.import_module("tests.test_retrieval_trace"); executed = []; [getattr(module, name)() or executed.append(name) for name in sorted(dir(module)) if name.startswith("test_")]; print(f"Executed {len(executed)} retrieval checks"); [print(f"- {name}") for name in executed]'
+
+thesis:
+	cd thesis && latexmk -pdf -interaction=nonstopmode -file-line-error -outdir=tex_build mt_bhinder.tex
+
+thesis-force:
+	cd thesis && latexmk -pdf -interaction=nonstopmode -file-line-error -outdir=tex_build -g mt_bhinder.tex
