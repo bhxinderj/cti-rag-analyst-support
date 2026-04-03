@@ -188,7 +188,7 @@ def _select_key_iocs(event: dict, iocs: list[IOCEntry], limit: int = 10) -> list
 
     seen = set()
     ranked = []
-    for ioc in iocs:
+    for index, ioc in enumerate(iocs):
         key = (ioc.type, ioc.value)
         if key in seen or not ioc.value:
             continue
@@ -199,10 +199,11 @@ def _select_key_iocs(event: dict, iocs: list[IOCEntry], limit: int = 10) -> list
             0 if attr.get("to_ids") else 1,
             _IOC_TYPE_PRIORITY.get(ioc.type, 99),
             ioc.value.lower(),
+            index,
             ioc,
         ))
 
-    ranked.sort()
+    ranked.sort(key=lambda item: item[:-1])
     return [item[-1] for item in ranked[:limit]]
 
 
