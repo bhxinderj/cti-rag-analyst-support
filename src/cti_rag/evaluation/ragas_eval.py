@@ -14,6 +14,7 @@ from datasets import Dataset
 from ragas import evaluate
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from ragas.llms import LangchainLLMWrapper
+from ragas.run_config import RunConfig
 from ragas.metrics import (
     answer_correctness,
     answer_relevancy,
@@ -154,6 +155,7 @@ class RAGASEvaluator:
                 model=eval_model,
                 base_url=llm_config["base_url"],
                 temperature=0.0,
+                timeout=600,  # Local Ollama needs generous timeout
             )
         )
 
@@ -180,6 +182,15 @@ class RAGASEvaluator:
             answer_relevancy,
             answer_correctness,
         ]
+
+        # Local Ollama models need longer timeouts and fewer parallel workers
+        # than hosted API endpoints. Defaults: timeout=180, max_workers=16.
+        self.run_config = RunConfig(
+            timeout=600,
+            max_workers=2,
+            max_retries=6,
+            max_wait=180,
+        )
 
         logger.info("RAGASEvaluator initialized (eval_llm=%s)", eval_model)
 
@@ -327,6 +338,7 @@ class RAGASEvaluator:
             metrics=metrics,
             llm=self.eval_llm,
             embeddings=self.eval_embeddings,
+            run_config=self.run_config,
         )
 
         ragas_records = _results_records(results)
