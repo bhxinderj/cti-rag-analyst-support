@@ -1,0 +1,40 @@
+"""
+API request/response schemas for the CTI-RAG REST interface.
+"""
+
+from pydantic import BaseModel, Field
+
+
+class QueryRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=2000)
+    mode: str = Field(default="hybrid", pattern=r"^(hybrid|bm25|vector)$")
+
+
+class SourceDocument(BaseModel):
+    doc_id: str
+    title: str
+    source: str
+    score: float
+    rank: int
+    citation_label: str
+    cited_in_answer: bool
+
+
+class QueryResponse(BaseModel):
+    query: str
+    answer: str
+    sources: list[SourceDocument]
+    retrieval_mode: str
+    retrieval_time_ms: float
+    generation_time_ms: float
+    total_time_ms: float
+    grounded: bool
+    abstention_reason: str | None = None
+    grounding_warnings: list[str] = []
+
+
+class HealthResponse(BaseModel):
+    status: str
+    ollama_reachable: bool
+    index_loaded: bool
+    active_setup: str
