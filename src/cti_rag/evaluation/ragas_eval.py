@@ -6,6 +6,7 @@ Evaluates the RAG pipeline with RAGAS and stores trace-rich run artifacts.
 
 import json
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -24,6 +25,7 @@ from ragas.metrics import (
 )
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 import torch
 
 from ..rag.chain import RAGResponse
@@ -143,21 +145,69 @@ class RAGASEvaluator:
     Evaluates RAG pipeline outputs using RAGAS metrics.
     """
 
+    @staticmethod
+    def _build_eval_llm(provider: str, eval_config: dict, ollama_base_url: str):
+        """Instantiate the configured evaluation LLM.
+
+        Returns a ``(model_label, wrapped_llm)`` tuple. The label is used
+        for logging and artifact metadata so runs can be identified later.
+        """
+        if provider == "openai":
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                raise RuntimeError(
+                    "eval_llm_provider=openai requires the OPENAI_API_KEY environment variable."
+                )
+            model_name = eval_config.get("eval_llm_openai", "gpt-4o-mini")
+            llm = ChatOpenAI(
+                model=model_name,
+                api_key=api_key,
+                temperature=0.0,
+                timeout=120,
+                max_retries=4,
+            )
+            return f"openai:{model_name}", LangchainLLMWrapper(llm)
+
+        if provider == "openrouter":
+            api_key = os.environ.get("OPENROUTER_API_KEY")
+            if not api_key:
+                raise RuntimeError(
+                    "eval_llm_provider=openrouter requires the OPENROUTER_API_KEY environment variable."
+                )
+            model_name = eval_config.get("eval_llm_openrouter", "openai/gpt-4o-mini")
+            llm = ChatOpenAI(
+                model=model_name,
+                api_key=api_key,
+                base_url="https://openrouter.ai/api/v1",
+                temperature=0.0,
+                timeout=120,
+                max_retries=4,
+            )
+            return f"openrouter:{model_name}", LangchainLLMWrapper(llm)
+
+        # Default: local Ollama
+        model_name = eval_config.get("eval_llm", "qwen2.5:7b-instruct")
+        llm = ChatOllama(
+            model=model_name,
+            base_url=ollama_base_url,
+            temperature=0.0,
+            timeout=600,
+        )
+        return f"ollama:{model_name}", LangchainLLMWrapper(llm)
+
     def __init__(self):
         config = load_config()
         eval_config = config["evaluation"]["ragas"]
         llm_config = config["llm"]
         emb_config = config["embedding"]
 
-        eval_model = eval_config.get("eval_llm", llm_config["model_name"])
-        self.eval_llm = LangchainLLMWrapper(
-            ChatOllama(
-                model=eval_model,
-                base_url=llm_config["base_url"],
-                temperature=0.0,
-                timeout=600,  # Local Ollama needs generous timeout
-            )
+        provider = eval_config.get("eval_llm_provider", "ollama").lower()
+        self.eval_model_label, self.eval_llm = self._build_eval_llm(
+            provider=provider,
+            eval_config=eval_config,
+            ollama_base_url=llm_config["base_url"],
         )
+        logger.info("RAGAS eval LLM: %s", self.eval_model_label)
 
         self.eval_embeddings = LangchainEmbeddingsWrapper(
             HuggingFaceEmbeddings(
@@ -192,7 +242,7 @@ class RAGASEvaluator:
             max_wait=180,
         )
 
-        logger.info("RAGASEvaluator initialized (eval_llm=%s)", eval_model)
+        logger.info("RAGASEvaluator initialized (eval_llm=%s)", self.eval_model_label)
 
         self.results_dir = get_project_root() / config["evaluation"]["results_dir"]
         self.results_dir.mkdir(parents=True, exist_ok=True)

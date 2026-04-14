@@ -306,6 +306,9 @@ def cmd_evaluate(args):
     # Run pipeline (RAG or baseline)
     chain = RAGChain(retrieval_mode=args.mode)
     responses = []
+    use_templated = getattr(args, "templated", False) and not is_baseline
+    if use_templated:
+        print("  Using Phase-2 templated pipeline (RAGChain.query_templated)")
 
     for q in queries:
         print(f"  Processing: {q['id']} - {q['question'][:60]}...")
@@ -314,6 +317,8 @@ def cmd_evaluate(args):
                 q["question"],
                 snapshot_date=config["data"].get("snapshot_date"),
             )
+        elif use_templated:
+            resp = chain.query_templated(q["question"])
         else:
             resp = chain.query(q["question"])
         responses.append(resp)
@@ -335,7 +340,12 @@ def cmd_evaluate(args):
 
     # Evaluate
     evaluator = RAGASEvaluator()
-    experiment_name = f"baseline_{args.name}" if is_baseline else f"{args.mode}_{args.name}"
+    if is_baseline:
+        experiment_name = f"baseline_{args.name}"
+    elif use_templated:
+        experiment_name = f"{args.mode}_templated_{args.name}"
+    else:
+        experiment_name = f"{args.mode}_{args.name}"
     results = evaluator.evaluate(
         rag_responses=responses,
         ground_truths=ground_truths,
@@ -491,6 +501,11 @@ def main():
     ev.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
     ev.add_argument("--name", type=str, default="default")
     ev.add_argument("--baseline", action="store_true", help="Run baseline (no retrieval) evaluation for SRQ1 comparison")
+    ev.add_argument(
+        "--templated",
+        action="store_true",
+        help="Use the Phase-2 templated pipeline (RAGChain.query_templated) instead of the legacy generic prompt. Ignored with --baseline.",
+    )
 
     # Interactive
     ia = subparsers.add_parser("interactive", help="Interactive query session")
