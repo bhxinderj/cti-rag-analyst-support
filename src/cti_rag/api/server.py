@@ -41,7 +41,10 @@ def _get_chain(mode: str) -> RAGChain:
 async def query(req: QueryRequest):
     chain = _get_chain(req.mode)
     try:
-        response = await asyncio.to_thread(chain.query, req.question)
+        if req.templated:
+            response = await asyncio.to_thread(chain.query_templated, req.question)
+        else:
+            response = await asyncio.to_thread(chain.query, req.question)
     except Exception as exc:
         logger.exception("Query failed")
         raise HTTPException(status_code=500, detail=str(exc))
@@ -70,6 +73,11 @@ async def query(req: QueryRequest):
         grounded=response.abstention_reason is None,
         abstention_reason=response.abstention_reason,
         grounding_warnings=response.grounding_warnings,
+        pipeline="templated" if req.templated else "legacy",
+        template=response.template or None,
+        routing_decision=response.routing_decision or None,
+        l1_block=response.l1_block or None,
+        l2_output=response.l2_output or None,
     )
 
 

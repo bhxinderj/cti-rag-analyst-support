@@ -31,12 +31,12 @@ def check_backend_health() -> dict | None:
     return None
 
 
-def query_rag(question: str, mode: str) -> dict | None:
+def query_rag(question: str, mode: str, templated: bool) -> dict | None:
     try:
         resp = requests.post(
             f"{API_URL}/api/query",
-            json={"question": question, "mode": mode},
-            timeout=120,
+            json={"question": question, "mode": mode, "templated": templated},
+            timeout=300,
         )
         resp.raise_for_status()
         return resp.json()
@@ -64,6 +64,17 @@ with st.sidebar:
         index=0,
         help="hybrid = BM25 + Vector + RRF fusion with cross-encoder reranking",
     )
+    pipeline_choice = st.radio(
+        "Pipeline",
+        options=["Templated (Phase 2)", "Legacy (Phase 1)"],
+        index=0,
+        help=(
+            "Templated = Router + Fact Bundle + L1/L2 task-specific templates "
+            "(VulnTriage / ThreatContext / CrossSourceCompare). "
+            "Legacy = single generic prompt."
+        ),
+    )
+    templated = pipeline_choice.startswith("Templated")
 
     st.divider()
     st.header("Backend Status")
@@ -81,6 +92,13 @@ def _render_sources(sources: list[dict], meta: dict):
     cited = [s for s in sources if s.get("cited_in_answer")]
     uncited = [s for s in sources if not s.get("cited_in_answer")]
 
+    pipeline = meta.get("pipeline", "legacy")
+    template = meta.get("template")
+    pipeline_label = f"Pipeline: **{pipeline}**"
+    if template:
+        pipeline_label += f" · Template: **{template}**"
+    st.caption(pipeline_label)
+
     timing = (
         f"Retrieval: {meta.get('retrieval_time_ms', 0):.0f}ms · "
         f"Generation: {meta.get('generation_time_ms', 0):.0f}ms · "
@@ -91,6 +109,11 @@ def _render_sources(sources: list[dict], meta: dict):
     if meta.get("grounding_warnings"):
         for warning in meta["grounding_warnings"]:
             st.warning(warning, icon=":warning:")
+
+    routing = meta.get("routing_decision")
+    if routing:
+        with st.expander("Routing decision", expanded=False):
+            st.json(routing)
 
     if cited:
         with st.expander(f"Cited Sources ({len(cited)})", expanded=True):
@@ -125,8 +148,13 @@ if question := st.chat_input("Ask a CTI question..."):
         st.markdown(question)
 
     with st.chat_message("assistant"):
-        with st.spinner("Retrieving and generating..."):
-            result = query_rag(question, mode)
+        spinner_label = (
+            "Retrieving, routing, and generating (templated)..."
+            if templated
+            else "Retrieving and generating..."
+        )
+        with st.spinner(spinner_label):
+            result = query_rag(question, mode, templated)
 
         if result:
             st.markdown(result["answer"])
@@ -136,6 +164,9 @@ if question := st.chat_input("Ask a CTI question..."):
                 "generation_time_ms": result["generation_time_ms"],
                 "total_time_ms": result["total_time_ms"],
                 "grounding_warnings": result.get("grounding_warnings", []),
+                "pipeline": result.get("pipeline", "legacy"),
+                "template": result.get("template"),
+                "routing_decision": result.get("routing_decision"),
             }
             _render_sources(result["sources"], meta)
 
