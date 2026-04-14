@@ -352,12 +352,15 @@ class RAGASEvaluator:
             [metric.name for metric in metrics],
         )
 
+        # ``run_config`` is set by ``__init__`` but some tests instantiate
+        # the evaluator via ``object.__new__`` to skip heavy setup — fall
+        # back to RAGAS defaults in that case.
         results = evaluate(
             dataset=dataset,
             metrics=metrics,
             llm=self.eval_llm,
             embeddings=self.eval_embeddings,
-            run_config=self.run_config,
+            run_config=getattr(self, "run_config", None),
         )
 
         ragas_records = _results_records(results)
