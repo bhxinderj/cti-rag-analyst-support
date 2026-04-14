@@ -38,17 +38,39 @@ queries:
 
   - id: vuln_003
     question: "Compare the severity and attack vectors of recent Microsoft Exchange Server vulnerabilities."
-    task_type: vulnerability_analysis
+    task_type: cross_source
     ground_truth: "Key Exchange vulnerabilities include ProxyLogon (CVE-2021-26855, CVSS 9.1, SSRF via CWE-918), ProxyShell (CVE-2021-34473, CVSS 9.1, SSRF via CWE-918), and ProxyNotShell (CVE-2022-41040, CVSS 8.8/CVE-2022-41082, CVSS 8.0). All are listed in CISA KEV as actively exploited with known ransomware campaign use."
     difficulty: complex
     # Verified: NVD ✓ (scores: 9.1, 9.1, 8.8, 8.0) | KEV ✓ (all ransomware: Known)
+    # task_type revised from vulnerability_analysis to cross_source during
+    # router-validation review: the question is explicitly comparative and
+    # spans multiple CVEs, which matches CrossSourceCompare semantics.
 
   - id: vuln_004
     question: "What is CVE-2023-4966 (Citrix Bleed) and how severe is it?"
     task_type: vulnerability_analysis
-    ground_truth: "CVE-2023-4966 (Citrix Bleed) is a critical information disclosure vulnerability in Citrix NetScaler ADC and NetScaler Gateway (CWE-119, CVSS 9.4). It allows unauthenticated attackers to extract sensitive information including session tokens from device memory. It is listed in CISA KEV as actively exploited with known ransomware campaign use."
+    template_expected: VulnTriage
+    ground_truth: "CVE-2023-4966 (Citrix Bleed) is a high-severity information disclosure vulnerability in Citrix NetScaler ADC and NetScaler Gateway (CWE-119, NVD CVSS 7.5; Citrix vendor advisory scored it 9.4). It allows unauthenticated attackers to extract sensitive information including session tokens from device memory. It is listed in CISA KEV as actively exploited with known ransomware campaign use (LockBit 3.0)."
     difficulty: simple
-    # Verified: NVD ✓ (CVSS 9.4, CWE-119) | KEV ✓ (ransomware: Known)
+    required_fields:
+      cve_id: "CVE-2023-4966"
+      cvss_score: 7.5
+      cwe_ids: ["CWE-119"]
+      affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+      kev_listed: true
+      ransomware_use: true
+      triage_signal: "high"
+      mitigations_min_count: 1
+    # Verified against Setup-B index: NVD ✓ (CVSS 7.5, CWE-119) | KEV ✓ (ransomware: Known).
+    # Annotation note (2026-04-14): NVD CVSS-3.1 calculates 7.5 for vector
+    # C:H/I:N/A:N. The Citrix vendor advisory CTX579459 scored this issue
+    # 9.4 using a different weighting. Prior revisions of this annotation
+    # used 9.4 / "critical"; the L1 smoke test surfaced the mismatch. The
+    # divergence itself is a thesis finding (Chapter 5 Discussion: "when
+    # deterministic severity rules disagree with vendor scoring, the
+    # triage card must surface the inconsistency, not hide it"). See
+    # FactBundle.inconsistencies for the cross-source hook.
+    # Calibration case: anchors VulnTriage field-coverage schema.
 
   - id: vuln_005
     question: "Describe the Ivanti Connect Secure vulnerabilities CVE-2023-46805 and CVE-2024-21887 and their combined impact."
@@ -129,9 +151,16 @@ queries:
   - id: ttp_001
     question: "What initial access techniques (MITRE ATT&CK) are commonly associated with the exploitation of public-facing application vulnerabilities?"
     task_type: ttp_correlation
+    template_expected: ThreatContext
     ground_truth: "Exploitation of public-facing applications maps to MITRE ATT&CK technique T1190 under Initial Access (TA0001). This technique is commonly used by threat actors leveraging vulnerabilities in web servers, VPN appliances, and email servers for initial access."
     difficulty: moderate
+    required_fields:
+      attack_techniques: ["T1190"]
+      attack_tactic: ["TA0001", "Initial Access"]
+      associated_cves_min_count: 1
+      detection_or_mitigation_min_count: 1
     # Verified: MISP ✓ (T1190 in 10 events, most frequent technique)
+    # Calibration case: anchors ThreatContext field-coverage schema
 
   - id: ttp_002
     question: "Which CVEs disclosed between 2021 and 2024 are associated with lateral movement techniques in MITRE ATT&CK?"
@@ -195,9 +224,15 @@ queries:
   - id: cross_003
     question: "Which vulnerabilities from 2023-2024 are present in both NVD and CISA KEV, and what are their severity ratings and exploitation status?"
     task_type: cross_source
+    template_expected: CrossSourceCompare
     ground_truth: "Recent high-profile examples include CVE-2023-22515 (Atlassian Confluence, CVSS 9.8, actively exploited), CVE-2023-34362 (MOVEit Transfer, CVSS 9.8, ransomware use), and CVE-2023-3519 (Citrix NetScaler, CVSS 9.8, ransomware use). All are listed in CISA KEV as actively exploited with NVD providing detailed CVSS scoring."
     difficulty: complex
+    required_fields:
+      expected_entities: ["CVE-2023-22515", "CVE-2023-34362", "CVE-2023-3519"]
+      expected_entities_min_matches: 2
+      cross_source_facts_min_count: 2
     # Verified: NVD ✓ (all CVSS 9.8) | KEV ✓ (all ransomware: Known)
+    # Calibration case: anchors CrossSourceCompare field-coverage schema
 
   - id: cross_004
     question: "What Fortinet vulnerabilities appear across NVD, CISA KEV, and MISP, and how do these sources complement each other?"
