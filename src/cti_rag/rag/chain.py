@@ -45,6 +45,11 @@ _GROUNDING_STOPWORDS = {
     "there", "these", "than", "into", "across", "query", "question",
 }
 _CITATION_BLOCK_RE = re.compile(r"\[(?:Source|Sources)\s*:\s*([^\]]+)\]")
+# Short-form citation: ``[doc_id]`` without the ``Source:`` prefix.  Accepted
+# only when the bracketed text resolves to a known citation label or doc_id,
+# so plain entity references like ``[CVE-2024-3094]`` are not misread as
+# sources.
+_SHORT_CITATION_RE = re.compile(r"\[([^\[\]\s][^\[\]]*?)\]")
 _ABSTENTION_SUMMARY = "Insufficient evidence in the retrieved context to answer this question."
 _SUMMARY_PREFIX = "Summary:"
 _WHY_SECTION_HEADER = "Why it matters:"
@@ -134,17 +139,35 @@ def _assess_context_support(question: str, chunk_dicts: list[dict]) -> str | Non
     return None
 
 
-def _build_citation_alias_map(source_documents: list[dict]) -> dict[str, str]:
-    """Map allowed citation aliases back to their canonical citation label."""
+def _build_citation_alias_map(
+    source_documents: list[dict],
+) -> tuple[dict[str, str], dict[str, str], dict[int, str]]:
+    """Map allowed citation aliases back to their canonical citation label.
+
+    In addition to exact aliases (canonical, doc_id, title), each ``doc_id``
+    is stored in a secondary set so that :func:`_resolve_citation` can fall
+    back to substring matching when the LLM embeds a ``doc_id`` inside a
+    longer free-text citation.  A position map (1-indexed) is also returned
+    so that numeric citations like ``[1]`` or ``[2]`` — referring to the
+    Nth chunk shown in the prompt context — can be resolved.
+    """
     alias_map: dict[str, str] = {}
     ambiguous_aliases: set[str] = set()
+    doc_id_map: dict[str, str] = {}
+    position_map: dict[int, str] = {}
 
-    for doc in source_documents:
+    for index, doc in enumerate(source_documents, start=1):
         canonical = doc.get("citation_label", "").strip()
         if not canonical:
             continue
 
-        for alias in (canonical, doc.get("doc_id", ""), doc.get("title", "")):
+        position_map[index] = canonical
+
+        doc_id = doc.get("doc_id", "").strip()
+        if doc_id:
+            doc_id_map[doc_id.lower()] = canonical
+
+        for alias in (canonical, doc_id, doc.get("title", "")):
             normalized = _normalize_alias(alias)
             if not normalized:
                 continue
@@ -159,36 +182,98 @@ def _build_citation_alias_map(source_documents: list[dict]) -> dict[str, str]:
     for alias in ambiguous_aliases:
         alias_map.pop(alias, None)
 
-    return alias_map
+    return alias_map, doc_id_map, position_map
+
+
+def _resolve_citation(
+    candidate: str,
+    alias_map: dict[str, str],
+    doc_id_map: dict[str, str],
+    position_map: dict[int, str] | None = None,
+) -> str | None:
+    """Resolve a single citation candidate to its canonical label.
+
+    1. Exact alias lookup (fast path).
+    2. Substring fallback: if the candidate contains a known ``doc_id``,
+       accept it.  This covers cases where the LLM wraps the doc_id in
+       extra text (e.g. ``"NVD entry nvd_CVE-2024-3094"``).
+    3. Numeric fallback: if the candidate is a pure integer referring to
+       a valid context position, resolve to that chunk's canonical label.
+       Llama-8B occasionally cites context chunks by their ``[N]`` index
+       (the numbered list used in :func:`format_context`).
+    """
+    canonical = alias_map.get(_normalize_alias(candidate))
+    if canonical:
+        return canonical
+
+    candidate_stripped = candidate.strip()
+    if position_map and candidate_stripped.isdigit():
+        try:
+            idx = int(candidate_stripped)
+        except ValueError:
+            idx = 0
+        if idx in position_map:
+            return position_map[idx]
+
+    candidate_lower = candidate.lower()
+    for doc_id_lower, canon in doc_id_map.items():
+        if doc_id_lower in candidate_lower:
+            return canon
+
+    return None
 
 
 def _normalize_response_citations(answer: str, source_documents: list[dict]) -> str:
     """
     Normalize citation blocks to the canonical [Source: <citation_label>] form.
 
-    Invalid or ambiguous citation aliases are removed rather than preserved.
+    Handles two bracket styles:
+      * ``[Source: <label>]`` — the prescribed form from the system prompt.
+      * ``[<label>]`` — short form the model frequently uses with terse
+        ``doc_id``-style labels.  Accepted only when the bracketed text
+        resolves to a known source, so inline entity references like
+        ``[CVE-2024-3094]`` embedded in prose do not get rewritten.
+
+    Unresolvable individual citations are silently dropped; valid citations
+    in the same block are preserved.
     """
-    alias_map = _build_citation_alias_map(source_documents)
-    if not alias_map:
+    alias_map, doc_id_map, position_map = _build_citation_alias_map(source_documents)
+    if not alias_map and not doc_id_map and not position_map:
         return answer
 
-    def replace(match: re.Match) -> str:
-        raw_value = match.group(1).strip()
+    def resolve_block(raw_value: str) -> list[str]:
         candidates = [raw_value]
         if ";" in raw_value:
             candidates = [part.strip() for part in raw_value.split(";") if part.strip()]
+        elif "," in raw_value:
+            candidates = [part.strip() for part in raw_value.split(",") if part.strip()]
 
         canonical_labels: list[str] = []
         for candidate in candidates:
-            canonical = alias_map.get(_normalize_alias(candidate))
-            if not canonical:
-                return ""
-            if canonical not in canonical_labels:
+            canonical = _resolve_citation(candidate, alias_map, doc_id_map, position_map)
+            if canonical and canonical not in canonical_labels:
                 canonical_labels.append(canonical)
+        return canonical_labels
 
+    def replace_source(match: re.Match) -> str:
+        canonical_labels = resolve_block(match.group(1).strip())
+        if not canonical_labels:
+            return ""
         return " ".join(f"[Source: {label}]" for label in canonical_labels)
 
-    normalized = _CITATION_BLOCK_RE.sub(replace, answer)
+    def replace_short(match: re.Match) -> str:
+        raw_value = match.group(1).strip()
+        # Skip blocks that already use the ``Source:`` prefix — those were
+        # handled in the first pass.
+        if re.match(r"(?i)^sources?\s*:", raw_value):
+            return match.group(0)
+        canonical_labels = resolve_block(raw_value)
+        if not canonical_labels:
+            return match.group(0)  # keep original text untouched
+        return " ".join(f"[Source: {label}]" for label in canonical_labels)
+
+    normalized = _CITATION_BLOCK_RE.sub(replace_source, answer)
+    normalized = _SHORT_CITATION_RE.sub(replace_short, normalized)
     normalized = re.sub(r"[ \t]+\n", "\n", normalized)
     normalized = re.sub(r"\n{3,}", "\n\n", normalized)
     return normalized.strip()
@@ -432,6 +517,7 @@ class RAGResponse:
     abstention_reason: str | None = None
     grounding_warnings: list[str] = field(default_factory=list)
     retrieval_trace: dict = field(default_factory=dict)
+    raw_llm_output: str = ""
 
 
 class RAGChain:
@@ -517,7 +603,8 @@ class RAGChain:
         generation_start = time.time()
         response = self.llm.invoke(messages)
         generation_time = (time.time() - generation_start) * 1000
-        answer = _normalize_response_citations(response.content, chunk_dicts)
+        raw_llm_output = response.content
+        answer = _normalize_response_citations(raw_llm_output, chunk_dicts)
         answer = _enforce_summary_grounding(answer)
         answer = _enforce_why_grounding(answer)
         answer = _enforce_evidence_grounding(answer)
@@ -541,6 +628,7 @@ class RAGChain:
                 prompt_context=context_str,
                 abstention_reason=abstention_reason,
                 retrieval_trace=dict(getattr(self.retriever, "last_trace", {})),
+                raw_llm_output=raw_llm_output,
             )
 
         if not compliance["has_evidence_section"] or compliance["evidence_cited_lines"] == 0:
@@ -573,6 +661,7 @@ class RAGChain:
             prompt_context=context_str,
             grounding_warnings=grounding_warnings,
             retrieval_trace=dict(getattr(self.retriever, "last_trace", {})),
+            raw_llm_output=raw_llm_output,
         )
 
     def query_baseline(self, question: str, snapshot_date: str | None = None) -> RAGResponse:

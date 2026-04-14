@@ -242,6 +242,48 @@ class HybridRetriever:
         text_tokens = set(self._tokenize_cti(text))
         return sum(1 for entity in query_entities if entity in text_tokens)
 
+    def _chunk_matches_query_entities(self, chunk: RetrievedChunk, query_entities: list[str]) -> bool:
+        """Check whether a retrieved chunk contains any exact CTI identifier from the query."""
+        if not query_entities:
+            return False
+
+        haystack = " ".join(
+            str(part).lower()
+            for part in (chunk.doc_id, chunk.metadata.get("title", ""), chunk.content)
+            if part
+        )
+        return any(entity in haystack for entity in query_entities)
+
+    def _preserve_query_entity_hits(
+        self,
+        fused: list[RetrievedChunk],
+        query_entities: list[str],
+        *candidate_lists: list[RetrievedChunk],
+    ) -> list[RetrievedChunk]:
+        """
+        Ensure exact entity matches survive into reranking even when RRF trims them out.
+
+        The original fused order stays intact; preserved hits are appended only when they
+        were retrieved upstream but excluded from the fused top-k candidate set.
+        """
+        if not query_entities:
+            return fused
+
+        preserved = list(fused)
+        seen_doc_ids = {chunk.doc_id for chunk in preserved}
+
+        for candidates in candidate_lists:
+            for chunk in candidates:
+                if chunk.doc_id in seen_doc_ids:
+                    continue
+                if not self._chunk_matches_query_entities(chunk, query_entities):
+                    continue
+                chunk.rank = len(preserved)
+                preserved.append(chunk)
+                seen_doc_ids.add(chunk.doc_id)
+
+        return preserved
+
     @staticmethod
     def _infer_source_type(doc_id: str) -> str:
         """Infer source type for BM25 results, which do not carry Chroma metadata."""
@@ -411,10 +453,12 @@ class HybridRetriever:
             vector_results = self._search_vector(query, self.vector_top_k)
             trace_stages["bm25"] = [self._serialize_trace_chunk(chunk) for chunk in bm25_results]
             trace_stages["vector"] = [self._serialize_trace_chunk(chunk) for chunk in vector_results]
+            query_entities = self._extract_query_entities(query)
 
             logger.debug(f"BM25: {len(bm25_results)} results, Vector: {len(vector_results)} results")
 
             fused = self._reciprocal_rank_fusion(bm25_results, vector_results)
+            fused = self._preserve_query_entity_hits(fused, query_entities, bm25_results, vector_results)
             trace_stages["fused"] = [self._serialize_trace_chunk(chunk) for chunk in fused]
             results = self._rerank(query, fused)
             trace_stages["reranked"] = [self._serialize_trace_chunk(chunk) for chunk in results]

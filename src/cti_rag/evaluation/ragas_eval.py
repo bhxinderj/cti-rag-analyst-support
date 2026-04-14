@@ -6,6 +6,8 @@ Evaluates the RAG pipeline with RAGAS and stores trace-rich run artifacts.
 
 import json
 import logging
+import math
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -24,6 +26,7 @@ from ragas.metrics import (
 )
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 import torch
 
 from ..rag.chain import RAGResponse
@@ -79,14 +82,22 @@ def _results_records(results) -> list[dict]:
 
 
 def _aggregate_metric_means(records: list[dict], metrics: list) -> dict[str, float]:
-    """Aggregate mean metric values from per-sample result records."""
+    """Aggregate mean metric values from per-sample result records.
+
+    NaN values (produced when the eval LLM fails to parse a single sample)
+    are excluded so they do not propagate into the aggregate mean.
+    """
     aggregated: dict[str, float] = {}
     for metric in metrics:
-        values = [
-            float(record[metric.name])
-            for record in records
-            if isinstance(record.get(metric.name), (int, float))
-        ]
+        values: list[float] = []
+        for record in records:
+            raw = record.get(metric.name)
+            if not isinstance(raw, (int, float)):
+                continue
+            value = float(raw)
+            if math.isnan(value):
+                continue
+            values.append(value)
         if values:
             aggregated[metric.name] = sum(values) / len(values)
     return aggregated
@@ -143,20 +154,67 @@ class RAGASEvaluator:
     Evaluates RAG pipeline outputs using RAGAS metrics.
     """
 
+    @staticmethod
+    def _build_eval_llm(provider: str, eval_config: dict, ollama_base_url: str):
+        """Instantiate the configured evaluation LLM.
+
+        Returns a ``(model_label, wrapped_llm)`` tuple.  The label is used
+        for logging and artifact metadata so runs can be identified later.
+        """
+        if provider == "openai":
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                raise RuntimeError(
+                    "eval_llm_provider=openai requires the OPENAI_API_KEY environment variable."
+                )
+            model_name = eval_config.get("eval_llm_openai", "gpt-4o-mini")
+            llm = ChatOpenAI(
+                model=model_name,
+                api_key=api_key,
+                temperature=0.0,
+                timeout=120,
+                max_retries=4,
+            )
+            return f"openai:{model_name}", LangchainLLMWrapper(llm)
+
+        if provider == "openrouter":
+            api_key = os.environ.get("OPENROUTER_API_KEY")
+            if not api_key:
+                raise RuntimeError(
+                    "eval_llm_provider=openrouter requires the OPENROUTER_API_KEY environment variable."
+                )
+            model_name = eval_config.get("eval_llm_openrouter", "openai/gpt-4o-mini")
+            llm = ChatOpenAI(
+                model=model_name,
+                api_key=api_key,
+                base_url="https://openrouter.ai/api/v1",
+                temperature=0.0,
+                timeout=120,
+                max_retries=4,
+            )
+            return f"openrouter:{model_name}", LangchainLLMWrapper(llm)
+
+        # Default: local Ollama
+        model_name = eval_config.get("eval_llm", "qwen2.5:7b-instruct")
+        llm = ChatOllama(
+            model=model_name,
+            base_url=ollama_base_url,
+            temperature=0.0,
+            timeout=600,
+        )
+        return f"ollama:{model_name}", LangchainLLMWrapper(llm)
+
     def __init__(self):
         config = load_config()
         eval_config = config["evaluation"]["ragas"]
         llm_config = config["llm"]
         emb_config = config["embedding"]
 
-        eval_model = eval_config.get("eval_llm", llm_config["model_name"])
-        self.eval_llm = LangchainLLMWrapper(
-            ChatOllama(
-                model=eval_model,
-                base_url=llm_config["base_url"],
-                temperature=0.0,
-                timeout=600,  # Local Ollama needs generous timeout
-            )
+        provider = eval_config.get("eval_llm_provider", "ollama").lower()
+        eval_model, self.eval_llm = self._build_eval_llm(
+            provider=provider,
+            eval_config=eval_config,
+            ollama_base_url=llm_config["base_url"],
         )
 
         self.eval_embeddings = LangchainEmbeddingsWrapper(
@@ -183,15 +241,24 @@ class RAGASEvaluator:
             answer_correctness,
         ]
 
-        # Local Ollama models need longer timeouts and fewer parallel workers
-        # than hosted API endpoints. Defaults: timeout=180, max_workers=16.
-        self.run_config = RunConfig(
-            timeout=600,
-            max_workers=2,
-            max_retries=6,
-            max_wait=180,
-        )
+        # Local Ollama needs conservative concurrency; hosted APIs can
+        # handle the RAGAS defaults (much more parallelism).
+        if provider == "ollama":
+            self.run_config = RunConfig(
+                timeout=600,
+                max_workers=2,
+                max_retries=10,
+                max_wait=180,
+            )
+        else:
+            self.run_config = RunConfig(
+                timeout=180,
+                max_workers=8,
+                max_retries=6,
+                max_wait=60,
+            )
 
+        self.eval_model_label = eval_model
         logger.info("RAGASEvaluator initialized (eval_llm=%s)", eval_model)
 
         self.results_dir = get_project_root() / config["evaluation"]["results_dir"]
@@ -221,6 +288,7 @@ class RAGASEvaluator:
             sample = {
                 "question": response.query,
                 "answer": response.answer,
+                "raw_llm_output": getattr(response, "raw_llm_output", ""),
                 "ground_truth": ground_truths[index],
                 "retrieval_mode": response.retrieval_mode,
                 "retrieval_time_ms": response.retrieval_time_ms,
@@ -317,6 +385,8 @@ class RAGASEvaluator:
             else rag_responses[0].retrieval_mode if rag_responses else "unknown"
         )
         sample_metadata = sample_metadata or query_metadata or []
+        run_metadata = dict(run_metadata or {})
+        run_metadata.setdefault("eval_llm", getattr(self, "eval_model_label", "unknown"))
 
         eval_data = {
             "question": [response.query for response in rag_responses],
@@ -333,16 +403,28 @@ class RAGASEvaluator:
             [metric.name for metric in metrics],
         )
 
-        results = evaluate(
-            dataset=dataset,
-            metrics=metrics,
-            llm=self.eval_llm,
-            embeddings=self.eval_embeddings,
-            run_config=self.run_config,
-        )
+        ragas_records: list[dict] = []
+        aggregated_metrics: dict[str, float] = {}
+        metrics_used = [metric.name for metric in metrics]
+        result_prefix = "ragas"
 
-        ragas_records = _results_records(results)
-        aggregated_metrics = _aggregate_metric_means(ragas_records, metrics)
+        try:
+            results = evaluate(
+                dataset=dataset,
+                metrics=metrics,
+                llm=self.eval_llm,
+                embeddings=self.eval_embeddings,
+                run_config=self.run_config,
+                raise_exceptions=False,
+            )
+
+            ragas_records = _results_records(results)
+            aggregated_metrics = _aggregate_metric_means(ragas_records, metrics)
+        except Exception:
+            logger.exception(
+                "RAGAS evaluate() crashed — saving retrieval artifacts without metric scores."
+            )
+            result_prefix = "ragas_partial"
 
         return self.save_run_artifacts(
             responses=rag_responses,
@@ -351,8 +433,8 @@ class RAGASEvaluator:
             sample_ids=sample_ids,
             sample_metadata=sample_metadata,
             run_metadata=run_metadata,
-            result_prefix="ragas",
-            metrics_used=[metric.name for metric in metrics],
+            result_prefix=result_prefix,
+            metrics_used=metrics_used,
             metrics=aggregated_metrics,
             ragas_records=ragas_records,
             is_baseline=is_baseline,
