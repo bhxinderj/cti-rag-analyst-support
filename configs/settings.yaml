@@ -34,7 +34,7 @@ retrieval:
   fusion:
     method: "rrf"            # Reciprocal Rank Fusion
     rrf_k: 60                # Standard RRF constant
-    top_k: 10                # After fusion, before reranking
+    top_k: 20                # After fusion, before reranking; keep hybrid candidate pool symmetric with BM25/vector top_k
   reranker:
     model_name: "cross-encoder/ms-marco-MiniLM-L-6-v2"
     top_k: 5                 # Final context chunks for LLM
@@ -75,7 +75,15 @@ evaluation:
       - answer_correctness
       - context_precision
       - context_recall
-    eval_llm: "qwen2.5:7b-instruct"  # Separate model to avoid same-model eval bias
+    eval_llm: "qwen2.5:7b-instruct"   # Used when eval_llm_provider=ollama
+    # Provider switch for the RAGAS evaluation LLM.
+    # Options:
+    #   ollama      — local Ollama model (eval_llm above)
+    #   openai      — OpenAI API (needs OPENAI_API_KEY), uses eval_llm_openai
+    #   openrouter  — OpenRouter API (needs OPENROUTER_API_KEY), uses eval_llm_openrouter
+    eval_llm_provider: "openrouter"
+    eval_llm_openai: "gpt-4o-mini"
+    eval_llm_openrouter: "openai/gpt-4o-mini"
   query_set_path: "configs/eval_queries.yaml"
   results_dir: "data/evaluation_results"
 
