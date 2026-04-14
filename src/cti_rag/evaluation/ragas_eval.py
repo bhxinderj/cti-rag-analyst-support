@@ -6,7 +6,6 @@ Evaluates the RAG pipeline with RAGAS and stores trace-rich run artifacts.
 
 import json
 import logging
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -24,8 +23,6 @@ from ragas.metrics import (
     faithfulness,
 )
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
 import torch
 
 from ..rag.chain import RAGResponse
@@ -35,6 +32,7 @@ from ..utils.config import (
     require_local_hf_snapshot,
     suppress_noisy_third_party_logs,
 )
+from ._judge_llm import build_judge_llm
 
 logger = logging.getLogger(__name__)
 suppress_noisy_third_party_logs()
@@ -147,53 +145,24 @@ class RAGASEvaluator:
 
     @staticmethod
     def _build_eval_llm(provider: str, eval_config: dict, ollama_base_url: str):
-        """Instantiate the configured evaluation LLM.
+        """Instantiate the configured RAGAS evaluation LLM.
 
-        Returns a ``(model_label, wrapped_llm)`` tuple. The label is used
-        for logging and artifact metadata so runs can be identified later.
+        Delegates to :func:`build_judge_llm` and wraps the result in
+        ``LangchainLLMWrapper`` so RAGAS can call it. Ollama callers need
+        the longer 600 s timeout because RAGAS issues many judgments
+        concurrently — that is hard-coded here and should not be tuned
+        down without also reducing ``RunConfig.max_workers``.
+
+        Kept as a static method for backwards compatibility with callers
+        and tests that patch ``RAGASEvaluator._build_eval_llm``.
         """
-        if provider == "openai":
-            api_key = os.environ.get("OPENAI_API_KEY")
-            if not api_key:
-                raise RuntimeError(
-                    "eval_llm_provider=openai requires the OPENAI_API_KEY environment variable."
-                )
-            model_name = eval_config.get("eval_llm_openai", "gpt-4o-mini")
-            llm = ChatOpenAI(
-                model=model_name,
-                api_key=api_key,
-                temperature=0.0,
-                timeout=120,
-                max_retries=4,
-            )
-            return f"openai:{model_name}", LangchainLLMWrapper(llm)
-
-        if provider == "openrouter":
-            api_key = os.environ.get("OPENROUTER_API_KEY")
-            if not api_key:
-                raise RuntimeError(
-                    "eval_llm_provider=openrouter requires the OPENROUTER_API_KEY environment variable."
-                )
-            model_name = eval_config.get("eval_llm_openrouter", "openai/gpt-4o-mini")
-            llm = ChatOpenAI(
-                model=model_name,
-                api_key=api_key,
-                base_url="https://openrouter.ai/api/v1",
-                temperature=0.0,
-                timeout=120,
-                max_retries=4,
-            )
-            return f"openrouter:{model_name}", LangchainLLMWrapper(llm)
-
-        # Default: local Ollama
-        model_name = eval_config.get("eval_llm", "qwen2.5:7b-instruct")
-        llm = ChatOllama(
-            model=model_name,
-            base_url=ollama_base_url,
-            temperature=0.0,
+        model_label, raw_llm = build_judge_llm(
+            provider=provider,
+            eval_config=eval_config,
+            ollama_base_url=ollama_base_url,
             timeout=600,
         )
-        return f"ollama:{model_name}", LangchainLLMWrapper(llm)
+        return model_label, LangchainLLMWrapper(raw_llm)
 
     def __init__(self):
         config = load_config()
