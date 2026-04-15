@@ -139,6 +139,44 @@ def _assess_context_support(question: str, chunk_dicts: list[dict]) -> str | Non
     return None
 
 
+_CTI_ID_IN_ALIAS_RE = re.compile(
+    r"(CVE-\d{4}-\d{4,}|CWE-\d+|T\d{4}(?:\.\d{3})?|TA\d{4}|[GSM]\d{4}|DS\d{4}|DET\d{4})",
+    flags=re.IGNORECASE,
+)
+# Tokens below this length are too noisy for fuzzy matching ("the", "log4j"
+# is fine, "nvd" is not — it matches every nvd_* chunk).
+_FUZZY_MIN_TOKEN_LEN = 5
+
+
+def _alias_variants(text: str) -> list[str]:
+    """Expand a raw alias string into additional normalized variants.
+
+    The retrieval layer labels chunks like ``"Log4Shell | nvd_CVE-2021-44228"``
+    or ``"nvd_CVE-2024-3094"``; LLMs frequently cite them as plain
+    ``CVE-2021-44228``, which then fails the strict alias_map lookup and
+    gets stripped. This helper pulls out CTI identifiers and bare doc-id
+    suffixes so those forms still resolve deterministically.
+    """
+    variants: list[str] = []
+    stripped = (text or "").strip()
+    if not stripped:
+        return variants
+
+    variants.append(stripped)
+
+    # Bare doc_id without source-type prefix, e.g. "nvd_CVE-2024-3094" -> "CVE-2024-3094".
+    if "_" in stripped:
+        suffix = stripped.split("_", 1)[1].strip()
+        if suffix:
+            variants.append(suffix)
+
+    # Extract embedded CTI identifiers (CVE, CWE, ATT&CK technique/tactic, ...).
+    for match in _CTI_ID_IN_ALIAS_RE.finditer(stripped):
+        variants.append(match.group(1))
+
+    return variants
+
+
 def _build_citation_alias_map(source_documents: list[dict]) -> dict[str, str]:
     """Map allowed citation aliases back to their canonical citation label."""
     alias_map: dict[str, str] = {}
@@ -149,7 +187,12 @@ def _build_citation_alias_map(source_documents: list[dict]) -> dict[str, str]:
         if not canonical:
             continue
 
-        for alias in (canonical, doc.get("doc_id", ""), doc.get("title", "")):
+        raw_sources = (canonical, doc.get("doc_id", ""), doc.get("title", ""))
+        expanded: list[str] = []
+        for raw in raw_sources:
+            expanded.extend(_alias_variants(raw))
+
+        for alias in expanded:
             normalized = _normalize_alias(alias)
             if not normalized:
                 continue
@@ -167,14 +210,84 @@ def _build_citation_alias_map(source_documents: list[dict]) -> dict[str, str]:
     return alias_map
 
 
+def _fuzzy_resolve_alias(candidate: str, source_documents: list[dict]) -> str | None:
+    """Best-effort fallback when the strict alias map misses.
+
+    Strategy, ordered by specificity (first deterministic hit wins):
+
+    1. Substring match of ``candidate`` inside any canonical citation
+       label or doc_id — recovers cases like ``"Log4Shell"`` cited when
+       the canonical label is ``"Log4Shell CVE | nvd_CVE-2021-44228"``.
+    2. Token overlap with the chunk title: the candidate must contribute
+       at least two substantive tokens (length >= ``_FUZZY_MIN_TOKEN_LEN``)
+       that also appear in the title.
+
+    Returns ``None`` when no chunk is unambiguously identified.
+    """
+    needle = _normalize_alias(candidate)
+    if not needle:
+        return None
+
+    # Stage 1: substring match on canonical label or doc_id.
+    substring_hits: list[str] = []
+    for doc in source_documents:
+        canonical = doc.get("citation_label", "").strip()
+        if not canonical:
+            continue
+        haystacks = [
+            _normalize_alias(canonical),
+            _normalize_alias(doc.get("doc_id", "")),
+        ]
+        if any(needle and needle in h for h in haystacks):
+            if canonical not in substring_hits:
+                substring_hits.append(canonical)
+    if len(substring_hits) == 1:
+        return substring_hits[0]
+
+    # Stage 2: token overlap with title.
+    candidate_tokens = {
+        tok for tok in re.split(r"[^a-z0-9]+", needle)
+        if len(tok) >= _FUZZY_MIN_TOKEN_LEN
+    }
+    if len(candidate_tokens) < 2:
+        return None
+
+    title_hits: list[str] = []
+    for doc in source_documents:
+        canonical = doc.get("citation_label", "").strip()
+        title = _normalize_alias(doc.get("title", ""))
+        if not canonical or not title:
+            continue
+        title_tokens = {
+            tok for tok in re.split(r"[^a-z0-9]+", title)
+            if len(tok) >= _FUZZY_MIN_TOKEN_LEN
+        }
+        if len(candidate_tokens & title_tokens) >= 2 and canonical not in title_hits:
+            title_hits.append(canonical)
+    if len(title_hits) == 1:
+        return title_hits[0]
+
+    return None
+
+
 def _normalize_response_citations(answer: str, source_documents: list[dict]) -> str:
     """
     Normalize citation blocks to the canonical [Source: <citation_label>] form.
 
-    Invalid or ambiguous citation aliases are removed rather than preserved.
+    Resolution order per citation candidate:
+      1. Exact alias-map lookup (canonical labels, doc_ids, titles, and
+         their :func:`_alias_variants` expansions).
+      2. :func:`_fuzzy_resolve_alias` fallback — substring match against
+         canonical label / doc_id, then >=2-token overlap with the title.
+
+    Only candidates that resolve to nothing after both stages are
+    stripped. This is deliberately more permissive than the previous
+    behaviour (strict-only stripping), which silently dropped valid
+    citations when the LLM emitted a close-but-not-exact label —
+    the dominant cause of the Phase-2 citation-coverage regression.
     """
     alias_map = _build_citation_alias_map(source_documents)
-    if not alias_map:
+    if not alias_map and not source_documents:
         return answer
 
     def replace(match: re.Match) -> str:
@@ -186,6 +299,8 @@ def _normalize_response_citations(answer: str, source_documents: list[dict]) -> 
         canonical_labels: list[str] = []
         for candidate in candidates:
             canonical = alias_map.get(_normalize_alias(candidate))
+            if not canonical:
+                canonical = _fuzzy_resolve_alias(candidate, source_documents)
             if not canonical:
                 return ""
             if canonical not in canonical_labels:
@@ -207,6 +322,25 @@ def _extract_citation_labels(answer: str) -> set[str]:
         if raw_value:
             labels.add(raw_value)
     return labels
+
+
+# NOTE (Step 12 first iteration, rolled back 2026-04-15):
+# An earlier revision of this module shipped an ``_enforce_l2_citations``
+# helper that rewrote uncited L2 claim lines into explicit grounding
+# notes, on the assumption that Phase-2's low citation_coverage (~0.09)
+# was caused by aggressive alias stripping. The live smoke on the three
+# calibrated queries (vuln_004, ttp_001, cross_003) surfaced a different
+# root cause: the local Ollama model rarely emits ``[Source: ...]`` at
+# all, preferring to dump chunk labels as a flat list under an
+# ``**Evidence**`` section. Line-level enforcement therefore replaced
+# *every* claim line with a grounding note and crashed the Rubric
+# Mean-Total from ~2.5 to 1.17 (traceability 0.33). The feature was
+# reverted; the real fix lives in the template prompts (one-shot
+# citation example, output-format constraints) and is scoped as a
+# follow-up iteration. Fuzzy alias resolution (_alias_variants /
+# _fuzzy_resolve_alias / _normalize_response_citations) and the
+# hardened system prompt survive from Step 12 — they are strictly
+# additive and do no harm when the LLM abstains from inline citations.
 
 
 def _enforce_summary_grounding(answer: str) -> str:
@@ -859,7 +993,10 @@ class RAGChain:
 
         # Citation normalization on the L2 output only. The L1 block is
         # deterministic markdown assembled from chunk metadata — it has no
-        # LLM-authored citations to normalize.
+        # LLM-authored citations to normalize. Patch 1 (Step 12) added
+        # fuzzy alias resolution so the normalizer now recovers bare CVE
+        # IDs, doc-id suffixes, and title-token matches instead of
+        # stripping them.
         l2_output = _normalize_response_citations(response.content, chunk_dicts)
         l2_output = re.sub(r"\n{3,}", "\n\n", l2_output).strip()
 
