@@ -22,7 +22,7 @@ retrieval:
   fusion:
     method: rrf
     rrf_k: 60
-    top_k: 10
+    top_k: 20
   reranker:
     model_name: cross-encoder/ms-marco-MiniLM-L-6-v2
     top_k: 5
