@@ -237,6 +237,90 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
 
 /* --- Reduce header top-padding a bit so the hero sits higher --- */
 .block-container { padding-top: 1.8rem !important; }
+
+/* --- Landing (welcome) screen --- */
+.landing-wrap {
+    max-width: 860px;
+    margin: 4vh auto 10px auto;
+    text-align: center;
+}
+.landing-badge {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #7dd3fc;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    font-weight: 600;
+    margin-bottom: 22px;
+}
+.landing-title {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0 0 10px 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #7dd3fc 60%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.landing-sub {
+    color: #94a3b8;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    max-width: 680px;
+    margin: 0 auto 30px auto;
+}
+.landing-sub strong { color: #cbd5e1; font-weight: 600; }
+.landing-examples-title {
+    color: #64748b;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    text-align: center;
+    margin: 28px 0 14px 0;
+}
+
+/* --- Template example cards on the landing screen --- */
+.example-card {
+    background: #111d38;
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: 14px;
+    padding: 18px 20px 14px 20px;
+    margin-bottom: 10px;
+    min-height: 170px;
+    box-shadow: 0 4px 14px rgba(2, 6, 23, 0.35);
+    transition: transform 0.1s ease, border-color 0.12s ease, box-shadow 0.15s ease;
+}
+.example-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.55);
+    box-shadow: 0 8px 26px rgba(14, 165, 233, 0.22);
+}
+.example-card .example-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+}
+.example-card .example-subtitle {
+    font-size: 0.78rem;
+    color: #7dd3fc;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+.example-card .example-question {
+    font-size: 0.88rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+    font-style: italic;
+}
 </style>
 """
 
@@ -272,16 +356,6 @@ def query_rag(question: str, mode: str, templated: bool) -> dict | None:
         st.error("Request timed out. The LLM may be overloaded.")
         return None
 
-
-# --- Hero header ---
-st.markdown(
-    """
-    <div class="hero">
-      <h1>🛡️ CTI-RAG Analyst Workbench</h1>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
 # --- Sidebar: Status & Settings ---
 with st.sidebar:
@@ -395,18 +469,12 @@ def _render_sources(sources: list[dict], meta: dict):
             st.markdown(html, unsafe_allow_html=True)
 
 
-# --- Chat History ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-        if msg["role"] == "assistant" and "sources" in msg:
-            _render_sources(msg["sources"], msg.get("meta", {}))
 
-# --- Chat Input ---
-if question := st.chat_input("Ask a CTI question…"):
+def _handle_query(question: str) -> None:
+    """Run a query through the backend and append the exchange to chat history."""
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
@@ -444,3 +512,84 @@ if question := st.chat_input("Ask a CTI question…"):
             fallback = "Failed to get a response from the backend."
             st.error(fallback)
             st.session_state.messages.append({"role": "assistant", "content": fallback})
+
+
+EXAMPLE_QUESTIONS = [
+    (
+        "🎯  VulnTriage",
+        "Vulnerability analysis with severity and exploitation status",
+        "What is CVE-2021-44228 and how has it been exploited?",
+    ),
+    (
+        "🧠  ThreatContext",
+        "Actor TTPs, IOCs, and ATT&CK technique mapping",
+        "What ATT&CK techniques and IOCs are associated with Volt Typhoon activity?",
+    ),
+    (
+        "🔀  CrossSourceCompare",
+        "Side-by-side view of the same CVE across NVD, KEV, and MISP",
+        "Compare how NVD, CISA KEV, and MISP describe CVE-2024-3094.",
+    ),
+]
+
+
+def _render_landing() -> None:
+    """Render the welcome / start screen when no chat history exists."""
+    st.markdown(
+        """
+        <div class="landing-wrap">
+          <div class="landing-badge">⬢ Prototype · Master's Thesis</div>
+          <div class="landing-title">🛡️ CTI-RAG Analyst Workbench</div>
+          <p class="landing-sub">
+            A <strong>retrieval-augmented generation</strong> prototype that grounds
+            answers for CTI analysts in a curated corpus of <strong>NVD, CISA KEV,
+            CISA Advisories, and MISP</strong> records. Your question is routed
+            through a deterministic <strong>Query Router</strong>, assembled into a
+            typed <strong>Fact Bundle</strong>, and rendered via a task-specific
+            template with an inline Severity Signal.
+          </p>
+          <div class="landing-examples-title">Try one of these to get started</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    cols = st.columns(3, gap="medium")
+    for col, (title, subtitle, question) in zip(cols, EXAMPLE_QUESTIONS):
+        with col:
+            st.markdown(
+                f"""
+                <div class="example-card">
+                  <div class="example-title">{title}</div>
+                  <div class="example-subtitle">{subtitle}</div>
+                  <div class="example-question">&ldquo;{question}&rdquo;</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "Try this →",
+                key=f"example_{title}",
+                use_container_width=True,
+            ):
+                st.session_state.pending_question = question
+                st.rerun()
+
+
+# --- Main: landing vs. chat history ---
+if not st.session_state.messages and "pending_question" not in st.session_state:
+    _render_landing()
+else:
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            if msg["role"] == "assistant" and "sources" in msg:
+                _render_sources(msg["sources"], msg.get("meta", {}))
+
+# A template-question button fired on the previous run — execute it now.
+if pending := st.session_state.pop("pending_question", None):
+    _handle_query(pending)
+
+# --- Chat Input ---
+if question := st.chat_input("Ask a CTI question…"):
+    _handle_query(question)
