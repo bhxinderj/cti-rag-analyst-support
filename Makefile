@@ -135,10 +135,24 @@ rubric: install
 	$(VENV_PY) main.py rubric --from-ragas-artifact $(ARTIFACT) $(if $(NAME),--name $(NAME),)
 
 api: install
-	$(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload
+	@if [ "$(SETUP)" = "default" ]; then \
+		$(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload; \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload; \
+	else \
+		echo "SETUP=$(SETUP) is not valid for make api. Use default, a, or b."; \
+		exit 1; \
+	fi
 
 ui: install
-	$(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501
+	@if [ "$(SETUP)" = "default" ]; then \
+		$(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501; \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501; \
+	else \
+		echo "SETUP=$(SETUP) is not valid for make ui. Use default, a, or b."; \
+		exit 1; \
+	fi
 
 thesis:
 	cd thesis && latexmk -pdf -interaction=nonstopmode -file-line-error -outdir=tex_build mt_bhinder.tex
