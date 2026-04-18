@@ -12,6 +12,7 @@ Design rationale:
 - `content` is the primary text field used for embedding generation
 """
 
+import json
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -165,7 +166,25 @@ class CTIDocument(BaseModel):
     def to_chromadb_metadata(self) -> dict:
         """
         Extract flat metadata dict for ChromaDB storage.
-        ChromaDB metadata values must be str, int, float, or bool.
+
+        ChromaDB metadata values must be scalars (str, int, float, bool);
+        lists and nested dicts are not supported. We flatten by:
+        - serializing list-of-primitives as comma-separated strings
+        - serializing IOCEntry lists as a JSON string plus a numeric count
+        - copying source-specific metadata sub-dict fields into top-level keys
+          when they are already scalar (strings/ints/floats/bools)
+        - deriving a few convenience fields (e.g. known_ransomware_bool) that
+          downstream triage/Severity-Signal logic needs deterministically.
+
+        Source-specific metadata key conventions (see parsers):
+          NVD:             references (list[str])
+          CISA KEV:        required_action, due_date, known_ransomware,
+                           date_added_to_kev
+          CISA Advisory:   advisory_id, section, plus raw_metadata scalars
+                           (e.g. source_url, archive_year)
+          MISP:            misp_event_id, misp_uuid, org, attribute_count,
+                           publish_timestamp, timestamp
+        These names currently do not collide with the top-level fields below.
         """
         meta = {
             "source": self.source.value,
@@ -179,6 +198,9 @@ class CTIDocument(BaseModel):
         if self.cvss_score is not None:
             meta["cvss_score"] = self.cvss_score
 
+        if self.cvss_vector:
+            meta["cvss_vector"] = self.cvss_vector
+
         if self.cve_ids:
             meta["cve_ids"] = ",".join(self.cve_ids)
 
@@ -190,5 +212,42 @@ class CTIDocument(BaseModel):
 
         if self.affected_products:
             meta["affected_products"] = ",".join(self.affected_products[:5])
+
+        # IoCs: serialize structured IOCEntry list for downstream rendering.
+        # iocs_json preserves type/value/category; iocs_count is a direct scalar.
+        if self.iocs:
+            meta["iocs_json"] = json.dumps(
+                [
+                    {"type": ioc.type, "value": ioc.value, "category": ioc.category}
+                    for ioc in self.iocs[:20]
+                ]
+            )
+            meta["iocs_count"] = len(self.iocs)
+
+        # Flatten source-specific metadata sub-dict into ChromaDB-compatible scalars.
+        # Empty strings, None, and unsupported nested structures are skipped.
+        for key, value in self.metadata.items():
+            if value is None or value == "":
+                continue
+            if isinstance(value, bool) or isinstance(value, (int, float)):
+                meta[key] = value
+            elif isinstance(value, str):
+                meta[key] = value
+            elif isinstance(value, list):
+                scalar_items = [str(v) for v in value if isinstance(v, (str, int, float))]
+                if scalar_items:
+                    meta[key] = ",".join(scalar_items[:10])
+            # Nested dicts are silently skipped; no current parser relies on this.
+
+        # Derived convenience field: deterministic ransomware-use flag for the
+        # Severity Signal / triage-card logic downstream. Only meaningful for KEV.
+        if self.source == CTISourceType.CISA_KEV:
+            # CISA KEV's knownRansomwareCampaignUse field uses the literal
+            # values "Known" / "Unknown" (upper-case K). Earlier versions
+            # of this loader checked for "yes" which never matched — that
+            # silently broke the triage-signal ransomware rule. Accept the
+            # canonical CISA spelling plus common synonyms defensively.
+            kev_ransomware = str(self.metadata.get("known_ransomware", "")).strip().lower()
+            meta["known_ransomware_bool"] = kev_ransomware in {"known", "yes", "true"}
 
         return meta

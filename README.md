@@ -18,10 +18,12 @@ This prototype enables natural-language querying over CTI data using a hybrid re
 ### Key Features
 - Hybrid retrieval: BM25 (lexical) + ChromaDB (vector) with Reciprocal Rank Fusion
 - Cross-encoder reranking for precision
-- Source-grounded generation with transparent citations
+- Source-grounded generation with transparent citations and fuzzy alias resolution for citation normalization
 - Baseline comparison mode (LLM without retrieval)
+- Phase-2 templated pipeline: Query Router → deterministic Fact Bundles → L1/L2/L3 templates (VulnTriage, ThreatContext, CrossSourceCompare) with Severity Signal (Triage-Ampel)
 - Ablation study support across BM25, vector, and hybrid candidate-generation modes under a shared reranking stage
-- RAGAS evaluation (faithfulness, context precision/recall, answer relevancy)
+- Three-axis evaluation: RAGAS (faithfulness, answer_correctness, answer_relevancy, context_precision, context_recall), Field Coverage, and a Structured Rubric LLM-as-Judge
+- FastAPI backend and Streamlit demo UI with a Legacy ↔ Templated pipeline toggle
 - Interactive terminal mode for ad-hoc queries
 
 ## Prerequisites
@@ -101,7 +103,10 @@ Useful targets:
 - `make smoke`
 - `make e2e-smoke`
 - `make e2e-eval-smoke`
-- `make test-retrieval`
+- `make test` — run the full offline test suite (all `tests/test_*.py` modules)
+- `make test-retrieval` — run the narrow retrieval checks only
+- `make api` — start the FastAPI backend on port 8000
+- `make ui` — start the Streamlit demo UI on port 8501
 
 Note:
 - the `Makefile` assumes `python3.12`, `ollama`, and `make` are available
@@ -198,13 +203,41 @@ CTI_RAG_SETUP=b python main.py query "Which ATT&CK techniques are described in C
 python main.py baseline "What is CVE-2021-44228?"
 ```
 
+### Phase-2 templated pipeline
+
+The Phase-2 pipeline routes each question through a deterministic Query Router into one of three templates — `VulnTriage`, `ThreatContext`, or `CrossSourceCompare` — and renders the answer from a typed Fact Bundle with an inline Severity Signal (Triage-Ampel).
+
+Enable it via the `--templated` flag on `evaluate` and `rubric`:
+
+```bash
+CTI_RAG_SETUP=b python main.py evaluate --mode hybrid --templated
+CTI_RAG_SETUP=b python main.py rubric --live --mode hybrid --templated
+```
+
+The Streamlit UI (`make ui`) exposes a Legacy ↔ Templated toggle for interactive comparison. The FastAPI backend (`make api`) serves both pipelines via its query endpoint.
+
 ### Run RAGAS evaluation
 
 ```bash
 python main.py evaluate
 CTI_RAG_SETUP=a python main.py evaluate --mode hybrid
 CTI_RAG_SETUP=b python main.py evaluate --mode hybrid
+CTI_RAG_SETUP=b python main.py evaluate --mode hybrid --templated
 ```
+
+### Run the Structured Rubric evaluator
+
+The Rubric evaluator is an LLM-as-Judge scoring layer orthogonal to RAGAS. It can either rescore an existing RAGAS artifact offline or run the pipeline live and score in one pass:
+
+```bash
+# Rescore an existing RAGAS run offline
+python main.py rubric --from-ragas-artifact data/evaluation_results/setup_b/ragas_hybrid_templated_phase2_final_28q_<ts>.json
+
+# Or run live and score in one pass (Phase-2 templated)
+CTI_RAG_SETUP=b python main.py rubric --live --mode hybrid --templated --name phase2_final
+```
+
+The judge model is configured in `configs/settings.yaml` under `evaluation.rubric` (default: `openrouter:openai/gpt-4o-mini`).
 
 ### Run smoke checks
 
@@ -254,7 +287,7 @@ cti-rag-analyst-support/
 ├── main.py                          # CLI entry point
 ├── configs/
 │   ├── settings.yaml                # All configurable parameters
-│   └── eval_queries.yaml            # RAGAS evaluation query set
+│   └── eval_queries.yaml            # Evaluation query set (RAGAS + Rubric)
 ├── src/cti_rag/
 │   ├── ingestion/
 │   │   ├── models.py                # CTIDocument Pydantic schema
@@ -266,15 +299,30 @@ cti-rag-analyst-support/
 │   │   ├── indexer.py               # ChromaDB + BM25 index builder
 │   │   └── hybrid_retriever.py      # Hybrid search + RRF + reranking
 │   ├── rag/
-│   │   ├── chain.py                 # LCEL RAG chain with citations
-│   │   └── prompts.py               # Prompt templates
+│   │   ├── chain.py                 # LCEL RAG chain (legacy + templated)
+│   │   ├── prompts.py               # Legacy Phase-1 prompt templates
+│   │   ├── router.py                # Phase-2 Query Router
+│   │   ├── facts.py                 # Deterministic Fact Bundles + fuzzy alias resolver
+│   │   ├── templates.py             # L1/L2/L3 templates (VulnTriage, ThreatContext, CrossSourceCompare)
+│   │   ├── severity.py              # Severity Signal (Triage-Ampel)
+│   │   └── cpe.py                   # CPE parser for affected-product extraction
 │   ├── evaluation/
-│   │   └── ragas_eval.py            # RAGAS framework integration
+│   │   ├── ragas_eval.py            # RAGAS framework integration
+│   │   ├── rubric_eval.py           # Structured Rubric LLM-as-Judge evaluator
+│   │   ├── field_coverage.py        # Field-coverage evaluator
+│   │   └── _judge_llm.py            # Judge-model adapter (Ollama / OpenRouter)
+│   ├── api/
+│   │   ├── server.py                # FastAPI backend
+│   │   └── schemas.py               # Request/response models
+│   ├── ui/
+│   │   └── app.py                   # Streamlit demo UI (Legacy/Templated toggle)
 │   └── mcp/                         # (planned) MCP agent extension
+├── tests/                           # Offline test suite (test_*.py) + smoke runners
 ├── data/
 │   ├── raw/                         # Downloaded CTI data (not in git)
 │   ├── processed/                   # Normalized documents
-│   └── indexes/                     # ChromaDB + BM25 indexes
+│   ├── indexes/                     # ChromaDB + BM25 indexes (setup_a / setup_b)
+│   └── evaluation_results/          # RAGAS + Rubric artifacts per setup
 └── requirements.txt
 ```
 

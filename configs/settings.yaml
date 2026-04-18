@@ -1,91 +1,68 @@
-# =============================================================================
-# CTI-RAG Prototype Configuration
-# Master Thesis: Bhinder (2026)
-# =============================================================================
-# All parameters centralized here for scientific reproducibility.
-# Document any changes with date and rationale.
-
-# --- LLM Configuration ---
 llm:
-  model_name: "llama3.1:8b-instruct-q5_K_M"
-  base_url: "http://localhost:11434"
-  temperature: 0.1          # Low temperature for factual CTI responses
+  model_name: llama3.1:8b-instruct-q5_K_M
+  base_url: http://localhost:11434
+  temperature: 0.1
   top_p: 0.9
   max_tokens: 2048
-  request_timeout: 120      # seconds
-
-# --- Embedding Configuration ---
+  request_timeout: 120
 embedding:
-  model_name: "BAAI/bge-small-en-v1.5"
+  model_name: BAAI/bge-small-en-v1.5
   dimension: 384
-  device: "mps"             # Apple Silicon Metal Performance Shaders
+  device: mps
   batch_size: 64
-
-# --- Retrieval Configuration ---
 retrieval:
-  entity_match_boost: 1.0    # Small exact-ID bonus after reranking; keeps CTI identifiers visible without dominating base scores
+  entity_match_boost: 1.0
   vector:
-    collection_name: "cti_documents"
-    top_k: 20                # Initial retrieval candidates
-    similarity_metric: "cosine"
+    collection_name: cti_documents
+    top_k: 20
+    similarity_metric: cosine
   bm25:
-    top_k: 20                # Initial retrieval candidates
-    index_path: "data/indexes/bm25_index.json"
+    top_k: 20
+    index_path: data/indexes/bm25_index.json
   fusion:
-    method: "rrf"            # Reciprocal Rank Fusion
-    rrf_k: 60                # Standard RRF constant
-    top_k: 20                # After fusion, before reranking; keep hybrid candidate pool symmetric with BM25/vector top_k
+    method: rrf
+    rrf_k: 60
+    top_k: 10
   reranker:
-    model_name: "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    top_k: 5                 # Final context chunks for LLM
-
-# --- Chunking Configuration ---
+    model_name: cross-encoder/ms-marco-MiniLM-L-6-v2
+    top_k: 5
 chunking:
   default_max_tokens: 512
-  overlap_tokens: 50         # Only used as fallback for oversized chunks
-  strategy: "semantic"       # CTI-aware chunking (1 CVE = 1 chunk, etc.)
-
-# --- Data Sources ---
+  overlap_tokens: 50
+  strategy: semantic
 data:
-  snapshot_date: "2025-12-31"  # Static dataset cutoff for reproducibility
+  snapshot_date: '2025-12-31'
   sources:
     nvd:
-      raw_dir: "data/raw/nvd"
-      min_cvss: 7.0            # Filter: only HIGH and CRITICAL
-      year_range: [2020, 2025]
+      raw_dir: data/raw/nvd
+      min_cvss: 7.0
+      year_range:
+      - 2020
+      - 2025
     cisa_kev:
-      raw_dir: "data/raw/cisa_kev"
+      raw_dir: data/raw/cisa_kev
     cisa_advisories:
-      raw_dir: "data/raw/cisa_advisories"
-      year_range: [2020, 2025]
+      raw_dir: data/raw/cisa_advisories
+      year_range:
+      - 2020
+      - 2025
     misp:
-      raw_dir: "data/raw/misp"
-
-# --- ChromaDB Configuration ---
+      raw_dir: data/raw/misp
 chromadb:
-  persist_directory: "data/indexes/chromadb"
+  persist_directory: data/indexes/chromadb
   anonymized_telemetry: false
-
-# --- Evaluation Configuration ---
 evaluation:
   ragas:
     metrics:
-      - faithfulness
-      - answer_relevancy
-      - answer_correctness
-      - context_precision
-      - context_recall
-    eval_llm: "qwen2.5:7b-instruct"   # Used when eval_llm_provider=ollama
-    # Provider switch for the RAGAS evaluation LLM.
-    # Options:
-    #   ollama      — local Ollama model (eval_llm above)
-    #   openai      — OpenAI API (needs OPENAI_API_KEY), uses eval_llm_openai
-    #   openrouter  — OpenRouter API (needs OPENROUTER_API_KEY), uses eval_llm_openrouter
-    eval_llm_provider: "openrouter"
-    eval_llm_openai: "gpt-4o-mini"
-    eval_llm_openrouter: "openai/gpt-4o-mini"
-  query_set_path: "configs/eval_queries.yaml"
-  results_dir: "data/evaluation_results"
-
-# --- Reproducibility ---
+    - faithfulness
+    - answer_relevancy
+    - answer_correctness
+    - context_precision
+    - context_recall
+    eval_llm_provider: openrouter
+    eval_llm: qwen2.5:7b-instruct
+    eval_llm_openai: gpt-4o-mini
+    eval_llm_openrouter: openai/gpt-4o-mini
+  query_set_path: configs/eval_queries.yaml
+  results_dir: data/evaluation_results
 random_seed: 42

@@ -8,6 +8,10 @@ from pydantic import BaseModel, Field
 class QueryRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=2000)
     mode: str = Field(default="hybrid", pattern=r"^(hybrid|bm25|vector)$")
+    templated: bool = Field(
+        default=False,
+        description="Use Phase-2 templated pipeline (router + fact bundle + L1/L2 templates).",
+    )
 
 
 class SourceDocument(BaseModel):
@@ -31,6 +35,12 @@ class QueryResponse(BaseModel):
     grounded: bool
     abstention_reason: str | None = None
     grounding_warnings: list[str] = []
+    # Phase-2 templated-pipeline fields (None when the legacy path was used).
+    pipeline: str = "legacy"
+    template: str | None = None
+    routing_decision: dict | None = None
+    l1_block: str | None = None
+    l2_output: str | None = None
 
 
 class HealthResponse(BaseModel):
