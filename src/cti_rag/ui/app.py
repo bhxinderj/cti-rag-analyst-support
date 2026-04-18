@@ -124,31 +124,119 @@ section[data-testid="stSidebar"] h2 {
 }
 
 /* --- Expander polish --- */
-.streamlit-expanderHeader {
+details[data-testid="stExpander"] {
+    background: transparent !important;
+    border: none !important;
+}
+details[data-testid="stExpander"] summary {
     background: #111d38 !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     border: 1px solid rgba(56, 189, 248, 0.12) !important;
+    padding: 8px 14px !important;
 }
 
-/* --- Buttons / inputs --- */
-.stChatInput textarea {
+/* --- Chat input (bottom) — kill the default double-border look --- */
+[data-testid="stChatInput"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInput"] > div,
+[data-testid="stChatInput"] > div > div {
     background: #111d38 !important;
-    border: 1px solid rgba(56, 189, 248, 0.25) !important;
+    border: 1px solid rgba(148, 163, 184, 0.15) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 20px rgba(2, 6, 23, 0.4) !important;
+}
+[data-testid="stChatInput"] textarea {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
     color: #e2e8f0 !important;
+    font-size: 0.95rem !important;
+    padding: 10px 14px !important;
+}
+[data-testid="stChatInput"] textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInput"] button {
+    background: rgba(56, 189, 248, 0.12) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
     border-radius: 10px !important;
+    color: #38bdf8 !important;
+}
+[data-testid="stChatInput"] button:hover {
+    background: rgba(56, 189, 248, 0.22) !important;
+    border-color: #38bdf8 !important;
+}
+
+/* --- Sidebar "New chat" button --- */
+section[data-testid="stSidebar"] button[kind="secondary"] {
+    background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%) !important;
+    color: #f8fafc !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+    padding: 10px 14px !important;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.22) !important;
+    transition: transform 0.08s ease, box-shadow 0.12s ease;
+}
+section[data-testid="stSidebar"] button[kind="secondary"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.35) !important;
+}
+
+/* --- Pipeline description card (sidebar bottom) --- */
+.pipeline-desc {
+    margin-top: 14px;
+    background: #0f1a33;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    border-left: 3px solid #38bdf8;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+.pipeline-desc .pipeline-title {
+    font-size: 0.72rem;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.pipeline-desc .pipeline-flow {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    line-height: 1.7;
+    font-family: ui-monospace, "SF Mono", monospace;
+}
+.pipeline-desc .pipeline-flow .arrow {
+    color: #38bdf8;
+    margin: 0 6px;
+    font-weight: 700;
+}
+.pipeline-desc .pipeline-flow em {
+    color: #94a3b8;
+    font-style: normal;
+    font-size: 0.78rem;
 }
 
 /* --- Metric cards in sidebar --- */
 [data-testid="stMetric"] {
     background: #0f1a33;
     padding: 10px 14px;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid rgba(56, 189, 248, 0.12);
 }
 [data-testid="stMetricValue"] {
     color: #38bdf8 !important;
     font-size: 1.15rem !important;
 }
+
+/* --- Reduce header top-padding a bit so the hero sits higher --- */
+.block-container { padding-top: 1.8rem !important; }
 </style>
 """
 
@@ -190,7 +278,6 @@ st.markdown(
     """
     <div class="hero">
       <h1>🛡️ CTI-RAG Analyst Workbench</h1>
-      <p>Retrieval-Augmented Generation for Cyber Threat Intelligence — Phase 2 Templated Pipeline</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -198,6 +285,11 @@ st.markdown(
 
 # --- Sidebar: Status & Settings ---
 with st.sidebar:
+    if st.button("＋  New chat", use_container_width=True, key="new_chat_btn"):
+        st.session_state.messages = []
+        st.rerun()
+    st.divider()
+
     st.header("Settings")
     mode = st.selectbox(
         "Retrieval Mode",
@@ -228,10 +320,20 @@ with st.sidebar:
         col2.metric("Index", "OK" if health["index_loaded"] else "MISSING")
         st.caption(f"Setup: `{health['active_setup']}`")
 
-    st.divider()
-    if st.button("🗑️ Clear conversation", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
+    st.markdown(
+        """
+        <div class="pipeline-desc">
+          <div class="pipeline-title">Pipeline</div>
+          <div class="pipeline-flow">
+            <span>BM25 + Vector</span><span class="arrow">→</span>
+            <span>RRF fusion</span><span class="arrow">→</span>
+            <span>Cross-encoder reranker</span><span class="arrow">→</span>
+            <span>Llama 3.1 8B <em>(Ollama)</em></span>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _pills(meta: dict) -> str:
