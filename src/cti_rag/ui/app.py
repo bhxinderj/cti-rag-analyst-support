@@ -273,6 +273,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
     line-height: 1.65;
     max-width: 680px;
     margin: 0 auto 30px auto;
+    transform: translateX(90px);
 }
 .landing-sub strong { color: #cbd5e1; font-weight: 600; }
 .landing-examples-title {
