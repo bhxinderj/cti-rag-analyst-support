@@ -102,14 +102,23 @@ You will receive:
 Rules:
 1. Produce ONLY the target sections listed in the user message, in order.
 2. Use ONLY the retrieved context. Do not use prior knowledge.
-3. Every factual statement must include an inline citation in the form
-   [Source: <citation_label>]. Use only labels present in the retrieved
-   context.
-4. Keep to one grounded claim per bullet or line.
-5. If a section has no support in the retrieved context, write exactly:
-   "No grounded information in the retrieved context."
-6. Be exact with CTI identifiers (CVE IDs, CVSS scores, ATT&CK techniques,
-   malware names, actor names).
+3. Every claim line MUST end with an inline citation of the form
+   [Source: <citation_label>], taken verbatim from the "Allowed Citation
+   Labels" list in the user message. Uncited claim lines will be rejected
+   downstream and replaced with an explicit grounding note, so it is
+   always better to omit a claim than to assert it without a citation.
+4. Keep to one grounded claim per bullet or line. If a bullet would make
+   two independent claims, split it into two bullets, each with its own
+   [Source: ...].
+5. If you cannot find support in the retrieved context for a claim you
+   would otherwise make, do NOT assert it. Either omit it entirely or
+   move it to the "Unknowns / Gaps" section as a statement of absence.
+6. If a whole section has no support in the retrieved context, write
+   exactly: "No grounded information in the retrieved context."
+7. Headers, bullet scaffolding, and explicit statements of absence in
+   "Unknowns / Gaps" do not require citations.
+8. Be exact with CTI identifiers (CVE IDs, CVSS scores, ATT&CK techniques,
+   malware names, actor names) — copy them verbatim from the context.
 """
 
 

@@ -14,170 +14,319 @@ import streamlit as st
 
 API_URL = os.environ.get("CTI_RAG_API_URL", "http://localhost:8000")
 
-# --- Page Config ---
 st.set_page_config(
     page_title="CTI-RAG Analyst Workbench",
-    page_icon="\U0001f6e1\ufe0f",
+    page_icon=":shield:",
     layout="wide",
-    initial_sidebar_state="expanded",
 )
 
-# --- Custom CSS ---
-st.markdown("""
+
+_CUSTOM_CSS = """
 <style>
-    /* --- Header bar --- */
-    .cti-header {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        padding: 1.5rem 2rem;
-        border-radius: 10px;
-        margin-bottom: 1.5rem;
-        border-left: 4px solid #3b82f6;
-    }
-    .cti-header h1 {
-        color: #f1f5f9;
-        font-size: 1.6rem;
-        margin: 0 0 0.25rem 0;
-        font-weight: 700;
-    }
-    .cti-header p {
-        color: #94a3b8;
-        font-size: 0.9rem;
-        margin: 0;
-    }
+/* --- Global palette tweaks --- */
+.stApp {
+    background: radial-gradient(1200px 600px at 10% -10%, #14244a 0%, #0a1120 55%, #070d1a 100%);
+}
 
-    /* --- Source badges --- */
-    .source-badge {
-        display: inline-block;
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        margin-right: 6px;
-    }
-    .badge-nvd { background: #1e3a5f; color: #60a5fa; }
-    .badge-cisa_kev { background: #5c2d0e; color: #fb923c; }
-    .badge-cisa_advisory { background: #5c2d0e; color: #fbbf24; }
-    .badge-misp { background: #14532d; color: #4ade80; }
-    .badge-unknown { background: #374151; color: #9ca3af; }
+/* --- Hero header --- */
+.hero {
+    background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%);
+    border-radius: 14px;
+    padding: 22px 28px;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.15);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.hero h1 {
+    margin: 0;
+    color: #f8fafc;
+    font-size: 1.9rem;
+    letter-spacing: -0.02em;
+}
+.hero p {
+    margin: 4px 0 0 0;
+    color: #cbd5e1;
+    font-size: 0.95rem;
+}
 
-    /* --- Source card --- */
-    .source-card {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
-    }
-    .source-card .doc-id {
-        font-weight: 600;
-        color: #1e293b;
-        font-size: 0.85rem;
-    }
-    .source-card .doc-title {
-        color: #475569;
-        font-size: 0.8rem;
-        margin-top: 2px;
-    }
-    .source-card .doc-meta {
-        color: #94a3b8;
-        font-size: 0.72rem;
-        margin-top: 4px;
-    }
+/* --- Sidebar polish --- */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0f1a33 0%, #0a1120 100%);
+    border-right: 1px solid rgba(148, 163, 184, 0.1);
+}
+section[data-testid="stSidebar"] h2 {
+    color: #38bdf8;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+}
 
-    /* --- Grounding indicator --- */
-    .grounding-pill {
-        display: inline-block;
-        padding: 3px 12px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    .grounding-ok { background: #14532d; color: #4ade80; }
-    .grounding-warn { background: #713f12; color: #fbbf24; }
-    .grounding-fail { background: #7f1d1d; color: #fca5a5; }
+/* --- Chat messages --- */
+[data-testid="stChatMessage"] {
+    background: #111d38 !important;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    border-radius: 12px;
+    padding: 14px 18px !important;
+    margin-bottom: 12px;
+}
+[data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-user"]) {
+    background: #142645 !important;
+    border-left: 3px solid #38bdf8;
+}
+[data-testid="stChatMessage"]:has(div[data-testid="chatAvatarIcon-assistant"]) {
+    border-left: 3px solid #22d3ee;
+}
 
-    /* --- Timing bar --- */
-    .timing-bar {
-        display: flex;
-        gap: 1.2rem;
-        padding: 0.4rem 0;
-        font-size: 0.75rem;
-        color: #64748b;
-    }
-    .timing-bar span {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
+/* --- Inline "pill" tags for metadata --- */
+.pill {
+    display: inline-block;
+    padding: 3px 10px;
+    margin: 2px 4px 2px 0;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    background: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+.pill.template  { background: rgba(167, 139, 250, 0.12); color: #c4b5fd; border-color: rgba(167, 139, 250, 0.25); }
+.pill.timing    { background: rgba(148, 163, 184, 0.10); color: #cbd5e1; border-color: rgba(148, 163, 184, 0.20); }
+.pill.legacy    { background: rgba(250, 204, 21, 0.10); color: #fde68a; border-color: rgba(250, 204, 21, 0.25); }
 
-    /* --- Welcome screen --- */
-    .welcome-box {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        margin: 2rem auto;
-        max-width: 700px;
-    }
-    .welcome-box h3 {
-        color: #1e293b;
-        margin-bottom: 0.5rem;
-    }
-    .welcome-box p {
-        color: #64748b;
-        font-size: 0.9rem;
-    }
+/* --- Source cards --- */
+.src-card {
+    background: #0f1a33;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    border-left: 3px solid #38bdf8;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+}
+.src-card.uncited { border-left-color: #475569; opacity: 0.85; }
+.src-card .doc-id {
+    color: #38bdf8;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.src-card.uncited .doc-id { color: #94a3b8; }
+.src-card .title {
+    color: #e2e8f0;
+    font-size: 0.92rem;
+    margin-top: 2px;
+}
+.src-card .meta {
+    color: #94a3b8;
+    font-size: 0.78rem;
+    margin-top: 4px;
+    font-family: ui-monospace, "SF Mono", monospace;
+}
 
-    /* --- Pipeline sidebar info --- */
-    .pipeline-step {
-        font-size: 0.78rem;
-        color: #cbd5e1;
-        padding: 2px 0;
-    }
-    .pipeline-step strong {
-        color: #f1f5f9;
-    }
+/* --- Expander polish --- */
+details[data-testid="stExpander"] {
+    background: transparent !important;
+    border: none !important;
+}
+details[data-testid="stExpander"] summary {
+    background: #111d38 !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(56, 189, 248, 0.12) !important;
+    padding: 8px 14px !important;
+}
 
-    /* --- Sidebar tweaks --- */
-    section[data-testid="stSidebar"] {
-        background: #0f172a;
-    }
-    section[data-testid="stSidebar"] * {
-        color: #e2e8f0;
-    }
-    section[data-testid="stSidebar"] .stSelectbox label {
-        color: #94a3b8;
-    }
+/* --- Chat input (bottom) — kill the default double-border look --- */
+[data-testid="stChatInput"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInput"] > div,
+[data-testid="stChatInput"] > div > div {
+    background: #111d38 !important;
+    border: 1px solid rgba(148, 163, 184, 0.15) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 20px rgba(2, 6, 23, 0.4) !important;
+}
+[data-testid="stChatInput"] textarea {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: #e2e8f0 !important;
+    font-size: 0.95rem !important;
+    padding: 10px 14px !important;
+}
+[data-testid="stChatInput"] textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stChatInput"] button {
+    background: rgba(56, 189, 248, 0.12) !important;
+    border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    border-radius: 10px !important;
+    color: #38bdf8 !important;
+}
+[data-testid="stChatInput"] button:hover {
+    background: rgba(56, 189, 248, 0.22) !important;
+    border-color: #38bdf8 !important;
+}
+
+/* --- Sidebar "New chat" button --- */
+section[data-testid="stSidebar"] button[kind="secondary"] {
+    background: linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%) !important;
+    color: #f8fafc !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+    padding: 10px 14px !important;
+    box-shadow: 0 4px 14px rgba(14, 165, 233, 0.22) !important;
+    transition: transform 0.08s ease, box-shadow 0.12s ease;
+}
+section[data-testid="stSidebar"] button[kind="secondary"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.35) !important;
+}
+
+/* --- Pipeline description card (sidebar bottom) --- */
+.pipeline-desc {
+    margin-top: 14px;
+    background: #0f1a33;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+    border-left: 3px solid #38bdf8;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+.pipeline-desc .pipeline-title {
+    font-size: 0.72rem;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.pipeline-desc .pipeline-flow {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    line-height: 1.7;
+    font-family: ui-monospace, "SF Mono", monospace;
+}
+.pipeline-desc .pipeline-flow .arrow {
+    color: #38bdf8;
+    margin: 0 6px;
+    font-weight: 700;
+}
+.pipeline-desc .pipeline-flow em {
+    color: #94a3b8;
+    font-style: normal;
+    font-size: 0.78rem;
+}
+
+/* --- Metric cards in sidebar --- */
+[data-testid="stMetric"] {
+    background: #0f1a33;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(56, 189, 248, 0.12);
+}
+[data-testid="stMetricValue"] {
+    color: #38bdf8 !important;
+    font-size: 1.15rem !important;
+}
+
+/* --- Reduce header top-padding a bit so the hero sits higher --- */
+.block-container { padding-top: 1.8rem !important; }
+
+/* --- Landing (welcome) screen --- */
+.landing-wrap {
+    max-width: 860px;
+    margin: 4vh auto 10px auto;
+    text-align: center;
+}
+.landing-badge {
+    display: inline-block;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #7dd3fc;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    font-weight: 600;
+    margin-bottom: 22px;
+}
+.landing-title {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin: 0 0 10px 0;
+    background: linear-gradient(135deg, #f8fafc 0%, #7dd3fc 60%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.landing-sub {
+    color: #94a3b8;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    max-width: 680px;
+    margin: 0 auto 30px auto;
+    transform: translateX(90px);
+}
+.landing-sub strong { color: #cbd5e1; font-weight: 600; }
+.landing-examples-title {
+    color: #64748b;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    text-align: center;
+    margin: 28px 0 14px 0;
+}
+
+/* --- Template example cards on the landing screen --- */
+.example-card {
+    background: #111d38;
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: 14px;
+    padding: 18px 20px 14px 20px;
+    margin-bottom: 10px;
+    min-height: 170px;
+    box-shadow: 0 4px 14px rgba(2, 6, 23, 0.35);
+    transition: transform 0.1s ease, border-color 0.12s ease, box-shadow 0.15s ease;
+}
+.example-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(56, 189, 248, 0.55);
+    box-shadow: 0 8px 26px rgba(14, 165, 233, 0.22);
+}
+.example-card .example-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+}
+.example-card .example-subtitle {
+    font-size: 0.78rem;
+    color: #7dd3fc;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+.example-card .example-question {
+    font-size: 0.88rem;
+    color: #cbd5e1;
+    line-height: 1.5;
+    font-style: italic;
+}
 </style>
-""", unsafe_allow_html=True)
+"""
 
-# --- Source badge mapping ---
-_SOURCE_BADGE_CLASS = {
-    "nvd": "badge-nvd",
-    "cisa_kev": "badge-cisa_kev",
-    "cisa_advisory": "badge-cisa_advisory",
-    "misp": "badge-misp",
-}
+st.markdown(_CUSTOM_CSS, unsafe_allow_html=True)
 
-_SOURCE_DISPLAY_NAME = {
-    "nvd": "NVD",
-    "cisa_kev": "CISA KEV",
-    "cisa_advisory": "CISA Advisory",
-    "misp": "MISP",
-}
-
-EXAMPLE_QUERIES = [
-    "What is CVE-2021-44228 and how has it been exploited?",
-    "Which vulnerabilities are listed in the CISA KEV catalog for Apache products?",
-    "What MITRE ATT&CK techniques are associated with Log4Shell?",
-    "What are the most critical vulnerabilities with CVSS score above 9.0?",
-]
-
-
-# --- Helper functions ---
 
 def check_backend_health() -> dict | None:
     try:
@@ -189,12 +338,12 @@ def check_backend_health() -> dict | None:
     return None
 
 
-def query_rag(question: str, mode: str) -> dict | None:
+def query_rag(question: str, mode: str, templated: bool) -> dict | None:
     try:
         resp = requests.post(
             f"{API_URL}/api/query",
-            json={"question": question, "mode": mode},
-            timeout=120,
+            json={"question": question, "mode": mode, "templated": templated},
+            timeout=300,
         )
         resp.raise_for_status()
         return resp.json()
@@ -202,176 +351,143 @@ def query_rag(question: str, mode: str) -> dict | None:
         st.error("Cannot reach the API server. Is it running?")
         return None
     except requests.HTTPError as exc:
-        st.error(f"API error: {exc.response.status_code} \u2014 {exc.response.text[:300]}")
+        st.error(f"API error: {exc.response.status_code} — {exc.response.text[:300]}")
         return None
     except requests.Timeout:
         st.error("Request timed out. The LLM may be overloaded.")
         return None
 
 
-def _source_badge(source_type: str) -> str:
-    badge_class = _SOURCE_BADGE_CLASS.get(source_type, "badge-unknown")
-    display = _SOURCE_DISPLAY_NAME.get(source_type, source_type.upper())
-    return f'<span class="source-badge {badge_class}">{display}</span>'
-
-
-def _render_grounding_status(result: dict):
-    if result.get("abstention_reason"):
-        st.markdown(
-            '<span class="grounding-pill grounding-fail">Abstained \u2014 insufficient evidence</span>',
-            unsafe_allow_html=True,
-        )
-    elif result.get("grounding_warnings"):
-        st.markdown(
-            '<span class="grounding-pill grounding-warn">Partially grounded</span>',
-            unsafe_allow_html=True,
-        )
-        for warning in result["grounding_warnings"]:
-            st.caption(f"\u26a0\ufe0f {warning}")
-    else:
-        st.markdown(
-            '<span class="grounding-pill grounding-ok">Fully grounded</span>',
-            unsafe_allow_html=True,
-        )
-
-
-def _render_timing(meta: dict):
-    st.markdown(
-        f"""<div class="timing-bar">
-            <span>\U0001f50d Retrieval: {meta.get('retrieval_time_ms', 0):.0f}ms</span>
-            <span>\U0001f9e0 Generation: {meta.get('generation_time_ms', 0):.0f}ms</span>
-            <span>\u23f1\ufe0f Total: {meta.get('total_time_ms', 0):.0f}ms</span>
-        </div>""",
-        unsafe_allow_html=True,
-    )
-
-
-def _render_source_card(src: dict):
-    badge = _source_badge(src.get("source", "unknown"))
-    st.markdown(
-        f"""<div class="source-card">
-            <div>{badge} <span class="doc-id">{src['doc_id']}</span></div>
-            <div class="doc-title">{src.get('title', '')[:120]}</div>
-            <div class="doc-meta">Score: {src.get('score', 0):.4f} &middot; Rank: {src.get('rank', '-')}</div>
-        </div>""",
-        unsafe_allow_html=True,
-    )
-
-
-def _render_sources(sources: list[dict], meta: dict):
-    """Render grounding status, timing, and source cards below the answer."""
-    _render_grounding_status(meta)
-    _render_timing(meta)
-
-    cited = [s for s in sources if s.get("cited_in_answer")]
-    uncited = [s for s in sources if not s.get("cited_in_answer")]
-
-    if cited:
-        with st.expander(f"\U0001f4ce Cited Sources ({len(cited)})", expanded=True):
-            for src in cited:
-                _render_source_card(src)
-    if uncited:
-        with st.expander(f"\U0001f4c2 Retrieved Context \u2014 not cited ({len(uncited)})"):
-            for src in uncited:
-                _render_source_card(src)
-
-
-# --- Header ---
-st.markdown("""
-<div class="cti-header">
-    <h1>\U0001f6e1\ufe0f CTI-RAG Analyst Workbench</h1>
-    <p>Retrieval-Augmented Generation for Cyber Threat Intelligence</p>
-</div>
-""", unsafe_allow_html=True)
-
-# --- Sidebar ---
+# --- Sidebar: Status & Settings ---
 with st.sidebar:
-    if st.button("New Chat", use_container_width=True, icon="\U0001f4ac"):
+    if st.button("＋  New chat", use_container_width=True, key="new_chat_btn"):
         st.session_state.messages = []
         st.rerun()
-
     st.divider()
 
-    st.markdown("### \u2699\ufe0f Settings")
+    st.header("Settings")
     mode = st.selectbox(
         "Retrieval Mode",
         options=["hybrid", "bm25", "vector"],
         index=0,
         help="hybrid = BM25 + Vector + RRF fusion with cross-encoder reranking",
     )
+    pipeline_choice = st.radio(
+        "Pipeline",
+        options=["Templated (Phase 2)", "Legacy (Phase 1)"],
+        index=0,
+        help=(
+            "Templated = Router + Fact Bundle + L1/L2 task-specific templates "
+            "(VulnTriage / ThreatContext / CrossSourceCompare). "
+            "Legacy = single generic prompt."
+        ),
+    )
+    templated = pipeline_choice.startswith("Templated")
 
     st.divider()
-
-    st.markdown("### \U0001f4e1 Backend Status")
+    st.header("Backend Status")
     health = check_backend_health()
     if health is None:
         st.error("API server unreachable")
     else:
         col1, col2 = st.columns(2)
-        if health["ollama_reachable"]:
-            col1.success("Ollama: OK", icon="\u2705")
-        else:
-            col1.error("Ollama: DOWN", icon="\u274c")
-        if health["index_loaded"]:
-            col2.success("Index: OK", icon="\u2705")
-        else:
-            col2.error("Index: MISSING", icon="\u274c")
-        st.caption(f"Active setup: `{health['active_setup']}`")
+        col1.metric("Ollama", "OK" if health["ollama_reachable"] else "DOWN")
+        col2.metric("Index", "OK" if health["index_loaded"] else "MISSING")
+        st.caption(f"Setup: `{health['active_setup']}`")
 
-    st.divider()
-
-    st.markdown("### \U0001f527 Pipeline")
-    st.markdown("""
-<div>
-    <div class="pipeline-step"><strong>1.</strong> BM25 lexical search (top-20)</div>
-    <div class="pipeline-step"><strong>2.</strong> Vector similarity search (top-20)</div>
-    <div class="pipeline-step"><strong>3.</strong> Reciprocal Rank Fusion (RRF k=60)</div>
-    <div class="pipeline-step"><strong>4.</strong> Cross-encoder reranking (top-5)</div>
-    <div class="pipeline-step"><strong>5.</strong> LLM generation with citation enforcement</div>
-</div>
-""", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="pipeline-desc">
+          <div class="pipeline-title">Pipeline</div>
+          <div class="pipeline-flow">
+            <span>BM25 + Vector</span><span class="arrow">→</span>
+            <span>RRF fusion</span><span class="arrow">→</span>
+            <span>Cross-encoder reranker</span><span class="arrow">→</span>
+            <span>Llama 3.1 8B <em>(Ollama)</em></span>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
-# --- Chat State ---
+def _pills(meta: dict) -> str:
+    """Build the pill-badge row for pipeline/template/timing metadata."""
+    pipeline = meta.get("pipeline", "legacy")
+    template = meta.get("template")
+    parts = []
+    pipeline_cls = "pill" if pipeline == "templated" else "pill legacy"
+    parts.append(f'<span class="{pipeline_cls}">pipeline · {pipeline}</span>')
+    if template:
+        parts.append(f'<span class="pill template">template · {template}</span>')
+    parts.append(
+        f'<span class="pill timing">retrieval {meta.get("retrieval_time_ms", 0):.0f}ms</span>'
+    )
+    parts.append(
+        f'<span class="pill timing">generation {meta.get("generation_time_ms", 0):.0f}ms</span>'
+    )
+    parts.append(
+        f'<span class="pill timing">total {meta.get("total_time_ms", 0):.0f}ms</span>'
+    )
+    return "<div>" + "".join(parts) + "</div>"
+
+
+def _source_card_html(src: dict, cited: bool) -> str:
+    cls = "src-card" if cited else "src-card uncited"
+    title = (src.get("title") or "")[:120]
+    return (
+        f'<div class="{cls}">'
+        f'<div class="doc-id">[{src["doc_id"]}]</div>'
+        f'<div class="title">{title}</div>'
+        f'<div class="meta">{src["source"]} · score {src["score"]:.4f} · rank {src["rank"]}</div>'
+        f"</div>"
+    )
+
+
+def _render_sources(sources: list[dict], meta: dict):
+    """Render source documents and metadata below the answer."""
+    cited = [s for s in sources if s.get("cited_in_answer")]
+    uncited = [s for s in sources if not s.get("cited_in_answer")]
+
+    st.markdown(_pills(meta), unsafe_allow_html=True)
+
+    if meta.get("grounding_warnings"):
+        for warning in meta["grounding_warnings"]:
+            st.warning(warning, icon=":warning:")
+
+    routing = meta.get("routing_decision")
+    if routing:
+        with st.expander("Routing decision", expanded=False):
+            st.json(routing)
+
+    if cited:
+        with st.expander(f"📎 Cited Sources ({len(cited)})", expanded=True):
+            html = "".join(_source_card_html(s, cited=True) for s in cited)
+            st.markdown(html, unsafe_allow_html=True)
+    if uncited:
+        with st.expander(f"📚 Retrieved context — not cited ({len(uncited)})"):
+            html = "".join(_source_card_html(s, cited=False) for s in uncited)
+            st.markdown(html, unsafe_allow_html=True)
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- Welcome Screen (only when no messages) ---
-if not st.session_state.messages:
-    st.markdown("""
-<div class="welcome-box">
-    <h3>Ask a question about cyber threats</h3>
-    <p>This prototype retrieves evidence from NVD, CISA KEV, CISA Advisories, and MISP feeds,
-    then generates a source-grounded answer with transparent citations.</p>
-</div>
-""", unsafe_allow_html=True)
 
-    st.markdown("**Try one of these:**")
-    cols = st.columns(2)
-    for i, example in enumerate(EXAMPLE_QUERIES):
-        if cols[i % 2].button(example, key=f"example_{i}", use_container_width=True):
-            st.session_state["_pending_query"] = example
-            st.rerun()
-
-# --- Render Chat History ---
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"], avatar="\U0001f6e1\ufe0f" if msg["role"] == "assistant" else None):
-        st.markdown(msg["content"])
-        if msg["role"] == "assistant" and "sources" in msg:
-            _render_sources(msg["sources"], msg.get("meta", {}))
-
-# --- Chat Input ---
-pending = st.session_state.pop("_pending_query", None)
-question = st.chat_input("Ask a CTI question...") or pending
-
-if question:
+def _handle_query(question: str) -> None:
+    """Run a query through the backend and append the exchange to chat history."""
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
 
-    with st.chat_message("assistant", avatar="\U0001f6e1\ufe0f"):
-        with st.spinner("Retrieving evidence and generating response..."):
-            result = query_rag(question, mode)
+    with st.chat_message("assistant"):
+        spinner_label = (
+            "Routing → retrieving → generating (templated)…"
+            if templated
+            else "Retrieving and generating…"
+        )
+        with st.spinner(spinner_label):
+            result = query_rag(question, mode, templated)
 
         if result:
             st.markdown(result["answer"])
@@ -381,7 +497,9 @@ if question:
                 "generation_time_ms": result["generation_time_ms"],
                 "total_time_ms": result["total_time_ms"],
                 "grounding_warnings": result.get("grounding_warnings", []),
-                "abstention_reason": result.get("abstention_reason"),
+                "pipeline": result.get("pipeline", "legacy"),
+                "template": result.get("template"),
+                "routing_decision": result.get("routing_decision"),
             }
             _render_sources(result["sources"], meta)
 
@@ -395,3 +513,84 @@ if question:
             fallback = "Failed to get a response from the backend."
             st.error(fallback)
             st.session_state.messages.append({"role": "assistant", "content": fallback})
+
+
+EXAMPLE_QUESTIONS = [
+    (
+        "🎯  VulnTriage",
+        "Vulnerability analysis with severity and exploitation status",
+        "What is CVE-2021-44228 and how has it been exploited?",
+    ),
+    (
+        "🧠  ThreatContext",
+        "Actor TTPs, IOCs, and ATT&CK technique mapping",
+        "What ATT&CK techniques and IOCs are associated with Volt Typhoon activity?",
+    ),
+    (
+        "🔀  CrossSourceCompare",
+        "Side-by-side view of the same CVE across NVD, KEV, and MISP",
+        "Compare how NVD, CISA KEV, and MISP describe CVE-2024-3094.",
+    ),
+]
+
+
+def _render_landing() -> None:
+    """Render the welcome / start screen when no chat history exists."""
+    st.markdown(
+        """
+        <div class="landing-wrap">
+          <div class="landing-badge">⬢ Prototype · Master's Thesis</div>
+          <div class="landing-title">🛡️ CTI-RAG Analyst Workbench</div>
+          <p class="landing-sub">
+            A <strong>retrieval-augmented generation</strong> prototype that grounds
+            answers for CTI analysts in a curated corpus of <strong>NVD, CISA KEV,
+            CISA Advisories, and MISP</strong> records. Your question is routed
+            through a deterministic <strong>Query Router</strong>, assembled into a
+            typed <strong>Fact Bundle</strong>, and rendered via a task-specific
+            template with an inline Severity Signal.
+          </p>
+          <div class="landing-examples-title">Try one of these to get started</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    cols = st.columns(3, gap="medium")
+    for col, (title, subtitle, question) in zip(cols, EXAMPLE_QUESTIONS):
+        with col:
+            st.markdown(
+                f"""
+                <div class="example-card">
+                  <div class="example-title">{title}</div>
+                  <div class="example-subtitle">{subtitle}</div>
+                  <div class="example-question">&ldquo;{question}&rdquo;</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "Try this →",
+                key=f"example_{title}",
+                use_container_width=True,
+            ):
+                st.session_state.pending_question = question
+                st.rerun()
+
+
+# --- Main: landing vs. chat history ---
+if not st.session_state.messages and "pending_question" not in st.session_state:
+    _render_landing()
+else:
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            if msg["role"] == "assistant" and "sources" in msg:
+                _render_sources(msg["sources"], msg.get("meta", {}))
+
+# A template-question button fired on the previous run — execute it now.
+if pending := st.session_state.pop("pending_question", None):
+    _handle_query(pending)
+
+# --- Chat Input ---
+if question := st.chat_input("Ask a CTI question…"):
+    _handle_query(question)

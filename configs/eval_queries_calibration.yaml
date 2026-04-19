@@ -1,0 +1,59 @@
+queries:
+- id: vuln_004
+  question: What is CVE-2023-4966 (Citrix Bleed) and how severe is it?
+  task_type: vulnerability_analysis
+  template_expected: VulnTriage
+  ground_truth: CVE-2023-4966 (Citrix Bleed) is a high-severity information disclosure
+    vulnerability in Citrix NetScaler ADC and NetScaler Gateway (CWE-119, NVD CVSS
+    7.5; Citrix vendor advisory scored it 9.4). It allows unauthenticated attackers
+    to extract sensitive information including session tokens from device memory.
+    It is listed in CISA KEV as actively exploited with known ransomware campaign
+    use (LockBit 3.0).
+  difficulty: simple
+  required_fields:
+    cve_id: CVE-2023-4966
+    cvss_score: 7.5
+    cwe_ids:
+    - CWE-119
+    affected_products:
+    - Citrix NetScaler ADC
+    - Citrix NetScaler Gateway
+    kev_listed: true
+    ransomware_use: true
+    triage_signal: high
+    mitigations_min_count: 1
+- id: ttp_001
+  question: What initial access techniques (MITRE ATT&CK) are commonly associated
+    with the exploitation of public-facing application vulnerabilities?
+  task_type: ttp_correlation
+  template_expected: ThreatContext
+  ground_truth: Exploitation of public-facing applications maps to MITRE ATT&CK technique
+    T1190 under Initial Access (TA0001). This technique is commonly used by threat
+    actors leveraging vulnerabilities in web servers, VPN appliances, and email servers
+    for initial access.
+  difficulty: moderate
+  required_fields:
+    attack_techniques:
+    - T1190
+    attack_tactic:
+    - TA0001
+    - Initial Access
+    associated_cves_min_count: 1
+    detection_or_mitigation_min_count: 1
+- id: cross_003
+  question: Which vulnerabilities from 2023-2024 are present in both NVD and CISA
+    KEV, and what are their severity ratings and exploitation status?
+  task_type: cross_source
+  template_expected: CrossSourceCompare
+  ground_truth: Recent high-profile examples include CVE-2023-22515 (Atlassian Confluence,
+    CVSS 9.8, actively exploited), CVE-2023-34362 (MOVEit Transfer, CVSS 9.8, ransomware
+    use), and CVE-2023-3519 (Citrix NetScaler, CVSS 9.8, ransomware use). All are
+    listed in CISA KEV as actively exploited with NVD providing detailed CVSS scoring.
+  difficulty: complex
+  required_fields:
+    expected_entities:
+    - CVE-2023-22515
+    - CVE-2023-34362
+    - CVE-2023-3519
+    expected_entities_min_matches: 2
+    cross_source_facts_min_count: 2

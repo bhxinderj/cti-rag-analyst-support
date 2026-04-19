@@ -8,7 +8,7 @@ QUERY ?= What is CVE-2021-44228 and how has it been exploited?
 MODE ?= hybrid
 SETUP ?= default
 
-.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test-retrieval thesis thesis-force api ui
+.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test test-retrieval thesis thesis-force api ui rubric
 
 help:
 	@echo "Available targets:"
@@ -28,9 +28,11 @@ help:
 	@echo "  make smoke           Run narrow reproducibility and traceability checks"
 	@echo "  make e2e-smoke       Run a live local smoke check against Ollama and real artifacts"
 	@echo "  make e2e-eval-smoke  Run the live smoke check plus a reduced one-sample local evaluation"
-	@echo "  make test-retrieval  Run narrow retrieval checks"
+	@echo "  make test            Run the full offline test suite (tests/test_*.py)"
+	@echo "  make test-retrieval  Run narrow retrieval checks only"
 	@echo "  make api             Start the FastAPI backend (port 8000)"
 	@echo "  make ui              Start the Streamlit demo UI (port 8501)"
+	@echo "  make rubric          Score a RAGAS artifact (ARTIFACT=path) with the Structured Rubric evaluator"
 	@echo "  make thesis          Build the LaTeX thesis if sources changed"
 	@echo "  make thesis-force    Force a full LaTeX rebuild of the thesis"
 
@@ -119,14 +121,38 @@ e2e-smoke: install
 e2e-eval-smoke: install
 	CTI_RAG_SETUP=b $(VENV_PY) tests/run_live_e2e_smoke.py --setup b --mode $(MODE) --question "$(QUERY)" --with-eval
 
+test: install
+	$(VENV_PY) tests/run_all_tests.py
+
 test-retrieval: install
 	$(VENV_PY) -c 'import importlib; module = importlib.import_module("tests.test_retrieval_trace"); executed = []; [getattr(module, name)() or executed.append(name) for name in sorted(dir(module)) if name.startswith("test_")]; print(f"Executed {len(executed)} retrieval checks"); [print(f"- {name}") for name in executed]'
 
+rubric: install
+	@if [ -z "$(ARTIFACT)" ]; then \
+		echo "Usage: make rubric ARTIFACT=data/evaluation_results/setup_b/ragas_*.json [NAME=label]"; \
+		exit 1; \
+	fi
+	$(VENV_PY) main.py rubric --from-ragas-artifact $(ARTIFACT) $(if $(NAME),--name $(NAME),)
+
 api: install
-	$(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload
+	@if [ "$(SETUP)" = "default" ]; then \
+		$(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload; \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload; \
+	else \
+		echo "SETUP=$(SETUP) is not valid for make api. Use default, a, or b."; \
+		exit 1; \
+	fi
 
 ui: install
-	$(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501
+	@if [ "$(SETUP)" = "default" ]; then \
+		$(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501; \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501; \
+	else \
+		echo "SETUP=$(SETUP) is not valid for make ui. Use default, a, or b."; \
+		exit 1; \
+	fi
 
 thesis:
 	cd thesis && latexmk -pdf -interaction=nonstopmode -file-line-error -outdir=tex_build mt_bhinder.tex

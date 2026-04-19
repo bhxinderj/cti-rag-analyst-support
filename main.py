@@ -306,6 +306,9 @@ def cmd_evaluate(args):
     # Run pipeline (RAG or baseline)
     chain = RAGChain(retrieval_mode=args.mode)
     responses = []
+    use_templated = getattr(args, "templated", False) and not is_baseline
+    if use_templated:
+        print("  Using Phase-2 templated pipeline (RAGChain.query_templated)")
 
     for q in queries:
         print(f"  Processing: {q['id']} - {q['question'][:60]}...")
@@ -314,6 +317,8 @@ def cmd_evaluate(args):
                 q["question"],
                 snapshot_date=config["data"].get("snapshot_date"),
             )
+        elif use_templated:
+            resp = chain.query_templated(q["question"])
         else:
             resp = chain.query(q["question"])
         responses.append(resp)
@@ -335,7 +340,12 @@ def cmd_evaluate(args):
 
     # Evaluate
     evaluator = RAGASEvaluator()
-    experiment_name = f"baseline_{args.name}" if is_baseline else f"{args.mode}_{args.name}"
+    if is_baseline:
+        experiment_name = f"baseline_{args.name}"
+    elif use_templated:
+        experiment_name = f"{args.mode}_templated_{args.name}"
+    else:
+        experiment_name = f"{args.mode}_{args.name}"
     results = evaluator.evaluate(
         rag_responses=responses,
         ground_truths=ground_truths,
@@ -436,6 +446,105 @@ def cmd_interactive(args):
             print()
 
 
+def cmd_rubric(args):
+    """Score rendered answers with the Structured Rubric LLM-as-Judge evaluator.
+
+    Two modes:
+      - Offline: read an existing ragas_*.json artifact and rescore its
+        per-sample records (``--from-ragas-artifact <path>``). No pipeline
+        run; ideal for comparing Legacy vs Phase-2 under the same judge.
+      - Live: run the pipeline on the eval set (optionally templated), then
+        score the generated answers (``--live --mode hybrid [--templated]``).
+    """
+    from src.cti_rag.evaluation.rubric_eval import (
+        RubricEvaluator,
+        RubricSample,
+        load_samples_from_ragas_artifact,
+    )
+
+    config = load_config()
+    root = get_project_root()
+
+    source_artifact: str | None = None
+    samples: list = []
+    source_meta: dict = {}
+
+    if args.from_ragas_artifact:
+        artifact_path = Path(args.from_ragas_artifact)
+        if not artifact_path.is_absolute():
+            artifact_path = root / artifact_path
+        if not artifact_path.exists():
+            print(f"RAGAS artifact not found: {artifact_path}", file=sys.stderr)
+            sys.exit(2)
+
+        print(f"Offline rescoring: {artifact_path}")
+        samples, source_meta = load_samples_from_ragas_artifact(artifact_path)
+        source_artifact = str(artifact_path)
+        print(f"Loaded {len(samples)} sample(s) from artifact "
+              f"(experiment={source_meta.get('experiment_name')})")
+    else:
+        # Live mode: run pipeline, then score.
+        from src.cti_rag.rag.chain import RAGChain
+
+        query_file = root / config["evaluation"]["query_set_path"]
+        queries = _load_eval_queries(query_file)
+        print(f"Live rubric: running pipeline over {len(queries)} queries "
+              f"(mode={args.mode}, templated={args.templated})")
+
+        chain = RAGChain(retrieval_mode=args.mode)
+        for query in queries:
+            print(f"  Processing: {query['id']} - {query['question'][:60]}...")
+            if args.templated:
+                response = chain.query_templated(query["question"])
+            else:
+                response = chain.query(query["question"])
+            samples.append(
+                RubricSample(
+                    question=query["question"],
+                    answer=response.answer,
+                    ground_truth=query.get("ground_truth", ""),
+                    sample_id=query["id"],
+                    template=response.template,
+                    task_type=query.get("task_type"),
+                    difficulty=query.get("difficulty"),
+                )
+            )
+
+    if not samples:
+        print("No samples to score.", file=sys.stderr)
+        sys.exit(2)
+
+    evaluator = RubricEvaluator()
+    print(f"Judge: {evaluator.judge_model_label}")
+
+    results = evaluator.score_samples(samples)
+
+    run_metadata = {
+        "snapshot_date": config["data"].get("snapshot_date"),
+        "active_setup": config["data"].get("active_setup", "default"),
+        **({"source_meta": source_meta} if source_meta else {}),
+    }
+    artifact = evaluator.save_artifact(
+        results=results,
+        experiment_name=args.name,
+        source_artifact=source_artifact,
+        run_metadata=run_metadata,
+    )
+
+    overall = artifact["aggregated"]
+    print(f"\n{'='*80}\nRubric results — {args.name}\nJudge: {evaluator.judge_model_label}\n{'='*80}")
+    print(f"  samples_scored : {overall['n']}")
+    print(f"  errors         : {overall['errors']}")
+    for dim in ("prioritization", "actionability", "completeness", "traceability"):
+        mean_val = overall.get(f"{dim}_mean")
+        mean_str = f"{mean_val:.4f}" if isinstance(mean_val, (int, float)) else "n/a"
+        print(f"  {dim+'_mean':<22}: {mean_str}")
+    total_val = overall.get("total_mean")
+    total_str = f"{total_val:.4f}" if isinstance(total_val, (int, float)) else "n/a"
+    print(f"  {'total_mean':<22}: {total_str}")
+    print(f"\nArtifact: {artifact.get('output_path')}")
+
+
 def cmd_ablation(args):
     """Run full ablation study across all retrieval modes + baseline."""
     print("Running ablation study: Baseline → BM25+Reranker → Vector+Reranker → Hybrid(RRF)+Reranker")
@@ -491,10 +600,51 @@ def main():
     ev.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
     ev.add_argument("--name", type=str, default="default")
     ev.add_argument("--baseline", action="store_true", help="Run baseline (no retrieval) evaluation for SRQ1 comparison")
+    ev.add_argument(
+        "--templated",
+        action="store_true",
+        help="Use the Phase-2 templated pipeline (RAGChain.query_templated) instead of the legacy generic prompt. Ignored with --baseline.",
+    )
 
     # Interactive
     ia = subparsers.add_parser("interactive", help="Interactive query session")
     ia.add_argument("--mode", choices=["hybrid", "bm25", "vector"], default="hybrid")
+
+    # Rubric (LLM-as-Judge)
+    rb = subparsers.add_parser(
+        "rubric",
+        help="Score answers with the Structured Rubric LLM-as-Judge evaluator",
+    )
+    rb.add_argument(
+        "--from-ragas-artifact",
+        type=str,
+        default=None,
+        help="Path to a ragas_*.json artifact to rescore offline "
+        "(no pipeline run). Mutually exclusive with --live.",
+    )
+    rb.add_argument(
+        "--live",
+        action="store_true",
+        help="Run the pipeline on the eval set first, then score. "
+        "Implicit if --from-ragas-artifact is omitted.",
+    )
+    rb.add_argument(
+        "--mode",
+        choices=["hybrid", "bm25", "vector"],
+        default="hybrid",
+        help="Retrieval mode (live mode only).",
+    )
+    rb.add_argument(
+        "--templated",
+        action="store_true",
+        help="Use the Phase-2 templated pipeline (live mode only).",
+    )
+    rb.add_argument(
+        "--name",
+        type=str,
+        default="default",
+        help="Experiment name used for the rubric_<name>_<ts>.json artifact.",
+    )
 
     # Ablation
     subparsers.add_parser("ablation", help="Run full ablation study")
@@ -509,6 +659,7 @@ def main():
         "baseline": cmd_baseline,
         "interactive": cmd_interactive,
         "evaluate": cmd_evaluate,
+        "rubric": cmd_rubric,
         "ablation": cmd_ablation,
     }
 

@@ -520,14 +520,6 @@ def build_threat_context_facts(
         # CVE correlations — these are the "associated CVEs" for the TTP.
         _merge_unique(facts.associated_cves, _chunk_cve_ids(chunk))
 
-        # ATT&CK technique / tactic enrichment when the primary is only a
-        # concept keyword: derive the most-frequent technique.
-        _merge_unique(
-            facts.associated_cves,
-            # no-op second call intentionally omitted; kept for clarity
-            [],
-        )
-
         # IoCs
         ioc_items = _parse_iocs_json(meta.get("iocs_json"))
         for ioc in ioc_items:

@@ -16,13 +16,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 TEST_MODULES = [
+    "tests.test_chain_templated",
     "tests.test_cti_representation",
     "tests.test_eval_query_loading",
     "tests.test_evaluation_trace",
+    "tests.test_grounding_hardening",
     "tests.test_misp_parser",
     "tests.test_rag_grounding",
     "tests.test_retrieval_quality",
     "tests.test_retrieval_trace",
+    "tests.test_rubric_eval",
     "tests.test_setup_and_bm25_artifacts",
     "tests.test_snapshot_logic",
 ]
