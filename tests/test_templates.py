@@ -197,6 +197,33 @@ def test_build_vuln_triage_prompt_carries_l1_block_and_citation_allowlist():
     assert "Gaps" in user
 
 
+def test_build_vuln_triage_prompt_offers_kev_required_action_as_mitigation():
+    chunks = [_nvd_chunk(), _kev_chunk()]
+    bundle = build_fact_bundle("VulnTriage", ["CVE-2023-4966"], chunks)
+
+    prompt = build_vuln_triage_prompt(bundle, "What is CVE-2023-4966?", chunks)
+    user = prompt[1]["content"]
+
+    # The KEV required_action is offered as a deterministic mitigation
+    # fact with its citation label, and the absence fallback is NOT
+    # instructed while mitigation facts exist in the bundle.
+    assert "Apply vendor patch per Citrix advisory." in user
+    assert "[Source: CISA KEV: CVE-2023-4966 | cisa_kev_CVE-2023-4966]" in user
+    assert "No reliable mitigation guidance" not in user
+
+
+def test_build_vuln_triage_prompt_keeps_fallback_without_mitigation_facts():
+    # NVD-only bundle: no KEV entry, hence no required_action fact.
+    chunks = [_nvd_chunk()]
+    bundle = build_fact_bundle("VulnTriage", ["CVE-2023-4966"], chunks)
+
+    prompt = build_vuln_triage_prompt(bundle, "What is CVE-2023-4966?", chunks)
+    user = prompt[1]["content"]
+
+    assert "No reliable mitigation guidance is" in user
+    assert "deterministic mitigation facts" not in user
+
+
 # ---------------------------------------------------------------------------
 # ThreatContext
 # ---------------------------------------------------------------------------
