@@ -110,6 +110,11 @@ def _aggregate_metric_means(records: list[dict], metrics: list) -> dict[str, flo
     return aggregated
 
 
+# Trailing "**Gaps**" section of a templated L2 narrative. The template
+# mandates this section as the last one in the output.
+_L2_TRAILING_GAPS_RE = re.compile(r"(?:^|\n)\*\*Gaps\*\*\s*\n.*\Z", re.DOTALL)
+
+
 def _ragas_answer_text(response: RAGResponse) -> str:
     """Select the answer text RAGAS should score for a response.
 
@@ -120,9 +125,17 @@ def _ragas_answer_text(response: RAGResponse) -> str:
     reverse-question generation. Score the LLM-authored L2 narrative
     instead; the full L1+L2 answer stays in the artifact and is what the
     Field-Coverage and Rubric evaluators assess.
+
+    The mandated trailing **Gaps** section is also stripped: it is
+    meta-commentary about the retrieved context ("lacks IoCs", "no
+    detection rules"), and its phrasing trips RAGAS' noncommittal
+    classifier, zeroing answer_relevancy for otherwise complete answers.
     """
     l2 = getattr(response, "l2_output", "")
-    return l2 if l2 else response.answer
+    if not l2:
+        return response.answer
+    stripped = _L2_TRAILING_GAPS_RE.sub("", l2).strip()
+    return stripped if stripped else l2
 
 
 def _build_grounding_stats(response: RAGResponse) -> dict:
@@ -385,7 +398,7 @@ class RAGASEvaluator:
 
         ragas_answers = [_ragas_answer_text(response) for response in rag_responses]
         if any(getattr(response, "l2_output", "") for response in rag_responses):
-            run_metadata.setdefault("ragas_answer_field", "l2_output")
+            run_metadata.setdefault("ragas_answer_field", "l2_output_sans_gaps")
         else:
             run_metadata.setdefault("ragas_answer_field", "answer")
 

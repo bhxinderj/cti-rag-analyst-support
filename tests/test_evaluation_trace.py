@@ -25,6 +25,33 @@ def test_ragas_answer_text_prefers_l2_output_for_templated_responses():
     assert _ragas_answer_text(legacy) == "Summary: plain answer [Source: nvd_x]."
 
 
+def test_ragas_answer_text_strips_trailing_gaps_section():
+    templated = RAGResponse(
+        query="q",
+        answer="full",
+        contexts=["c"],
+        source_documents=[],
+        l2_output=(
+            "**Exploitation Context**\n- Claim [Source: nvd_x].\n\n"
+            "**Gaps**\n* The retrieved context lacks IoCs.\n* No detection rules present."
+        ),
+    )
+    assert (
+        _ragas_answer_text(templated)
+        == "**Exploitation Context**\n- Claim [Source: nvd_x]."
+    )
+    # Degenerate case: an L2 that is ONLY a Gaps section stays untouched
+    # rather than being stripped to nothing.
+    gaps_only = RAGResponse(
+        query="q",
+        answer="full",
+        contexts=["c"],
+        source_documents=[],
+        l2_output="**Gaps**\n* Nothing usable retrieved.",
+    )
+    assert _ragas_answer_text(gaps_only) == "**Gaps**\n* Nothing usable retrieved."
+
+
 class _FakeSeries:
     def __init__(self, values):
         self._values = [value for value in values if value is not None]
