@@ -119,6 +119,11 @@ def main() -> int:
         "Default: all calibrated queries (vuln_004, ttp_001, cross_003).",
     )
     parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Run every query in the file instead of the calibrated trio.",
+    )
+    parser.add_argument(
         "--dump",
         action="store_true",
         help="Write the full result to data/interim/ as JSON.",
@@ -129,8 +134,11 @@ def main() -> int:
     print(f"Queries file: {args.queries_file}")
 
     all_queries = _load_queries(Path(args.queries_file))
-    selected_ids = tuple(args.only) if args.only else CALIBRATION_IDS
-    queries = [q for q in all_queries if q.get("id") in selected_ids]
+    if args.all:
+        queries = list(all_queries)
+    else:
+        selected_ids = tuple(args.only) if args.only else CALIBRATION_IDS
+        queries = [q for q in all_queries if q.get("id") in selected_ids]
     missing = [qid for qid in selected_ids if not any(q.get("id") == qid for q in queries)]
     if missing:
         print(f"⚠️  Missing query IDs in yaml: {missing}", file=sys.stderr)
