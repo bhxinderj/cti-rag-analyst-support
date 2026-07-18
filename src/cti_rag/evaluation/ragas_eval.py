@@ -110,6 +110,21 @@ def _aggregate_metric_means(records: list[dict], metrics: list) -> dict[str, flo
     return aggregated
 
 
+def _ragas_answer_text(response: RAGResponse) -> str:
+    """Select the answer text RAGAS should score for a response.
+
+    RAGAS metrics are designed for free-text answers. For templated
+    responses the final answer prepends the deterministic L1 block
+    (markdown cards/tables assembled from chunk *metadata*), which the
+    judge cannot verify against chunk *text* and which breaks
+    reverse-question generation. Score the LLM-authored L2 narrative
+    instead; the full L1+L2 answer stays in the artifact and is what the
+    Field-Coverage and Rubric evaluators assess.
+    """
+    l2 = getattr(response, "l2_output", "")
+    return l2 if l2 else response.answer
+
+
 def _build_grounding_stats(response: RAGResponse) -> dict:
     """Extract lightweight grounding transparency metrics from a response."""
     cited_lines = 0
@@ -368,9 +383,15 @@ class RAGASEvaluator:
         run_metadata = dict(run_metadata or {})
         run_metadata.setdefault("eval_llm", getattr(self, "eval_model_label", "unknown"))
 
+        ragas_answers = [_ragas_answer_text(response) for response in rag_responses]
+        if any(getattr(response, "l2_output", "") for response in rag_responses):
+            run_metadata.setdefault("ragas_answer_field", "l2_output")
+        else:
+            run_metadata.setdefault("ragas_answer_field", "answer")
+
         eval_data = {
             "question": [response.query for response in rag_responses],
-            "answer": [response.answer for response in rag_responses],
+            "answer": ragas_answers,
             "contexts": [response.contexts if response.contexts else ["N/A"] for response in rag_responses],
             "ground_truth": ground_truths,
         }

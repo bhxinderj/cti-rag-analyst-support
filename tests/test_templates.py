@@ -136,6 +136,16 @@ def test_render_vuln_triage_l1_handles_missing_cvss_and_kev_cleanly():
     assert "UNKNOWN" in rendered
 
 
+def test_render_vuln_triage_l1_returns_empty_when_no_entity_resolves():
+    # Product-level queries ("What affects Zoho ManageEngine?") route to
+    # VulnTriage with no primary CVE entities. The L1 block must be
+    # suppressed entirely (no "no entity resolved" header), leaving the
+    # cited L2 narrative as the whole answer.
+    bundle = build_fact_bundle("VulnTriage", [], [_kev_chunk()])
+    assert bundle.vuln_triage == []
+    assert render_vuln_triage_l1(bundle) == ""
+
+
 def test_render_vuln_triage_l1_renders_multiple_cards_separated_by_hr():
     chunks = [_nvd_chunk("CVE-2023-46805"), _nvd_chunk("CVE-2024-21887")]
     bundle = build_fact_bundle(

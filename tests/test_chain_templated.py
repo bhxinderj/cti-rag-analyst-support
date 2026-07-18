@@ -409,3 +409,42 @@ def test_query_templated_entity_aware_augmentation_fills_missing_nvd():
     assert "nvd_CVE-2023-4966" in doc_ids
     # Trace records the augmentation.
     assert resp.retrieval_trace.get("entity_aware_augmented_cves") == ["CVE-2023-4966"]
+
+
+def test_query_templated_augmentation_respects_total_chunk_cap():
+    """Augmentation must never grow the context past the hard ceiling."""
+    from src.cti_rag.rag.chain import _AUGMENT_MAX_TOTAL_CHUNKS, _augment_chunks_for_cves
+
+    base_chunks = [
+        {
+            "doc_id": f"misp_base_{idx}",
+            "content": "Base chunk.",
+            "source": "misp",
+            "title": f"Base {idx}",
+            "metadata": {"source": "misp"},
+        }
+        for idx in range(5)
+    ]
+    cves = [f"CVE-2024-{1000 + idx}" for idx in range(8)]
+    extra = {
+        cve: [
+            {
+                "doc_id": f"nvd_{cve}",
+                "content": f"NVD record for {cve}.",
+                "metadata": {"source": "nvd", "title": f"NVD: {cve}", "cve_ids": cve},
+            },
+            {
+                "doc_id": f"cisa_kev_{cve}",
+                "content": f"KEV record for {cve}.",
+                "metadata": {"source": "cisa_kev", "title": f"KEV: {cve}", "cve_ids": cve},
+            },
+        ]
+        for cve in cves
+    }
+    retriever = _FakeRetriever(chunks=[], collection=_FakeCollection(extra))
+
+    augmented, augmented_cves = _augment_chunks_for_cves(retriever, base_chunks, cves)
+
+    assert len(augmented) <= _AUGMENT_MAX_TOTAL_CHUNKS
+    # The cap still leaves room for the first CVEs to be augmented.
+    assert augmented_cves

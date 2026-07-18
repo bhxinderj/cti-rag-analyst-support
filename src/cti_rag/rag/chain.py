@@ -658,6 +658,11 @@ def _log_used_chunks(question: str, chunk_dicts: list[dict]) -> None:
 
 _AUGMENT_PER_CVE_LIMIT = 2
 _AUGMENT_RELEVANT_SOURCES = ("nvd", "cisa_kev")
+# Hard ceiling on the context size after entity-aware augmentation. Without
+# it, CrossSourceCompare queries with many auto-detected CVEs ballooned to
+# 24 contexts, which measurably hurt context_precision and diluted the
+# generation prompt.
+_AUGMENT_MAX_TOTAL_CHUNKS = 10
 
 
 def _auto_detect_cves_from_chunks(chunks: list[dict], top_n: int = 10) -> list[str]:
@@ -710,6 +715,12 @@ def _augment_chunks_for_cves(
     augmented_cves: list[str] = []
 
     for cve in cve_ids:
+        if len(augmented) >= _AUGMENT_MAX_TOTAL_CHUNKS:
+            logger.info(
+                "Entity-aware augmentation stopped at %d chunks (cap); remaining CVEs skipped.",
+                len(augmented),
+            )
+            break
         cve_u = cve.upper()
         if existing_by_cve.get(cve_u, 0) >= _AUGMENT_PER_CVE_LIMIT:
             continue
@@ -727,6 +738,8 @@ def _augment_chunks_for_cves(
             res.get("documents", []) or [],
             res.get("metadatas", []) or [],
         ):
+            if len(augmented) >= _AUGMENT_MAX_TOTAL_CHUNKS:
+                break
             if doc_id in existing_ids:
                 continue
             meta_dict = dict(meta or {})
@@ -1090,7 +1103,7 @@ class RAGChain:
         l2_output = re.sub(r"\n{3,}", "\n\n", l2_output).strip()
 
         # --- Step 8: Compose final answer ---
-        final_answer = f"{l1_block}\n\n{l2_output}" if l2_output else l1_block
+        final_answer = "\n\n".join(part for part in (l1_block, l2_output) if part)
 
         # Mark which chunks were actually cited.
         cited_labels = _extract_citation_labels(l2_output)

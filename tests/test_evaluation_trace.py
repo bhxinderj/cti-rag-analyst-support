@@ -3,8 +3,26 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from src.cti_rag.evaluation.ragas_eval import RAGASEvaluator
+from src.cti_rag.evaluation.ragas_eval import RAGASEvaluator, _ragas_answer_text
 from src.cti_rag.rag.chain import RAGResponse
+
+
+def test_ragas_answer_text_prefers_l2_output_for_templated_responses():
+    templated = RAGResponse(
+        query="q",
+        answer="## L1 Card\n\nCVSS: 9.8\n\nNarrative text [Source: nvd_x].",
+        contexts=["c"],
+        source_documents=[],
+        l2_output="Narrative text [Source: nvd_x].",
+    )
+    legacy = RAGResponse(
+        query="q",
+        answer="Summary: plain answer [Source: nvd_x].",
+        contexts=["c"],
+        source_documents=[],
+    )
+    assert _ragas_answer_text(templated) == "Narrative text [Source: nvd_x]."
+    assert _ragas_answer_text(legacy) == "Summary: plain answer [Source: nvd_x]."
 
 
 class _FakeSeries:

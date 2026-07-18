@@ -196,7 +196,11 @@ def render_vuln_triage_l1(bundle: FactBundle) -> str:
         card_blocks.append("\n".join(lines))
 
     if not card_blocks:
-        return "## No CVE entity resolved from retrieved context\n\nSee Evidence section below."
+        # No resolvable CVE card: suppress the L1 block entirely so the final
+        # answer is the cited L2 narrative alone. A visible "no entity
+        # resolved" header reads as a non-answer to both analysts and
+        # LLM-as-judge metrics even when the narrative below is complete.
+        return ""
 
     return "\n\n---\n\n".join(card_blocks)
 
@@ -218,7 +222,7 @@ def build_vuln_triage_prompt(
         f"Question: {question}\n\n"
         f"Target CVE(s): {cve_list}\n\n"
         f"--- Pre-rendered L1 Block (do NOT repeat) ---\n"
-        f"{l1_block}\n"
+        f"{l1_block or '(no deterministic triage card available)'}\n"
         f"--- End of L1 Block ---\n\n"
         f"--- Retrieved Context ---\n"
         f"{context_str}\n"
@@ -345,7 +349,7 @@ def build_threat_context_prompt(
         f"Question: {question}\n\n"
         f"Primary entity: {primary}\n\n"
         f"--- Pre-rendered L1 Block (do NOT repeat) ---\n"
-        f"{l1_block}\n"
+        f"{l1_block or '(no deterministic triage card available)'}\n"
         f"--- End of L1 Block ---\n\n"
         f"--- Retrieved Context ---\n"
         f"{context_str}\n"
@@ -484,7 +488,7 @@ def build_cross_source_prompt(
         f"Question: {question}\n\n"
         f"Entities to compare: {entity_list}\n\n"
         f"--- Pre-rendered L1 Block (do NOT repeat) ---\n"
-        f"{l1_block}\n"
+        f"{l1_block or '(no deterministic triage card available)'}\n"
         f"--- End of L1 Block ---\n\n"
         f"--- Retrieved Context ---\n"
         f"{context_str}\n"
