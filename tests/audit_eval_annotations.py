@@ -186,7 +186,9 @@ def main() -> int:
     all_cves: set[str] = set()
     per_query_cves: dict[str, list[str]] = {}
     for q in queries:
-        text = f"{q.get('question', '')} {q.get('ground_truth', '')}"
+        gt = q.get("ground_truth") or " ".join(q.get("ground_truth_points") or [])
+        q["ground_truth"] = gt
+        text = f"{q.get('question', '')} {gt}"
         cves = sorted(set(m.group(0).upper() for m in _CVE_RE.finditer(text)))
         per_query_cves[q["id"]] = cves
         all_cves.update(cves)
@@ -213,8 +215,15 @@ def main() -> int:
 
         req = q.get("required_fields")
         if req and cves:
-            # required_fields queries always target a single CVE.
-            primary_cve = cves[0]
+            # The field-coverage evaluator reads entities[0], which is the
+            # first CVE mentioned in the *question* (router order) — not the
+            # alphabetically first. Mirror that here.
+            question_cves = list(
+                dict.fromkeys(
+                    m.group(0).upper() for m in _CVE_RE.finditer(q.get("question", ""))
+                )
+            )
+            primary_cve = question_cves[0] if question_cves else cves[0]
             issues.extend(_audit_required_fields(qid, req, truths[primary_cve]))
         # Note: queries like ttp_001 annotate required_fields on a
         # tactic/technique, not a CVE — no CVE-truth audit applies there.

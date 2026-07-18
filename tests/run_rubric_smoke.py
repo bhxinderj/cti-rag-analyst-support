@@ -153,7 +153,9 @@ def main() -> int:
         qid = query["id"]
         question = query["question"]
         template_expected = query.get("template_expected")
-        ground_truth = query.get("ground_truth", "")
+        ground_truth = query.get("ground_truth") or " ".join(
+            point.strip() for point in (query.get("ground_truth_points") or []) if point.strip()
+        )
 
         _print_divider(f"Running {qid}")
         print(f"  question          : {question}")
