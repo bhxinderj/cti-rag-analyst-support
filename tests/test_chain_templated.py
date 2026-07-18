@@ -227,8 +227,10 @@ def test_query_templated_vuln_triage_routes_and_assembles():
     assert resp.answer.startswith(resp.l1_block)
 
     # L2 output: the LLM's text, with citation normalization applied.
+    # Canonical labels are bare doc_ids so small LLMs can reproduce them;
+    # the long-form citation in the fixture resolves via doc_id substring.
     assert "**Exploitation Context**" in resp.l2_output
-    assert "[Source: NVD: CVE-2023-4966 | nvd_CVE-2023-4966]" in resp.l2_output
+    assert "[Source: nvd_CVE-2023-4966]" in resp.l2_output
 
     # fact_bundle is serialized and carries the VulnTriage entity.
     assert resp.fact_bundle["template"] == "VulnTriage"
@@ -241,7 +243,7 @@ def test_query_templated_vuln_triage_routes_and_assembles():
     assert "**Exploitation Context** (L2)" in user_msg.content
     assert "**Evidence** (L1)" in user_msg.content
     # Allowed citation labels are listed.
-    assert "NVD: CVE-2023-4966 | nvd_CVE-2023-4966" in user_msg.content
+    assert "nvd_CVE-2023-4966" in user_msg.content
 
     # Source documents are annotated with cited_in_answer.
     nvd_doc = next(d for d in resp.source_documents if d["doc_id"] == "nvd_CVE-2023-4966")
@@ -261,9 +263,10 @@ def test_query_templated_drops_invalid_citations():
 
     resp = chain.query_templated("Tell me about CVE-2023-4966.")
 
-    # The fabricated citation is stripped; the real one survives.
+    # The fabricated citation is stripped; the real one survives (normalized
+    # to the short canonical doc_id label).
     assert "Totally Made Up" not in resp.l2_output
-    assert "[Source: NVD: CVE-2023-4966 | nvd_CVE-2023-4966]" in resp.l2_output
+    assert "[Source: nvd_CVE-2023-4966]" in resp.l2_output
 
 
 # ---------------------------------------------------------------------------

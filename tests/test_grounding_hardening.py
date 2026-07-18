@@ -76,9 +76,16 @@ def test_alias_variants_handles_attack_technique_id():
 
 
 def test_build_alias_map_includes_bare_cve_when_unambiguous():
-    alias_map = _build_citation_alias_map(_docs())
+    alias_map, _doc_id_map, _position_map = _build_citation_alias_map(_docs())
     assert alias_map.get("cve-2024-3094") == "XZ Utils backdoor | nvd_CVE-2024-3094"
     assert alias_map.get("cve-2021-44228") == "Log4Shell in Apache Log4j | cisa_kev_CVE-2021-44228"
+
+
+def test_build_alias_map_returns_doc_id_and_position_maps():
+    _alias_map, doc_id_map, position_map = _build_citation_alias_map(_docs())
+    assert doc_id_map.get("nvd_cve-2024-3094") == "XZ Utils backdoor | nvd_CVE-2024-3094"
+    assert position_map.get(1) == "XZ Utils backdoor | nvd_CVE-2024-3094"
+    assert position_map.get(2) == "Log4Shell in Apache Log4j | cisa_kev_CVE-2021-44228"
 
 
 def test_build_alias_map_drops_ambiguous_bare_id_when_two_chunks_share_cve():
@@ -95,7 +102,7 @@ def test_build_alias_map_drops_ambiguous_bare_id_when_two_chunks_share_cve():
             "citation_label": "XZ backdoor CISA advisory | cisa_ad_CVE-2024-3094",
         },
     ]
-    alias_map = _build_citation_alias_map(dupes)
+    alias_map, _doc_id_map, _position_map = _build_citation_alias_map(dupes)
     assert "cve-2024-3094" not in alias_map  # ambiguous → removed
 
 
@@ -161,3 +168,22 @@ def test_normalize_response_multiple_labels_in_one_block():
     out = _normalize_response_citations(text, _docs())
     assert "[Source: XZ Utils backdoor | nvd_CVE-2024-3094]" in out
     assert "[Source: Log4Shell in Apache Log4j | cisa_kev_CVE-2021-44228]" in out
+
+
+def test_normalize_response_accepts_short_form_docid_bracket():
+    text = "Backdoor confirmed [nvd_CVE-2024-3094]."
+    out = _normalize_response_citations(text, _docs())
+    assert "[Source: XZ Utils backdoor | nvd_CVE-2024-3094]" in out
+
+
+def test_normalize_response_resolves_numeric_position_citation():
+    # [2] refers to the second chunk in prompt-context order.
+    text = "Critical impact [Source: 2]."
+    out = _normalize_response_citations(text, _docs())
+    assert "[Source: Log4Shell in Apache Log4j | cisa_kev_CVE-2021-44228]" in out
+
+
+def test_normalize_response_keeps_unknown_short_brackets_untouched():
+    text = "Uses scripting [T1059] against servers."
+    out = _normalize_response_citations(text, _docs())
+    assert "[T1059]" in out

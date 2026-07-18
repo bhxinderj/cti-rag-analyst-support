@@ -6,6 +6,7 @@ Evaluates the RAG pipeline with RAGAS and stores trace-rich run artifacts.
 
 import json
 import logging
+import math
 import re
 from datetime import datetime
 from pathlib import Path
@@ -79,14 +80,31 @@ def _results_records(results) -> list[dict]:
 
 
 def _aggregate_metric_means(records: list[dict], metrics: list) -> dict[str, float]:
-    """Aggregate mean metric values from per-sample result records."""
+    """Aggregate mean metric values from per-sample result records.
+
+    NaN values (produced when the eval LLM fails to parse a single sample)
+    are excluded so they do not propagate into the aggregate mean.
+    """
     aggregated: dict[str, float] = {}
     for metric in metrics:
-        values = [
-            float(record[metric.name])
-            for record in records
-            if isinstance(record.get(metric.name), (int, float))
-        ]
+        values: list[float] = []
+        nan_count = 0
+        for record in records:
+            raw = record.get(metric.name)
+            if not isinstance(raw, (int, float)):
+                continue
+            value = float(raw)
+            if math.isnan(value):
+                nan_count += 1
+                continue
+            values.append(value)
+        if nan_count:
+            logger.warning(
+                "Metric %s: excluded %d NaN sample(s) from aggregate (%d valid)",
+                metric.name,
+                nan_count,
+                len(values),
+            )
         if values:
             aggregated[metric.name] = sum(values) / len(values)
     return aggregated
@@ -202,14 +220,22 @@ class RAGASEvaluator:
             answer_correctness,
         ]
 
-        # Local Ollama models need longer timeouts and fewer parallel workers
-        # than hosted API endpoints. Defaults: timeout=180, max_workers=16.
-        self.run_config = RunConfig(
-            timeout=600,
-            max_workers=2,
-            max_retries=6,
-            max_wait=180,
-        )
+        # Local Ollama needs conservative concurrency; hosted APIs can
+        # handle the RAGAS defaults (much more parallelism).
+        if provider == "ollama":
+            self.run_config = RunConfig(
+                timeout=600,
+                max_workers=2,
+                max_retries=10,
+                max_wait=180,
+            )
+        else:
+            self.run_config = RunConfig(
+                timeout=180,
+                max_workers=8,
+                max_retries=6,
+                max_wait=60,
+            )
 
         logger.info("RAGASEvaluator initialized (eval_llm=%s)", self.eval_model_label)
 
@@ -248,6 +274,7 @@ class RAGASEvaluator:
                 "num_contexts": len(response.contexts),
                 "prompt_context": response.prompt_context,
                 "retrieval_trace": response.retrieval_trace,
+                "raw_llm_output": getattr(response, "raw_llm_output", ""),
                 **grounding_stats,
             }
 
@@ -337,6 +364,10 @@ class RAGASEvaluator:
         )
         sample_metadata = sample_metadata or query_metadata or []
 
+        # Stamp the judge model into the artifact so runs stay identifiable.
+        run_metadata = dict(run_metadata or {})
+        run_metadata.setdefault("eval_llm", getattr(self, "eval_model_label", "unknown"))
+
         eval_data = {
             "question": [response.query for response in rag_responses],
             "answer": [response.answer for response in rag_responses],
@@ -352,19 +383,32 @@ class RAGASEvaluator:
             [metric.name for metric in metrics],
         )
 
+        ragas_records: list[dict] = []
+        aggregated_metrics: dict[str, float] = {}
+        metrics_used = [metric.name for metric in metrics]
+        result_prefix = "ragas"
+
         # ``run_config`` is set by ``__init__`` but some tests instantiate
         # the evaluator via ``object.__new__`` to skip heavy setup — fall
-        # back to RAGAS defaults in that case.
-        results = evaluate(
-            dataset=dataset,
-            metrics=metrics,
-            llm=self.eval_llm,
-            embeddings=self.eval_embeddings,
-            run_config=getattr(self, "run_config", None),
-        )
+        # back to RAGAS defaults in that case. A crash inside RAGAS must
+        # not lose the retrieval-trace artifacts, hence the partial save.
+        try:
+            results = evaluate(
+                dataset=dataset,
+                metrics=metrics,
+                llm=self.eval_llm,
+                embeddings=self.eval_embeddings,
+                run_config=getattr(self, "run_config", None),
+                raise_exceptions=False,
+            )
 
-        ragas_records = _results_records(results)
-        aggregated_metrics = _aggregate_metric_means(ragas_records, metrics)
+            ragas_records = _results_records(results)
+            aggregated_metrics = _aggregate_metric_means(ragas_records, metrics)
+        except Exception:
+            logger.exception(
+                "RAGAS evaluate() crashed — saving retrieval artifacts without metric scores."
+            )
+            result_prefix = "ragas_partial"
 
         return self.save_run_artifacts(
             responses=rag_responses,
@@ -373,8 +417,8 @@ class RAGASEvaluator:
             sample_ids=sample_ids,
             sample_metadata=sample_metadata,
             run_metadata=run_metadata,
-            result_prefix="ragas",
-            metrics_used=[metric.name for metric in metrics],
+            result_prefix=result_prefix,
+            metrics_used=metrics_used,
             metrics=aggregated_metrics,
             ragas_records=ragas_records,
             is_baseline=is_baseline,
