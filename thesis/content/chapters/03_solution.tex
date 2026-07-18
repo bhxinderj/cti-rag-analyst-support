@@ -1,0 +1,271 @@
+% ======================================================================
+% Kapitel 3 — Solution: Design and Implementation (Budget: ~9 Seiten)
+% Einzige Heimat fuer: Designkriterien (3.2) und Evaluationsdesign (3.8).
+% Architektur begruendet nichts neu, sondern referenziert Kriterien-IDs.
+% ======================================================================
+\chapter{Solution: Design and Implementation}
+\label{ch:solution}
+
+\section{Task formulation}
+\label{sec:task-formulation}
+
+The task addressed in this thesis is grounded question answering over CTI
+sources. The prototype operates on a corpus $\mathcal{D}$ of documents
+collected from heterogeneous CTI sources and segmented into a set of
+passages $\mathcal{P}$ (Section~\ref{sec:ingestion}). Given an analyst
+query $q$, a retrieval function $R$ selects the $k$ highest-ranked passages
+as context:
+\begin{equation}
+    \mathcal{C}_k = R(q, \mathcal{P}), \qquad \lvert\mathcal{C}_k\rvert = k.
+    \label{eq:retrieval}
+\end{equation}
+A generation model $g$ then produces the answer
+\begin{equation}
+    a = g(q, \mathcal{C}_k),
+    \label{eq:generation}
+\end{equation}
+subject to a grounding constraint: every factual claim in $a$ must be
+attributable to at least one passage in $\mathcal{C}_k$ and marked with an
+inline citation to that passage. The analyst can therefore verify each
+claim against its source instead of trusting the answer as a whole
+(bottleneck B3, Section~\ref{sec:cti}).
+
+In the hybrid configuration, $R$ combines a lexical relevance score
+(BM25) with a semantic similarity score (dense embeddings) and reranks the
+fused candidates; Section~\ref{sec:retrieval} describes this instantiation.
+Setting $\mathcal{C}_k = \emptyset$ yields the non-retrieval baseline
+\begin{equation}
+    a_0 = g(q, \emptyset),
+    \label{eq:baseline}
+\end{equation}
+in which the model answers from parametric knowledge alone. This baseline
+corresponds to configuration V0 in the evaluation
+(Section~\ref{sec:baselines}); the comparison between $a$ and $a_0$
+quantifies the effect of retrieval augmentation and thereby
+operationalizes SRQ1.
+
+\section{Requirements and design criteria}
+\label{sec:requirements}
+% TODO: EINZIGE Stelle fuer Designkriterien. Aus Forschungsluecken
+% (\ref{sec:research-gap}) UND Workflow-Engpaessen B1--B3 (\ref{sec:cti})
+% ableiten --- im Einleitungstext der Section beide Quellen explizit nennen.
+% Rueckverfolgbarkeitskette: B/G -> Criterion -> Result -> RQ-Antwort.
+% Zuordnung (fuer Herleitungstext): C1 <- B3/G1, C2 <- B1/G1, C3 <- G3,
+% C4 <- G2, C5 <- B1/G2, C6 <- Proposal-Vorgabe (open-source only).
+
+% Kriterien-Entwuerfe direkt aus SotA Kap. 4.2 "Implications for this
+% thesis" + Proposal (open-source only). Beim Schreiben: pro Kriterium
+% 1--2 Saetze Herleitung mit Gap-Bezug (G1--G3), dann nur noch per ID
+% referenzieren.
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabular}{lp{0.62\textwidth}ll}
+        \toprule
+        \textbf{ID} & \textbf{Design criterion} & \textbf{Gap} & \textbf{Ref.} \\
+        \midrule
+        C1 & Evidence-linked outputs: explicit, source-based citations for
+             key claims to support traceability and reduce verification
+             effort & G1 & SRQ1 \\
+        C2 & Hybrid retrieval as a baseline: combined lexical (BM25) and
+             semantic retrieval with optional reranking & G1 & SRQ1 \\
+        C3 & Source integrity and reliability: curated ingestion and
+             source-reliability signals to limit misinformation risk & G3 & MRQ \\
+        C4 & Scenario-based evaluation: assessment on representative CTI
+             analyst tasks beyond offline metrics & G2 & SRQ2 \\
+        C5 & Analyst-oriented presentation: structured outputs matching
+             analyst intent (task coverage, clarity, transparency) & G2 & SRQ2 \\
+        C6 & Open-source, locally deployable stack (data protection,
+             reproducibility, cost) & --- & MRQ \\
+        \bottomrule
+    \end{tabular}
+    \caption{Design criteria with traceability to research gaps and research questions}
+    \label{tab:design-criteria}
+\end{table}
+
+\section{System architecture}
+\label{sec:architecture}
+% TODO: Komponenten und Datenfluss beschreiben. Designentscheidungen NUR
+% per Kriterien-ID begruenden ("addresses C2"), keine erneute Herleitung.
+...
+
+% TODO Abbildung: Export aus docs/architecture/cti_rag_architecture_overview.drawio
+% -> images/ (PDF/PNG). Konkrete Instanz von \ref{fig:rag-pipeline}.
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{cti_rag_architecture_overview}
+%     \caption{System architecture of the CTI-RAG prototype}
+%     \label{fig:architecture}
+% \end{figure}
+
+\section{Data ingestion and preprocessing}
+\label{sec:ingestion}
+% TODO: Quellenkorpus (welche CTI-Quellen, Umfang), Parsing, Chunking,
+% Metadaten.
+...
+
+% TODO Tabelle: Korpus-Statistik aus dem Index ziehen.
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{llrr}
+%         \toprule
+%         \textbf{Source} & \textbf{Document type} & \textbf{Documents} & \textbf{Chunks} \\
+%         \midrule
+%         CVE/NVD & ... & ... & ... \\
+%         CISA advisories & ... & ... & ... \\
+%         MISP & ... & ... & ... \\
+%         Vendor reports & ... & ... & ... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Corpus statistics of the ingested CTI sources}
+%     \label{tab:corpus-stats}
+% \end{table}
+
+\section{Hybrid retrieval and reranking}
+\label{sec:retrieval}
+% TODO: dense + BM25, Fusion, Reranker. Kein eigenes Diagramm ---
+% der Fluss steckt in \ref{fig:architecture}.
+...
+
+% TODO Tabelle: Werte aus configs/settings.yaml uebernehmen.
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{llp{0.42\textwidth}}
+%         \toprule
+%         \textbf{Component} & \textbf{Model / method} & \textbf{Parameters} \\
+%         \midrule
+%         Sparse retrieval & BM25 & ... \\
+%         Dense retrieval & <embedding model> & ... \\
+%         Fusion & ... & ... \\
+%         Reranking & <cross-encoder> & top-k = ... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Retrieval pipeline configuration}
+%     \label{tab:retrieval-config}
+% \end{table}
+
+\section{Context assembly, answer generation and citation}
+\label{sec:generation}
+% TODO: Kontextaufbau, Prompt-Struktur (Verweis auf Anhang Prompt Templates),
+% Grounding-/Zitiermechanismus, Refusal-Verhalten bei fehlender Evidenz.
+...
+
+% TODO Listing: gekuerztes System-Prompt mit Zitier-Instruktion
+% (aus src/cti_rag/rag/prompts.py); Vollversion in Anhang B.
+% \begin{lstlisting}[caption={System prompt with citation instruction (excerpt)},
+%                    label={lst:system-prompt}]
+% ...
+% \end{lstlisting}
+
+\section{Implementation}
+\label{sec:implementation}
+% TODO: Technologie-Stack, Verweis auf Repository (Anhang).
+% Hinweis: MCP-/Agent-Erweiterung hier nur kurz erwaehnen oder ganz in
+% Future Work (\ref{sec:future-work}) verschieben.
+...
+
+% TODO Tabelle: Komponenten nach Salmas Vorbild (ihre Tabelle 11).
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{lp{0.22\textwidth}p{0.45\textwidth}}
+%         \toprule
+%         \textbf{Path} & \textbf{Function} & \textbf{Details} \\
+%         \midrule
+%         src/cti\_rag/ingestion/ & ... & ... \\
+%         src/cti\_rag/retrieval/ & Hybrid retrieval & ... \\
+%         src/cti\_rag/rag/ & Chain, prompts & ... \\
+%         src/cti\_rag/evaluation/ & RAGAS evaluation & ... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Prototype components with path, function, and technical details}
+%     \label{tab:components}
+% \end{table}
+
+% TODO Abbildung: UI-Screenshot (Chat-Ansicht mit Pipeline-Flow-Card oder
+% Landing Page). Druckbarkeit des Dark-Themes pruefen, ggf. helles Theme.
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{ui_chat_view}
+%     \caption{Analyst-facing user interface of the prototype}
+%     \label{fig:ui-overview}
+% \end{figure}
+
+\section{Evaluation design}
+\label{sec:evaluation-design}
+% EINZIGE Stelle fuer das Evaluationsdesign (frueheres 2.4 ist hier aufgegangen).
+
+\subsection{Test set construction}
+\label{sec:test-set}
+% TODO: Query-Set (Anzahl, Kategorien, Erstellung, Ground Truth),
+% Verweis auf Anhang C.
+...
+
+% TODO Tabelle: Query-Set-Uebersicht.
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{lrp{0.5\textwidth}}
+%         \toprule
+%         \textbf{Task category} & \textbf{Queries} & \textbf{Example query} \\
+%         \midrule
+%         Vulnerability assessment & ... & ... \\
+%         IOC enrichment & ... & ... \\
+%         Threat actor context & ... & ... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Evaluation query set by CTI task category}
+%     \label{tab:query-set}
+% \end{table}
+
+\subsection{RAGAS metrics}
+\label{sec:ragas-metrics}
+% TODO: verwendete Metriken definieren (faithfulness, answer relevancy,
+% context precision/recall, ...), Judge-Modell, Konfiguration.
+...
+
+% TODO Tabelle: Metrik-Definitionen kompakt.
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{lp{0.5\textwidth}l}
+%         \toprule
+%         \textbf{Metric} & \textbf{Measures} & \textbf{Range} \\
+%         \midrule
+%         Faithfulness & ... & 0--1 \\
+%         Answer relevancy & ... & 0--1 \\
+%         Context precision & ... & 0--1 \\
+%         Context recall & ... & 0--1 \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Evaluation metrics used in this thesis}
+%     \label{tab:metrics}
+% \end{table}
+
+\subsection{Baseline and variant configurations}
+\label{sec:baselines}
+% TODO: Konfigurationsmatrix; Setup A/B dokumentieren. Kapitel 4.1
+% verweist NUR hierher, keine Wiederholung dort.
+...
+
+% TODO Tabelle: Konfigurationsmatrix (wichtigste Tabelle von 3.7).
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{llll}
+%         \toprule
+%         \textbf{ID} & \textbf{Configuration} & \textbf{Retrieval} & \textbf{Generation model} \\
+%         \midrule
+%         V0 & Non-retrieval baseline & --- & local 8B \\
+%         V1 & Sparse-only & BM25 & local 8B \\
+%         V2 & Dense-only & vector & local 8B \\
+%         V3 & Hybrid & BM25 + vector & local 8B \\
+%         V4 & Hybrid + reranking & BM25 + vector + rerank & local 8B \\
+%         V5 & Ablation: hosted model & wie V4 & hosted \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Baseline and variant configurations}
+%     \label{tab:configurations}
+% \end{table}
+
+\subsection{Experimental protocol}
+\label{sec:protocol}
+% TODO: Ablauf, Reproduzierbarkeit (Seeds, Versionen, Hardware),
+% Fairness-Bedingungen der Vergleiche.
+...
