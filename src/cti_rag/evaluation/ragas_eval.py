@@ -114,6 +114,36 @@ def _aggregate_metric_means(records: list[dict], metrics: list) -> dict[str, flo
 # mandates this section as the last one in the output.
 _L2_TRAILING_GAPS_RE = re.compile(r"(?:^|\n)\*\*Gaps\*\*\s*\n.*\Z", re.DOTALL)
 
+# Template-mandated absence declarations. The VulnTriage template requires
+# the exact mitigation-fallback sentence, and instructs the model to state
+# when versions are absent — the model phrases those freely but in a stable
+# "No ... in the retrieved context" shape. gpt-4o-mini's noncommittal
+# classifier zeroes answer_relevancy for ANY answer containing such a
+# sentence, so they are removed from the scored text only.
+_TEMPLATE_ABSENCE_SENTENCES = (
+    "No reliable mitigation guidance is present in the retrieved context.",
+)
+_L2_ABSENCE_LINE_RE = re.compile(
+    r"^No\b[^.\n]*\bin the retrieved context\.?$", re.IGNORECASE
+)
+
+
+def _strip_absence_declarations(text: str) -> str:
+    """Remove mandated absence sentences and pure absence lines from text."""
+    for sentence in _TEMPLATE_ABSENCE_SENTENCES:
+        text = text.replace(sentence, "")
+
+    kept_lines = []
+    for line in text.splitlines():
+        core = line.strip().lstrip("*-•").strip()
+        if not core and line.strip():
+            # Line consisted only of a bullet marker after sentence removal.
+            continue
+        if _L2_ABSENCE_LINE_RE.match(core):
+            continue
+        kept_lines.append(line.rstrip())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept_lines)).strip()
+
 
 def _ragas_answer_text(response: RAGResponse) -> str:
     """Select the answer text RAGAS should score for a response.
@@ -126,15 +156,18 @@ def _ragas_answer_text(response: RAGResponse) -> str:
     instead; the full L1+L2 answer stays in the artifact and is what the
     Field-Coverage and Rubric evaluators assess.
 
-    The mandated trailing **Gaps** section is also stripped: it is
-    meta-commentary about the retrieved context ("lacks IoCs", "no
-    detection rules"), and its phrasing trips RAGAS' noncommittal
+    Deterministic structural elements are stripped from the scored text
+    (never from the artifact): the trailing **Gaps** section and the
+    template-mandated absence declarations. Both are meta-commentary
+    about the retrieved context rather than answers to the question, and
+    their phrasing deterministically trips RAGAS' noncommittal
     classifier, zeroing answer_relevancy for otherwise complete answers.
     """
     l2 = getattr(response, "l2_output", "")
     if not l2:
         return response.answer
     stripped = _L2_TRAILING_GAPS_RE.sub("", l2).strip()
+    stripped = _strip_absence_declarations(stripped)
     return stripped if stripped else l2
 
 

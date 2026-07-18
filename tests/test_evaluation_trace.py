@@ -52,6 +52,32 @@ def test_ragas_answer_text_strips_trailing_gaps_section():
     assert _ragas_answer_text(gaps_only) == "**Gaps**\n* Nothing usable retrieved."
 
 
+def test_ragas_answer_text_strips_template_absence_declarations():
+    l2 = (
+        "**Exploitation Context**\n"
+        "* Real claim about exploitation [Source: nvd_x].\n"
+        "* No authentication is required for exploitation [Source: nvd_x].\n\n"
+        "**Affected Versions**\n"
+        "* The affected versions are xz 5.6.0 and 5.6.1 [Source: nvd_x].\n"
+        "* No fixed version strings are present in the retrieved context.\n\n"
+        "**Mitigations**\n"
+        "Apply updates per vendor instructions [Source: kev_x]. "
+        "No reliable mitigation guidance is present in the retrieved context.\n"
+    )
+    resp = RAGResponse(
+        query="q", answer="full", contexts=["c"], source_documents=[], l2_output=l2
+    )
+    scored = _ragas_answer_text(resp)
+    # Mandated fallback sentence removed even mid-line; pure absence line
+    # removed; substantive claims survive — including ones starting with
+    # "No" that carry citations and do not end in "in the retrieved context".
+    assert "No reliable mitigation guidance" not in scored
+    assert "No fixed version strings" not in scored
+    assert "Apply updates per vendor instructions [Source: kev_x]." in scored
+    assert "No authentication is required for exploitation [Source: nvd_x]." in scored
+    assert "The affected versions are xz 5.6.0 and 5.6.1 [Source: nvd_x]." in scored
+
+
 class _FakeSeries:
     def __init__(self, values):
         self._values = [value for value in values if value is not None]
