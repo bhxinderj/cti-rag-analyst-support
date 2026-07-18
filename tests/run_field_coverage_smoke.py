@@ -136,6 +136,7 @@ def main() -> int:
     all_queries = _load_queries(Path(args.queries_file))
     if args.all:
         queries = list(all_queries)
+        selected_ids = tuple(q.get("id") for q in queries)
     else:
         selected_ids = tuple(args.only) if args.only else CALIBRATION_IDS
         queries = [q for q in all_queries if q.get("id") in selected_ids]
