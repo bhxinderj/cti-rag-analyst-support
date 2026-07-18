@@ -1,0 +1,247 @@
+% ======================================================================
+% Kapitel 4 — Results and Critical Appraisal (Budget: ~8 Seiten)
+% Enthaelt Ergebnisse UND deren Einordnung (kein separates Discussion-Kapitel):
+% 4.6 Bewertung gegen Designkriterien, 4.8 Beantwortung der Forschungsfragen.
+% ======================================================================
+\chapter{Results and Critical Appraisal}
+\label{ch:results}
+
+\section{Experimental setup}
+\label{sec:experimental-setup}
+% TODO: nur konkrete Durchfuehrung (Konfigurationen, Laufumgebung, Ablauf);
+% KEINE Wiederholung des Evaluationsdesigns aus \ref{sec:evaluation-design}.
+% Absatz "Methodological remarks" nach Salmas Vorbild fuer Fairness-Details
+% (z.B. Local-8B vs. hosted, Setup A/B).
+...
+
+% TODO Tabelle: Laufumgebung (klein); Konfigurationen NUR per Verweis
+% auf Table~\ref{tab:configurations}.
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{ll}
+%         \toprule
+%         \textbf{Component} & \textbf{Version / specification} \\
+%         \midrule
+%         Hardware & ... \\
+%         Generation model & ... \\
+%         Embedding model & ... \\
+%         Key software & Python ..., LangChain ..., ChromaDB ..., RAGAS ... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Runtime environment of the evaluation}
+%     \label{tab:environment}
+% \end{table}
+
+\section{Retrieval performance}
+\label{sec:results-retrieval}
+% TODO: Ergebnisse pro Retrieval-Konfiguration, Bezug zu SRQ1.
+% Chart per Skript aus Eval-Daten generieren (einheitlicher Stil mit \ref{fig:generation-results}).
+...
+
+% TODO Tabelle: IR-Metriken x Konfigurationen (V1--V4 aus \ref{tab:configurations}).
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{lrrrr}
+%         \toprule
+%         \textbf{Configuration} & \textbf{P@k} & \textbf{R@k} & \textbf{MRR} & \textbf{nDCG} \\
+%         \midrule
+%         V1 Sparse-only & ... & ... & ... & ... \\
+%         V2 Dense-only & ... & ... & ... & ... \\
+%         V3 Hybrid & ... & ... & ... & ... \\
+%         V4 Hybrid + rerank & ... & ... & ... & ... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Retrieval performance across configurations}
+%     \label{tab:retrieval-results}
+% \end{table}
+
+% TODO Abbildung: gruppiertes Balkendiagramm zu \ref{tab:retrieval-results}.
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{retrieval_results}
+%     \caption{Retrieval performance by configuration and metric}
+%     \label{fig:retrieval-results}
+% \end{figure}
+
+\section{Generation quality}
+\label{sec:results-generation}
+% TODO: RAGAS-Ergebnisse, Bezug zu SRQ1. Gleicher Chart-Stil wie 4.2.
+...
+
+% TODO Tabelle: RAGAS-Metriken x Konfigurationen (inkl. V0 Baseline!).
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{lrrrr}
+%         \toprule
+%         \textbf{Configuration} & \textbf{Faithf.} & \textbf{Ans. rel.} & \textbf{Ctx. prec.} & \textbf{Ctx. rec.} \\
+%         \midrule
+%         V0 Non-retrieval & ... & ... & --- & --- \\
+%         V3 Hybrid & ... & ... & ... & ... \\
+%         V4 Hybrid + rerank & ... & ... & ... & ... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Generation quality (RAGAS) across configurations}
+%     \label{tab:generation-results}
+% \end{table}
+
+% TODO Abbildung: Chart zu \ref{tab:generation-results}, Stil wie \ref{fig:retrieval-results}.
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{generation_results}
+%     \caption{Generation quality by configuration and metric}
+%     \label{fig:generation-results}
+% \end{figure}
+
+\section{Baseline comparison and ablation}
+\label{sec:results-ablation}
+% TODO: Vergleich gegen Baselines; Ablation (u.a. hosted Modell als
+% Ablation-Zeile, Reranking an/aus). Was traegt welche Komponente bei?
+...
+
+% TODO Tabelle: wichtigste Einzeltabelle der Arbeit --- Delta gegenueber
+% V0 Non-Retrieval-Baseline (beantwortet SRQ1 direkt).
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{lrrr}
+%         \toprule
+%         \textbf{Configuration} & \textbf{Metric ...} & \textbf{Metric ...} & \textbf{$\Delta$ vs. V0} \\
+%         \midrule
+%         V0 Non-retrieval & ... & ... & --- \\
+%         V4 Hybrid + rerank & ... & ... & +... \\
+%         V5 Hosted model & ... & ... & +... \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Ablation results relative to the non-retrieval baseline}
+%     \label{tab:ablation}
+% \end{table}
+
+\section{Scenario-based evaluation of representative outputs}
+\label{sec:representative-outputs}
+% Qualitative Ergebnisse pro CTI-Task-Szenario (Proposal: Process Analysis).
+% Pro Subsection: 1 exemplarische Antwort mit Zitaten (gekuerzt) + Bewertung
+% entlang task coverage, clarity, transparency; Rest in Anhang E.
+% Beleg-Basis fuer SRQ2 --- die Antwortbox in \ref{sec:rq-answers} verweist
+% pro Task-Typ hierher.
+
+\subsection{Vulnerability assessment}
+\label{sec:scenario-vuln}
+% TODO: CVE-/Schwachstellen-Summarization-Szenario. Dieses Szenario als
+% echten UI-Screenshot zeigen (Antwort mit sichtbaren Zitaten ---
+% Analog zu Salmas Audit-Trail-Screenshot); 4.5.2/4.5.3 als Text-Boxen.
+...
+
+% TODO Abbildung: UI-Screenshot Antwort mit Zitaten.
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{scenario_vuln_answer}
+%     \caption{System response with source citations for a vulnerability
+%              assessment query (excerpt)}
+%     \label{fig:scenario-vuln}
+% \end{figure}
+
+\subsection{IOC enrichment}
+\label{sec:scenario-ioc}
+% TODO: Indicator-of-Compromise-Anreicherungs-Szenario.
+% Antwortauszug als gesetzte Box (druckt sauberer als Screenshot), z.B.:
+% \begin{tcolorbox}[title={Example response: IOC enrichment (excerpt)},
+%                   fonttitle=\bfseries, colback=gray!4, colframe=gray!60!black,
+%                   boxrule=0.5pt, arc=1mm]
+% ...
+% \end{tcolorbox}
+...
+
+\subsection{Threat actor context building}
+\label{sec:scenario-actor}
+% TODO: Threat-Actor-/TTP-Kontext-Szenario. Ebenfalls Text-Box wie 4.5.2.
+...
+
+\section{Assessment against the design criteria}
+\label{sec:assessment}
+% TODO: pro Kriterium C1...Cn: erfuellt / teilweise / nicht erfuellt,
+% mit Verweis auf die Evidenz in 4.2--4.5 (nur referenzieren, nicht
+% nacherzaehlen). Kompakte Tabelle + kurze kritische Wuerdigung.
+% In der Wuerdigung den Bogen zu den Workflow-Engpaessen B1--B3
+% (\ref{sec:cti}) schlagen: welcher Engpass wird durch welches erfuellte
+% Kriterium adressiert (Salmas "Verbesserungen ggue. Ist-Prozess"-Effekt).
+...
+
+% TODO Tabelle: Kriterien-Assessment.
+% \begin{table}[htbp]
+%     \centering\small
+%     \begin{tabular}{llp{0.34\textwidth}l}
+%         \toprule
+%         \textbf{Criterion} & \textbf{Status} & \textbf{Evidence} & \textbf{Bottleneck} \\
+%         \midrule
+%         C1 Evidence-linked outputs & fulfilled & Sec.~\ref{sec:representative-outputs} & B3 \\
+%         C2 Hybrid retrieval & fulfilled & Tab.~\ref{tab:retrieval-results} & B1 \\
+%         C3 Source integrity & partially & ... & --- \\
+%         C4 Scenario-based evaluation & fulfilled & Sec.~\ref{sec:representative-outputs} & B1 \\
+%         C5 Analyst-oriented presentation & ... & ... & B1 \\
+%         C6 Open-source stack & fulfilled & Sec.~\ref{sec:implementation} & --- \\
+%         \bottomrule
+%     \end{tabular}
+%     \caption{Assessment of the prototype against the design criteria}
+%     \label{tab:assessment}
+% \end{table}
+
+\section{Reference model for CTI-RAG integration}
+\label{sec:reference-model}
+% TODO: aus den Ergebnissen verallgemeinertes Referenzmodell
+% (Artefakt-Beitrag der Arbeit): Komponenten, Datenfluesse,
+% Analyst-Interaktionspunkte, Governance (Proposal: Reference Modeling).
+...
+
+% TODO Abbildung: DIE Abbildung der Arbeit --- hier lohnt der meiste
+% Gestaltungsaufwand. Als drawio in docs/architecture/ anlegen.
+% \begin{figure}[htbp]
+%     \centering
+%     \includegraphics[width=\textwidth]{reference_model}
+%     \caption{Reference model for integrating RAG-based LLM systems into
+%              CTI and threat-hunting workflows}
+%     \label{fig:reference-model}
+% \end{figure}
+
+\section{Answering the research questions}
+\label{sec:rq-answers}
+% Spiegelt die Boxen aus \ref{sec:research-questions}: Antwort in 1--2
+% Saetzen + "Evidence:"-Bullets mit Verweisen auf Abschnitte/Tabellen.
+
+\begin{rqbox}{MRQ}
+    % TODO: Frage aus \ref{sec:research-questions} wiederholen, dann:
+    \textbf{Answer:} ...\\[2pt]
+    \textbf{Evidence:}
+    \begin{itemize}
+        \item ... (Section~\ref{sec:results-retrieval})
+        \item ... (Section~\ref{sec:results-generation})
+        \item ... (Section~\ref{sec:assessment})
+    \end{itemize}
+\end{rqbox}
+
+\begin{rqbox}{SRQ1 --- Information retrieval and answer quality}
+    % Beleg-Basis: RAGAS-/IR-Ergebnisse + Vergleich gegen Non-Retrieval-Baseline.
+    \textbf{Answer:} ...\\[2pt]
+    \textbf{Evidence:}
+    \begin{itemize}
+        \item ... (Section~\ref{sec:results-retrieval}, Section~\ref{sec:results-ablation})
+    \end{itemize}
+\end{rqbox}
+
+\begin{rqbox}{SRQ2 --- Practical utility and workflow support}
+    % Beleg-Basis: szenariobasierte qualitative Analyse, pro Task-Typ.
+    \textbf{Answer:} ...\\[2pt]
+    \textbf{Evidence:}
+    \begin{itemize}
+        \item Vulnerability assessment: ... (Section~\ref{sec:scenario-vuln})
+        \item IOC enrichment: ... (Section~\ref{sec:scenario-ioc})
+        \item Threat actor context: ... (Section~\ref{sec:scenario-actor})
+    \end{itemize}
+\end{rqbox}
+
+\begin{rqbox}{SRQ3 --- Conceptual design}
+    % Beleg-Basis: Referenzmodell/Designprinzipien aus Synthese der Ergebnisse.
+    \textbf{Answer:} ...\\[2pt]
+    \textbf{Evidence:}
+    \begin{itemize}
+        \item ... (Section~\ref{sec:reference-model}, Table~\ref{tab:design-criteria})
+    \end{itemize}
+\end{rqbox}

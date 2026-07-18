@@ -1,36 +1,48 @@
 \babel@toc {english}{}\relax 
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
-\contentsline {section}{\numberline {1.1}Problem statement and motivation}{1}{section.1.1}%
-\contentsline {section}{\numberline {1.2}State of the art}{1}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Research questions and objectives}{1}{section.1.3}%
-\contentsline {chapter}{\numberline {2}Methodology}{1}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Literature review}{1}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Prototype development}{1}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}System overview}{1}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}Data preparation and preprocessing}{1}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Embedding and retrieval strategy}{2}{subsection.2.2.3}%
-\contentsline {subsection}{\numberline {2.2.4}Answer generation and citation}{2}{subsection.2.2.4}%
-\contentsline {subsection}{\numberline {2.2.5}Agent-based extension (MCP)}{2}{subsection.2.2.5}%
-\contentsline {section}{\numberline {2.3}Evaluation design}{2}{section.2.3}%
-\contentsline {subsection}{\numberline {2.3.1}Evaluation tools and implementation}{2}{subsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.3.2}Research metrics}{2}{subsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.3.3}Evaluation scenarios / Query set}{2}{subsection.2.3.3}%
-\contentsline {subsection}{\numberline {2.3.4}Comparison baselines}{2}{subsection.2.3.4}%
-\contentsline {subsection}{\numberline {2.3.5}Experimental setup and evaluation procedure}{2}{subsection.2.3.5}%
-\contentsline {section}{\numberline {2.4}Reference modeling}{2}{section.2.4}%
-\contentsline {chapter}{\numberline {3}Results}{2}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Prototype implementation results}{3}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Evaluation results}{3}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Comparison with baselines}{3}{section.3.3}%
-\contentsline {chapter}{\numberline {4}Discussion}{3}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Interpretation of results}{3}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Limitations}{3}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Implications}{3}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Future work}{3}{section.4.4}%
-\contentsline {chapter}{\nonumberline List of Figures}{4}{chapter*.8}%
-\contentsline {chapter}{\nonumberline List of Tables}{5}{chapter*.9}%
-\contentsline {chapter}{Documentation table of AI-based tools}{6}{section*.10}%
-\contentsline {chapter}{List of Abbreviations}{7}{chapter*.11}%
-\contentsline {chapter}{\numberline {A}Additional Evaluation Tables}{8}{appendix.A}%
-\contentsline {chapter}{\numberline {B}Prompt Templates}{9}{appendix.B}%
+\contentsline {section}{\numberline {1.1}Motivation and problem statement}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Solution approach}{1}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Research questions}{2}{section.1.3}%
+\contentsline {section}{\numberline {1.4}Objectives, scope and delimitation}{3}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Methodological approach}{3}{section.1.5}%
+\contentsline {chapter}{\numberline {2}Background and Related Work}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}CTI and RAG foundations}{4}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Key findings from the literature}{5}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Research gaps}{6}{section.2.3}%
+\contentsline {chapter}{\numberline {3}Solution: Design and Implementation}{7}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Task formulation}{7}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Requirements and design criteria}{8}{section.3.2}%
+\contentsline {section}{\numberline {3.3}System architecture}{8}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Data ingestion and preprocessing}{8}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Hybrid retrieval and reranking}{8}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Context assembly, answer generation and citation}{8}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Implementation}{9}{section.3.7}%
+\contentsline {section}{\numberline {3.8}Evaluation design}{9}{section.3.8}%
+\contentsline {subsection}{\numberline {3.8.1}Test set construction}{9}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.2}RAGAS metrics}{9}{subsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.8.3}Baseline and variant configurations}{9}{subsection.3.8.3}%
+\contentsline {subsection}{\numberline {3.8.4}Experimental protocol}{9}{subsection.3.8.4}%
+\contentsline {chapter}{\numberline {4}Results and Critical Appraisal}{9}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Experimental setup}{9}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Retrieval performance}{9}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Generation quality}{10}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Baseline comparison and ablation}{10}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Scenario-based evaluation of representative outputs}{10}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Vulnerability assessment}{10}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}IOC enrichment}{10}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}Threat actor context building}{10}{subsection.4.5.3}%
+\contentsline {section}{\numberline {4.6}Assessment against the design criteria}{10}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Reference model for CTI-RAG integration}{10}{section.4.7}%
+\contentsline {section}{\numberline {4.8}Answering the research questions}{11}{section.4.8}%
+\contentsline {chapter}{\numberline {5}Conclusion, Limitations and Outlook}{11}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Summary and contributions}{11}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Limitations}{12}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Future work}{12}{section.5.3}%
+\contentsline {chapter}{\nonumberline Bibliography}{13}{chapter*.10}%
+\contentsline {chapter}{\nonumberline List of Figures}{15}{chapter*.11}%
+\contentsline {chapter}{\nonumberline List of Tables}{16}{chapter*.12}%
+\contentsline {chapter}{Documentation table of AI-based tools}{17}{section*.13}%
+\contentsline {chapter}{List of Abbreviations}{18}{chapter*.14}%
+\contentsline {chapter}{\numberline {A}Additional Evaluation Tables}{19}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Prompt Templates}{20}{appendix.B}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

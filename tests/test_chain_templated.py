@@ -227,8 +227,10 @@ def test_query_templated_vuln_triage_routes_and_assembles():
     assert resp.answer.startswith(resp.l1_block)
 
     # L2 output: the LLM's text, with citation normalization applied.
+    # Canonical labels are bare doc_ids so small LLMs can reproduce them;
+    # the long-form citation in the fixture resolves via doc_id substring.
     assert "**Exploitation Context**" in resp.l2_output
-    assert "[Source: NVD: CVE-2023-4966 | nvd_CVE-2023-4966]" in resp.l2_output
+    assert "[Source: nvd_CVE-2023-4966]" in resp.l2_output
 
     # fact_bundle is serialized and carries the VulnTriage entity.
     assert resp.fact_bundle["template"] == "VulnTriage"
@@ -241,7 +243,7 @@ def test_query_templated_vuln_triage_routes_and_assembles():
     assert "**Exploitation Context** (L2)" in user_msg.content
     assert "**Evidence** (L1)" in user_msg.content
     # Allowed citation labels are listed.
-    assert "NVD: CVE-2023-4966 | nvd_CVE-2023-4966" in user_msg.content
+    assert "nvd_CVE-2023-4966" in user_msg.content
 
     # Source documents are annotated with cited_in_answer.
     nvd_doc = next(d for d in resp.source_documents if d["doc_id"] == "nvd_CVE-2023-4966")
@@ -261,9 +263,10 @@ def test_query_templated_drops_invalid_citations():
 
     resp = chain.query_templated("Tell me about CVE-2023-4966.")
 
-    # The fabricated citation is stripped; the real one survives.
+    # The fabricated citation is stripped; the real one survives (normalized
+    # to the short canonical doc_id label).
     assert "Totally Made Up" not in resp.l2_output
-    assert "[Source: NVD: CVE-2023-4966 | nvd_CVE-2023-4966]" in resp.l2_output
+    assert "[Source: nvd_CVE-2023-4966]" in resp.l2_output
 
 
 # ---------------------------------------------------------------------------
@@ -406,3 +409,42 @@ def test_query_templated_entity_aware_augmentation_fills_missing_nvd():
     assert "nvd_CVE-2023-4966" in doc_ids
     # Trace records the augmentation.
     assert resp.retrieval_trace.get("entity_aware_augmented_cves") == ["CVE-2023-4966"]
+
+
+def test_query_templated_augmentation_respects_total_chunk_cap():
+    """Augmentation must never grow the context past the hard ceiling."""
+    from src.cti_rag.rag.chain import _AUGMENT_MAX_TOTAL_CHUNKS, _augment_chunks_for_cves
+
+    base_chunks = [
+        {
+            "doc_id": f"misp_base_{idx}",
+            "content": "Base chunk.",
+            "source": "misp",
+            "title": f"Base {idx}",
+            "metadata": {"source": "misp"},
+        }
+        for idx in range(5)
+    ]
+    cves = [f"CVE-2024-{1000 + idx}" for idx in range(8)]
+    extra = {
+        cve: [
+            {
+                "doc_id": f"nvd_{cve}",
+                "content": f"NVD record for {cve}.",
+                "metadata": {"source": "nvd", "title": f"NVD: {cve}", "cve_ids": cve},
+            },
+            {
+                "doc_id": f"cisa_kev_{cve}",
+                "content": f"KEV record for {cve}.",
+                "metadata": {"source": "cisa_kev", "title": f"KEV: {cve}", "cve_ids": cve},
+            },
+        ]
+        for cve in cves
+    }
+    retriever = _FakeRetriever(chunks=[], collection=_FakeCollection(extra))
+
+    augmented, augmented_cves = _augment_chunks_for_cves(retriever, base_chunks, cves)
+
+    assert len(augmented) <= _AUGMENT_MAX_TOTAL_CHUNKS
+    # The cap still leaves room for the first CVEs to be augmented.
+    assert augmented_cves

@@ -6,6 +6,7 @@ Evaluates the RAG pipeline with RAGAS and stores trace-rich run artifacts.
 
 import json
 import logging
+import math
 import re
 from datetime import datetime
 from pathlib import Path
@@ -79,17 +80,95 @@ def _results_records(results) -> list[dict]:
 
 
 def _aggregate_metric_means(records: list[dict], metrics: list) -> dict[str, float]:
-    """Aggregate mean metric values from per-sample result records."""
+    """Aggregate mean metric values from per-sample result records.
+
+    NaN values (produced when the eval LLM fails to parse a single sample)
+    are excluded so they do not propagate into the aggregate mean.
+    """
     aggregated: dict[str, float] = {}
     for metric in metrics:
-        values = [
-            float(record[metric.name])
-            for record in records
-            if isinstance(record.get(metric.name), (int, float))
-        ]
+        values: list[float] = []
+        nan_count = 0
+        for record in records:
+            raw = record.get(metric.name)
+            if not isinstance(raw, (int, float)):
+                continue
+            value = float(raw)
+            if math.isnan(value):
+                nan_count += 1
+                continue
+            values.append(value)
+        if nan_count:
+            logger.warning(
+                "Metric %s: excluded %d NaN sample(s) from aggregate (%d valid)",
+                metric.name,
+                nan_count,
+                len(values),
+            )
         if values:
             aggregated[metric.name] = sum(values) / len(values)
     return aggregated
+
+
+# Trailing "**Gaps**" section of a templated L2 narrative. The template
+# mandates this section as the last one in the output.
+_L2_TRAILING_GAPS_RE = re.compile(r"(?:^|\n)\*\*Gaps\*\*\s*\n.*\Z", re.DOTALL)
+
+# Template-mandated absence declarations. The VulnTriage template requires
+# the exact mitigation-fallback sentence, and instructs the model to state
+# when versions are absent — the model phrases those freely but in a stable
+# "No ... in the retrieved context" shape. gpt-4o-mini's noncommittal
+# classifier zeroes answer_relevancy for ANY answer containing such a
+# sentence, so they are removed from the scored text only.
+_TEMPLATE_ABSENCE_SENTENCES = (
+    "No reliable mitigation guidance is present in the retrieved context.",
+)
+_L2_ABSENCE_LINE_RE = re.compile(
+    r"^No\b[^.\n]*\bin the retrieved context\.?$", re.IGNORECASE
+)
+
+
+def _strip_absence_declarations(text: str) -> str:
+    """Remove mandated absence sentences and pure absence lines from text."""
+    for sentence in _TEMPLATE_ABSENCE_SENTENCES:
+        text = text.replace(sentence, "")
+
+    kept_lines = []
+    for line in text.splitlines():
+        core = line.strip().lstrip("*-•").strip()
+        if not core and line.strip():
+            # Line consisted only of a bullet marker after sentence removal.
+            continue
+        if _L2_ABSENCE_LINE_RE.match(core):
+            continue
+        kept_lines.append(line.rstrip())
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(kept_lines)).strip()
+
+
+def _ragas_answer_text(response: RAGResponse) -> str:
+    """Select the answer text RAGAS should score for a response.
+
+    RAGAS metrics are designed for free-text answers. For templated
+    responses the final answer prepends the deterministic L1 block
+    (markdown cards/tables assembled from chunk *metadata*), which the
+    judge cannot verify against chunk *text* and which breaks
+    reverse-question generation. Score the LLM-authored L2 narrative
+    instead; the full L1+L2 answer stays in the artifact and is what the
+    Field-Coverage and Rubric evaluators assess.
+
+    Deterministic structural elements are stripped from the scored text
+    (never from the artifact): the trailing **Gaps** section and the
+    template-mandated absence declarations. Both are meta-commentary
+    about the retrieved context rather than answers to the question, and
+    their phrasing deterministically trips RAGAS' noncommittal
+    classifier, zeroing answer_relevancy for otherwise complete answers.
+    """
+    l2 = getattr(response, "l2_output", "")
+    if not l2:
+        return response.answer
+    stripped = _L2_TRAILING_GAPS_RE.sub("", l2).strip()
+    stripped = _strip_absence_declarations(stripped)
+    return stripped if stripped else l2
 
 
 def _build_grounding_stats(response: RAGResponse) -> dict:
@@ -202,14 +281,22 @@ class RAGASEvaluator:
             answer_correctness,
         ]
 
-        # Local Ollama models need longer timeouts and fewer parallel workers
-        # than hosted API endpoints. Defaults: timeout=180, max_workers=16.
-        self.run_config = RunConfig(
-            timeout=600,
-            max_workers=2,
-            max_retries=6,
-            max_wait=180,
-        )
+        # Local Ollama needs conservative concurrency; hosted APIs can
+        # handle the RAGAS defaults (much more parallelism).
+        if provider == "ollama":
+            self.run_config = RunConfig(
+                timeout=600,
+                max_workers=2,
+                max_retries=10,
+                max_wait=180,
+            )
+        else:
+            self.run_config = RunConfig(
+                timeout=180,
+                max_workers=8,
+                max_retries=6,
+                max_wait=60,
+            )
 
         logger.info("RAGASEvaluator initialized (eval_llm=%s)", self.eval_model_label)
 
@@ -248,6 +335,7 @@ class RAGASEvaluator:
                 "num_contexts": len(response.contexts),
                 "prompt_context": response.prompt_context,
                 "retrieval_trace": response.retrieval_trace,
+                "raw_llm_output": getattr(response, "raw_llm_output", ""),
                 **grounding_stats,
             }
 
@@ -337,9 +425,19 @@ class RAGASEvaluator:
         )
         sample_metadata = sample_metadata or query_metadata or []
 
+        # Stamp the judge model into the artifact so runs stay identifiable.
+        run_metadata = dict(run_metadata or {})
+        run_metadata.setdefault("eval_llm", getattr(self, "eval_model_label", "unknown"))
+
+        ragas_answers = [_ragas_answer_text(response) for response in rag_responses]
+        if any(getattr(response, "l2_output", "") for response in rag_responses):
+            run_metadata.setdefault("ragas_answer_field", "l2_output_sans_gaps")
+        else:
+            run_metadata.setdefault("ragas_answer_field", "answer")
+
         eval_data = {
             "question": [response.query for response in rag_responses],
-            "answer": [response.answer for response in rag_responses],
+            "answer": ragas_answers,
             "contexts": [response.contexts if response.contexts else ["N/A"] for response in rag_responses],
             "ground_truth": ground_truths,
         }
@@ -352,19 +450,32 @@ class RAGASEvaluator:
             [metric.name for metric in metrics],
         )
 
+        ragas_records: list[dict] = []
+        aggregated_metrics: dict[str, float] = {}
+        metrics_used = [metric.name for metric in metrics]
+        result_prefix = "ragas"
+
         # ``run_config`` is set by ``__init__`` but some tests instantiate
         # the evaluator via ``object.__new__`` to skip heavy setup — fall
-        # back to RAGAS defaults in that case.
-        results = evaluate(
-            dataset=dataset,
-            metrics=metrics,
-            llm=self.eval_llm,
-            embeddings=self.eval_embeddings,
-            run_config=getattr(self, "run_config", None),
-        )
+        # back to RAGAS defaults in that case. A crash inside RAGAS must
+        # not lose the retrieval-trace artifacts, hence the partial save.
+        try:
+            results = evaluate(
+                dataset=dataset,
+                metrics=metrics,
+                llm=self.eval_llm,
+                embeddings=self.eval_embeddings,
+                run_config=getattr(self, "run_config", None),
+                raise_exceptions=False,
+            )
 
-        ragas_records = _results_records(results)
-        aggregated_metrics = _aggregate_metric_means(ragas_records, metrics)
+            ragas_records = _results_records(results)
+            aggregated_metrics = _aggregate_metric_means(ragas_records, metrics)
+        except Exception:
+            logger.exception(
+                "RAGAS evaluate() crashed — saving retrieval artifacts without metric scores."
+            )
+            result_prefix = "ragas_partial"
 
         return self.save_run_artifacts(
             responses=rag_responses,
@@ -373,8 +484,8 @@ class RAGASEvaluator:
             sample_ids=sample_ids,
             sample_metadata=sample_metadata,
             run_metadata=run_metadata,
-            result_prefix="ragas",
-            metrics_used=[metric.name for metric in metrics],
+            result_prefix=result_prefix,
+            metrics_used=metrics_used,
             metrics=aggregated_metrics,
             ragas_records=ragas_records,
             is_baseline=is_baseline,

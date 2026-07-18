@@ -6,4 +6,32 @@
 \usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage{acronym}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{float} % erlaubt [H] fuer harte Float-Platzierung
+\usepackage{longtable} % seitenumbrechende Tabellen
+% Absatzstil: kein Erstzeilen-Einzug, stattdessen vertikaler Abstand
+% zwischen Absaetzen (Blockstil wie in der Salma-Arbeit).
+\usepackage{parskip}
 \graphicspath{{images/}}
+
+% Stil fuer Prompt-/Code-Listings (z.B. lst:system-prompt in Kap. 3.5)
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    framerule=0.5pt,
+    xleftmargin=2mm,
+    captionpos=b}
+
+% Box fuer Forschungsfragen (Kap. 1) und deren Beantwortung (Kap. 4),
+% nach dem Vorbild der Salma-Arbeit.
+\newtcolorbox{rqbox}[1]{%
+    breakable,
+    colback=blue!4!white,
+    colframe=blue!35!black,
+    title={#1},
+    fonttitle=\bfseries,
+    boxrule=0.5pt,
+    arc=1mm,
+    left=2mm, right=2mm, top=1.5mm, bottom=1.5mm}

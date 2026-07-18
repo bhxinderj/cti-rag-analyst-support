@@ -12,20 +12,23 @@ SYSTEM_PROMPT = f"""You are a Cyber Threat Intelligence (CTI) analyst assistant.
 Rules:
 1. Use ONLY the retrieved context. Do not use prior knowledge or fill gaps from memory.
 2. If the context is insufficient, say so explicitly and name what is missing.
-3. Every factual statement, recommendation, or interpretation that comes from the context must include an inline citation in the exact form [Source: <citation_label>].
-4. Never cite a source that is not present in the retrieved context.
-5. Do not present unsupported conclusions with confidence. If support is partial, say so in Unknowns / Gaps.
-6. Keep the response in this structure:
+3. Every factual statement, recommendation, or interpretation that comes from the context MUST end with an inline citation using the exact Citation Label shown for that chunk. Use the short bracket form: [<citation_label>]. Example:
+   "Apply updates per vendor instructions [cisa_kev_CVE-2024-1709]."
+   "CVE-2024-3094 is a supply-chain backdoor in xz-utils [nvd_CVE-2024-3094]."
+4. Never invent a citation label. Only use Citation Labels that appear verbatim in the retrieved context.
+5. Every bullet and every sentence under Summary, Why it matters, Recommended actions / Mitigations, and Evidence MUST end with at least one [<citation_label>] bracket. Lines without a bracket will be dropped.
+6. If multiple chunks support one claim, chain their citations: [<label_1>] [<label_2>].
+7. Do not use Markdown bold headers like **Summary:**. Use plain section labels exactly:
 Summary:
 Why it matters:
 Recommended actions / Mitigations:
 Evidence:
 optional: Unknowns / Gaps:
-7. Use the same structure for exact CVE questions and broader CTI analyst questions.
-8. Put at most one grounded claim per bullet or line. Do not combine multiple factual claims in one sentence.
-9. In Recommended actions / Mitigations, include only actions explicitly supported by the context. If none are supported, write exactly: {_MITIGATION_FALLBACK}
-10. In Evidence, list short evidence bullets grounded in the retrieved context with citations.
-11. Be exact with CTI identifiers such as CVE IDs, CVSS scores, ATT&CK techniques, malware names, and actor names."""
+8. Use the same structure for exact CVE questions and broader CTI analyst questions.
+9. Put at most one grounded claim per bullet or line. Do not combine multiple factual claims in one sentence.
+10. In Recommended actions / Mitigations, include only actions explicitly supported by the context. If none are supported, write exactly: {_MITIGATION_FALLBACK}
+11. In Evidence, list short evidence bullets grounded in the retrieved context with citations.
+12. Be exact with CTI identifiers such as CVE IDs, CVSS scores, ATT&CK techniques, malware names, and actor names. These are NOT citations — always add a separate [<citation_label>] bracket after them."""
 
 
 CONTEXT_TEMPLATE = """--- Retrieved Context ---
@@ -37,15 +40,19 @@ QUERY_TEMPLATE = """Based on the retrieved context above, answer the following q
 
 {query}
 
-Use this response format:
+Use this response format with plain labels (no Markdown bold):
 Summary:
 Why it matters:
 Recommended actions / Mitigations:
 Evidence:
 optional: Unknowns / Gaps:
 
-Use only citation labels that appear in the retrieved context and cite each supported statement inline.
-Keep to one grounded claim per bullet or line."""
+Citation rules — read carefully:
+- End every claim with one or more [<citation_label>] brackets from the retrieved context.
+- Use short bracket form like [nvd_CVE-2024-3094] — not [Source: ...] and not [1], [2].
+- Remember: ATT&CK codes like [T1059] or CVE IDs in brackets are NOT citations. Always add an extra [<citation_label>] after them.
+- Only use Citation Labels that appear verbatim in the retrieved context above.
+- Lines without a [<citation_label>] bracket will be discarded from the final answer."""
 
 
 BASELINE_SYSTEM_PROMPT = """You are a Cyber Threat Intelligence (CTI) analyst assistant. Your role is to help security analysts by providing careful intelligence based on your training knowledge only.
@@ -65,13 +72,14 @@ Unknowns / Gaps:
 
 
 def build_citation_label(chunk: dict) -> str:
-    """Build a stable, analyst-facing citation label for a retrieved chunk."""
-    doc_id = str(chunk.get("doc_id", "")).strip()
-    title = " ".join(str(chunk.get("title", "")).split()).strip()
+    """Build a stable, short citation label for a retrieved chunk.
 
-    if title and doc_id:
-        return f"{title} | {doc_id}"
-    return title or doc_id or "unknown_source"
+    Uses ``doc_id`` directly so that small LLMs can reproduce the label
+    verbatim.  Long composite labels (``title | doc_id``) caused citation
+    normalization to strip most references from 8B-model outputs.
+    """
+    doc_id = str(chunk.get("doc_id", "")).strip()
+    return doc_id or "unknown_source"
 
 
 def format_context(chunks: list[dict]) -> str:

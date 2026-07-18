@@ -83,8 +83,9 @@ def test_query_normalizes_citation_aliases_to_canonical_labels():
 
     response = chain.query("What is CVE-2024-3094?")
 
-    assert "[Source: XZ Utils vulnerability | nvd_CVE-2024-3094]" in response.answer
-    assert "[Source: nvd_CVE-2024-3094]" not in response.answer
+    # Canonical labels are bare doc_ids; the title alias resolves to it.
+    assert "[Source: nvd_CVE-2024-3094]" in response.answer
+    assert "XZ Utils vulnerability |" not in response.answer
     assert "[Sources:" not in response.answer
     assert chain.llm.invocations == 1
 
@@ -242,7 +243,7 @@ def test_query_keeps_only_grounded_mitigation_guidance():
     response = chain.query("What should defenders do about CVE-2021-44228?")
 
     assert "- Isolate critical systems immediately." not in response.answer
-    assert "- Apply mitigations per vendor instructions. [Source: Log4Shell KEV | cisa_kev_CVE-2021-44228]" in response.answer
+    assert "- Apply mitigations per vendor instructions. [Source: cisa_kev_CVE-2021-44228]" in response.answer
     assert "No reliable mitigation guidance is present in the retrieved context." not in response.answer
 
 
