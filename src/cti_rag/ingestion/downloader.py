@@ -364,12 +364,13 @@ def download_nvd(
             cve = v.get("cve", {})
             metrics = cve.get("metrics", {})
             published_dt = _parse_iso_datetime(cve.get("published"))
-            modified_dt = _parse_iso_datetime(cve.get("lastModified"))
 
+            # Snapshot semantics: published <= cutoff. lastModified is NOT
+            # a drop criterion (see _filter_documents_by_snapshot in
+            # main.py) — NVD re-analysis timestamps would evict exactly
+            # the prominent CVEs the corpus needs.
             if snapshot_cutoff:
                 if published_dt and published_dt.date() > snapshot_cutoff:
-                    continue
-                if modified_dt and modified_dt.date() > snapshot_cutoff:
                     continue
 
             # Check cvssMetricV31, then cvssMetricV30

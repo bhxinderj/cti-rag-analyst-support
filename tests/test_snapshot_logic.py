@@ -11,16 +11,16 @@ from src.cti_rag.ingestion.models import CTIDocument, CTISourceType
 
 
 class TestSnapshotLogic(unittest.TestCase):
-    def test_filter_documents_by_snapshot_drops_documents_modified_after_cutoff(self):
-        stale_snapshot_doc = CTIDocument(
+    def test_filter_documents_by_snapshot_drops_only_post_cutoff_publications(self):
+        published_late_doc = CTIDocument(
             doc_id="nvd_CVE-2024-0001",
             source=CTISourceType.NVD,
             title="CVE-2024-0001",
             content="example",
-            published_date=datetime(2026, 3, 20, tzinfo=timezone.utc),
+            published_date=datetime(2026, 3, 29, tzinfo=timezone.utc),
             modified_date=datetime(2026, 3, 29, tzinfo=timezone.utc),
         )
-        valid_snapshot_doc = CTIDocument(
+        in_snapshot_doc = CTIDocument(
             doc_id="nvd_CVE-2024-0002",
             source=CTISourceType.NVD,
             title="CVE-2024-0002",
@@ -30,12 +30,31 @@ class TestSnapshotLogic(unittest.TestCase):
         )
 
         kept, dropped = _filter_documents_by_snapshot(
-            [stale_snapshot_doc, valid_snapshot_doc],
+            [published_late_doc, in_snapshot_doc],
             "2026-03-28",
         )
 
         self.assertEqual([doc.doc_id for doc in kept], ["nvd_CVE-2024-0002"])
         self.assertEqual([doc.doc_id for doc in dropped], ["nvd_CVE-2024-0001"])
+
+    def test_filter_documents_by_snapshot_keeps_in_range_doc_modified_after_cutoff(self):
+        # Regression for the 3081-dropped-NVD-docs bug: a CVE published
+        # inside the snapshot window must survive even when NVD
+        # re-analyzed it after the cutoff (e.g. CVE-2021-44228 with
+        # lastModified 2026-02-20).
+        reanalyzed_doc = CTIDocument(
+            doc_id="nvd_CVE-2021-44228",
+            source=CTISourceType.NVD,
+            title="CVE-2021-44228",
+            content="example",
+            published_date=datetime(2021, 12, 10, tzinfo=timezone.utc),
+            modified_date=datetime(2026, 2, 20, tzinfo=timezone.utc),
+        )
+
+        kept, dropped = _filter_documents_by_snapshot([reanalyzed_doc], "2025-12-31")
+
+        self.assertEqual([doc.doc_id for doc in kept], ["nvd_CVE-2021-44228"])
+        self.assertEqual(dropped, [])
 
     def test_parse_cisa_advisory_separates_release_and_last_updated(self):
         with TemporaryDirectory() as tmp_dir:
