@@ -342,6 +342,7 @@ def cmd_evaluate(args):
     run_metadata = {
         "snapshot_date": config["data"].get("snapshot_date"),
         "active_setup": config["data"].get("active_setup", "default"),
+        "generation_llm": getattr(chain, "generation_model_label", "unknown"),
     }
 
     # Evaluate

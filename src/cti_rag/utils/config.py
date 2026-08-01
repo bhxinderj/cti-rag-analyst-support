@@ -33,6 +33,15 @@ def load_config() -> dict:
     - B: NVD + CISA KEV + MISP + CISA Advisories
     """
     config = copy.deepcopy(_load_base_config())
+
+    # Generation-provider override for one-off runs (e.g. the hosted
+    # ablation row) without touching the frozen settings.yaml default.
+    llm_provider = os.environ.get("CTI_RAG_LLM_PROVIDER", "").strip().lower()
+    if llm_provider:
+        if llm_provider not in {"ollama", "openai", "openrouter"}:
+            raise ValueError(f"Unsupported CTI_RAG_LLM_PROVIDER: {llm_provider}")
+        config["llm"]["provider"] = llm_provider
+
     active_setup = os.environ.get("CTI_RAG_SETUP", "").strip().lower()
 
     if not active_setup:

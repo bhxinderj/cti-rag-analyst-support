@@ -7,7 +7,17 @@
 
 # --- LLM Configuration ---
 llm:
+  # Generation-model provider switch. Options:
+  #   ollama      — local Ollama (default; thesis-primary, evaluated setup)
+  #   openai      — OpenAI API (needs OPENAI_API_KEY), uses model_name_openai
+  #   openrouter  — OpenRouter API (needs OPENROUTER_API_KEY), uses model_name_openrouter
+  # Hosted providers serve exactly one purpose: the single hosted-generation
+  # ablation row. The hosted generator must differ from the evaluation judge
+  # (gpt-4o-mini) to avoid self-preference bias.
+  provider: "ollama"
   model_name: "llama3.1:8b-instruct-q5_K_M"
+  model_name_openai: "gpt-4.1-mini"
+  model_name_openrouter: "anthropic/claude-haiku-4.5"
   base_url: "http://localhost:11434"
   temperature: 0.1          # Low temperature for factual CTI responses
   top_p: 0.9

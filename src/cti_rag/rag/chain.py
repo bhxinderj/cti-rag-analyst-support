@@ -9,6 +9,7 @@ logged and inspectable for evaluation and debugging.
 """
 
 import logging
+import os
 import re
 import time
 from collections import Counter
@@ -819,6 +820,70 @@ class RAGResponse:
     l2_output: str = ""
 
 
+def build_generation_llm(llm_config: dict) -> tuple[str, object]:
+    """Instantiate the configured generation LLM (mirrors the judge adapter).
+
+    Providers via ``llm.provider`` in settings.yaml:
+      - ``ollama``      — local Ollama (default; the thesis-primary path,
+                          construction identical to the evaluated setup)
+      - ``openai``      — OpenAI via ``OPENAI_API_KEY``
+      - ``openrouter``  — OpenRouter via ``OPENROUTER_API_KEY``
+
+    Hosted providers exist for exactly one purpose: the single hosted-
+    generation ablation row that quantifies the local-vs-hosted quality
+    trade-off. The hosted generator must differ from the evaluation
+    judge model (gpt-4o-mini), otherwise the comparison inherits
+    self-preference bias.
+
+    Returns ``(model_label, chat_model)``; the label is stamped into run
+    metadata so artifacts stay self-describing.
+    """
+    provider = (llm_config.get("provider") or "ollama").lower()
+
+    if provider in ("openai", "openrouter"):
+        from langchain_openai import ChatOpenAI
+
+        if provider == "openai":
+            api_key = os.environ.get("OPENAI_API_KEY")
+            env_name = "OPENAI_API_KEY"
+            model_name = llm_config.get("model_name_openai", "gpt-4.1-mini")
+            extra_kwargs = {}
+        else:
+            api_key = os.environ.get("OPENROUTER_API_KEY")
+            env_name = "OPENROUTER_API_KEY"
+            model_name = llm_config.get(
+                "model_name_openrouter", "anthropic/claude-haiku-4.5"
+            )
+            extra_kwargs = {"base_url": "https://openrouter.ai/api/v1"}
+
+        if not api_key:
+            raise RuntimeError(
+                f"llm.provider={provider} requires the {env_name} environment variable."
+            )
+
+        llm = ChatOpenAI(
+            model=model_name,
+            api_key=api_key,
+            temperature=llm_config["temperature"],
+            top_p=llm_config["top_p"],
+            max_tokens=llm_config["max_tokens"],
+            timeout=llm_config.get("request_timeout", 120),
+            max_retries=4,
+            **extra_kwargs,
+        )
+        return f"{provider}:{model_name}", llm
+
+    # Default: local Ollama — argument-identical to the evaluated setup.
+    llm = ChatOllama(
+        model=llm_config["model_name"],
+        base_url=llm_config["base_url"],
+        temperature=llm_config["temperature"],
+        top_p=llm_config["top_p"],
+        num_predict=llm_config["max_tokens"],
+    )
+    return f"ollama:{llm_config['model_name']}", llm
+
+
 class RAGChain:
     """
     Main RAG orchestration chain.
@@ -836,19 +901,15 @@ class RAGChain:
         config = load_config()
         llm_config = config["llm"]
 
-        # Initialize LLM
-        self.llm = ChatOllama(
-            model=llm_config["model_name"],
-            base_url=llm_config["base_url"],
-            temperature=llm_config["temperature"],
-            top_p=llm_config["top_p"],
-            num_predict=llm_config["max_tokens"],
-        )
+        self.generation_model_label, self.llm = build_generation_llm(llm_config)
 
         self.retrieval_mode = retrieval_mode
         self.retriever: HybridRetriever | None = None
 
-        logger.info(f"RAGChain initialized (mode={retrieval_mode})")
+        logger.info(
+            f"RAGChain initialized (mode={retrieval_mode}, "
+            f"generation={self.generation_model_label})"
+        )
 
     def query(self, question: str) -> RAGResponse:
         """
