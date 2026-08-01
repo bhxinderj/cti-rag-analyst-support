@@ -16,11 +16,14 @@
 #   - difficulty: simple | moderate | complex
 #
 # Design decisions (document in thesis section 2.3.3):
-#   - 28 queries: 7 per task type (vuln, ioc, ttp, cross-source)
+#   - 28 queries across four task types: 6 vulnerability_analysis, 7
+#     ioc_enrichment, 7 ttp_correlation, 8 cross_source (vuln_003 counts as
+#     cross_source by task_type despite its vuln_ id prefix)
 #   - Ground truths are fact-checkable against the indexed snapshot (NVD, CISA
-#     KEV, CISA advisories, MISP; snapshot cutoff 2025-12-31). Facts that exist
-#     in data/raw but have no chunk in the Setup-B index (e.g. missing NVD docs
-#     for CVE-2021-44228, CVE-2023-22515, CVE-2024-1709) are NOT claimed.
+#     KEV, CISA advisories, MISP; corpus: published <= 2025-12-31, fetched
+#     2026-03-28). Since the snapshot-filter fix (ab48938) and re-index of
+#     2026-07-20 the index carries all in-range NVD entries; every GT fact is
+#     verified against an existing chunk.
 #   - GT review 2026-07-18: open enumeration questions were narrowed to named
 #     entity sets so the correct answer set is uniquely retrievable (Class A),
 #     and ground truths were reduced to snapshot-backed core facts (Class B).
