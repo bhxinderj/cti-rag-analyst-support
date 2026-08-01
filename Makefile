@@ -8,7 +8,7 @@ QUERY ?= What is CVE-2021-44228 and how has it been exploited?
 MODE ?= hybrid
 SETUP ?= default
 
-.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test test-retrieval thesis thesis-force api ui rubric
+.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test test-retrieval thesis thesis-force api ui rubric mcp-server mcp-demo
 
 help:
 	@echo "Available targets:"
@@ -159,3 +159,9 @@ thesis:
 
 thesis-force:
 	cd thesis && latexmk -pdf -interaction=nonstopmode -file-line-error -outdir=tex_build -g mt_bhinder.tex
+
+mcp-server: install
+	CTI_RAG_SETUP=$(if $(filter a b,$(SETUP)),$(SETUP),b) $(VENV_PY) -m src.cti_rag.mcp.server
+
+mcp-demo: install
+	CTI_RAG_SETUP=$(if $(filter a b,$(SETUP)),$(SETUP),b) $(VENV_PY) -m src.cti_rag.mcp.client_demo
