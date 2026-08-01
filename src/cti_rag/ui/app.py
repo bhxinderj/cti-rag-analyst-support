@@ -453,7 +453,7 @@ def _render_sources(sources: list[dict], meta: dict):
 
     if meta.get("grounding_warnings"):
         for warning in meta["grounding_warnings"]:
-            st.warning(warning, icon=":warning:")
+            st.warning(warning, icon="⚠️")
 
     routing = meta.get("routing_decision")
     if routing:
