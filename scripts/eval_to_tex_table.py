@@ -61,6 +61,10 @@ RUBRIC_ROWS = [
     ("Templated hybrid", "rubric_hybrid_templated_final_v1_r*.json"),
     ("Legacy hybrid", "rubric_hybrid_final_v1_r*.json"),
     ("No-retrieval baseline", "rubric_baseline_final_v1_r*.json"),
+    (
+        "Templated hybrid (hosted, Haiku 4.5)",
+        "rubric_hybrid_templated_hostedgen_haiku45_final_v1_*.json",
+    ),
 ]
 
 
