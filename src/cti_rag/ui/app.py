@@ -156,6 +156,12 @@ details[data-testid="stExpander"] summary {
     color: #e2e8f0 !important;
     font-size: 0.95rem !important;
     padding: 10px 14px !important;
+    /* The !important padding breaks Streamlit's autosize measurement and
+       inflates the empty textarea to ~270px, pushing the landing hero out
+       of the scroll-to-bottom viewport. Pin it to sane bounds instead. */
+    height: auto !important;
+    min-height: 44px !important;
+    max-height: 120px !important;
 }
 [data-testid="stChatInput"] textarea:focus {
     outline: none !important;
@@ -241,7 +247,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
 /* --- Landing (welcome) screen --- */
 .landing-wrap {
     max-width: 860px;
-    margin: 4vh auto 10px auto;
+    margin: 1.5vh auto 6px auto;
     text-align: center;
 }
 .landing-badge {
@@ -255,7 +261,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
     background: rgba(56, 189, 248, 0.08);
     border: 1px solid rgba(56, 189, 248, 0.25);
     font-weight: 600;
-    margin-bottom: 22px;
+    margin-bottom: 12px;
 }
 .landing-title {
     font-size: 2.6rem;
@@ -272,8 +278,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
     font-size: 1.02rem;
     line-height: 1.65;
     max-width: 680px;
-    margin: 0 auto 30px auto;
-    transform: translateX(90px);
+    margin: 0 auto 16px auto;
 }
 .landing-sub strong { color: #cbd5e1; font-weight: 600; }
 .landing-examples-title {
@@ -282,7 +287,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
     text-transform: uppercase;
     letter-spacing: 0.16em;
     text-align: center;
-    margin: 28px 0 14px 0;
+    margin: 12px 0 10px 0;
 }
 
 /* --- Template example cards on the landing screen --- */
@@ -444,6 +449,24 @@ def _source_card_html(src: dict, cited: bool) -> str:
     )
 
 
+def _render_answer(content: str, meta: dict) -> None:
+    """Render an assistant answer; abstentions get a distinct callout.
+
+    An abstention is a deliberate, evidence-based refusal — visually
+    separating it from regular answers makes the behaviour legible for
+    analysts (and on camera) instead of reading like a thin answer.
+    """
+    if meta.get("abstention_reason"):
+        st.info(
+            "**Abstained — insufficient evidence in the retrieved context.**\n\n"
+            f"{meta['abstention_reason']} No answer was generated; the model "
+            "was not invoked.",
+            icon="🛡️",
+        )
+    else:
+        st.markdown(content)
+
+
 def _render_sources(sources: list[dict], meta: dict):
     """Render source documents and metadata below the answer."""
     cited = [s for s in sources if s.get("cited_in_answer")]
@@ -490,8 +513,6 @@ def _handle_query(question: str) -> None:
             result = query_rag(question, mode, templated)
 
         if result:
-            st.markdown(result["answer"])
-
             meta = {
                 "retrieval_time_ms": result["retrieval_time_ms"],
                 "generation_time_ms": result["generation_time_ms"],
@@ -500,7 +521,9 @@ def _handle_query(question: str) -> None:
                 "pipeline": result.get("pipeline", "legacy"),
                 "template": result.get("template"),
                 "routing_decision": result.get("routing_decision"),
+                "abstention_reason": result.get("abstention_reason"),
             }
+            _render_answer(result["answer"], meta)
             _render_sources(result["sources"], meta)
 
             st.session_state.messages.append({
@@ -583,7 +606,10 @@ if not st.session_state.messages and "pending_question" not in st.session_state:
 else:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+            if msg["role"] == "assistant":
+                _render_answer(msg["content"], msg.get("meta", {}))
+            else:
+                st.markdown(msg["content"])
             if msg["role"] == "assistant" and "sources" in msg:
                 _render_sources(msg["sources"], msg.get("meta", {}))
 
