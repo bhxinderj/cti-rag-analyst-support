@@ -205,6 +205,32 @@ def render_vuln_triage_l1(bundle: FactBundle) -> str:
     return "\n\n---\n\n".join(card_blocks)
 
 
+def _known_mitigation_facts(bundle: FactBundle) -> list[str]:
+    """Deterministic mitigation lines derived from the fact bundle.
+
+    CISA KEV entries carry a ``required_action`` for practically every
+    listed CVE. Offering these to the L2 prompt prevents the model from
+    reaching for the absence fallback while the bundle demonstrably
+    holds mitigation guidance — the dominant cause of empty Mitigations
+    sections observed across all three evaluation axes.
+    """
+    lines: list[str] = []
+    for facts in bundle.vuln_triage:
+        if not facts.kev_required_action:
+            continue
+        label = next(
+            (
+                chunk.get("citation_label")
+                for chunk in facts.source_chunks
+                if chunk.get("source") == "cisa_kev" and chunk.get("citation_label")
+            ),
+            None,
+        )
+        citation = f" [Source: {label}]" if label else ""
+        lines.append(f"{facts.cve_id}: {facts.kev_required_action}{citation}")
+    return lines
+
+
 def build_vuln_triage_prompt(
     bundle: FactBundle,
     question: str,
@@ -217,6 +243,24 @@ def build_vuln_triage_prompt(
     allowed_str = "\n".join(f"- {label}" for label in allowed_labels) or "(none)"
 
     cve_list = ", ".join(facts.cve_id for facts in bundle.vuln_triage) or "(none)"
+
+    mitigation_facts = _known_mitigation_facts(bundle)
+    if mitigation_facts:
+        mitigation_section = (
+            "**Mitigations** (L2)\n"
+            "- Ground the section in these deterministic mitigation facts\n"
+            "  (rephrase compactly, keep each citation label exactly as given):\n"
+            + "".join(f"    {line}\n" for line in mitigation_facts)
+            + "- Add further mitigations only if the retrieved context\n"
+            "  explicitly supports them.\n\n"
+        )
+    else:
+        mitigation_section = (
+            "**Mitigations** (L2)\n"
+            "- Discrete, specific mitigations. If no grounded mitigations\n"
+            "  exist, write exactly: No reliable mitigation guidance is\n"
+            "  present in the retrieved context.\n\n"
+        )
 
     user_content = (
         f"Question: {question}\n\n"
@@ -235,10 +279,7 @@ def build_vuln_triage_prompt(
         "**Affected Versions** (L2)\n"
         "- Concrete affected and fixed version strings drawn from the\n"
         "  retrieved context. If versions are not in context, say so.\n\n"
-        "**Mitigations** (L2)\n"
-        "- Discrete, specific mitigations. If no grounded mitigations\n"
-        "  exist, write exactly: No reliable mitigation guidance is\n"
-        "  present in the retrieved context.\n\n"
+        f"{mitigation_section}"
         "**Evidence** (L1)\n"
         "- Bullet list referencing the citation labels you used, each on\n"
         "  its own line with a short (≤ 6-word) description.\n\n"

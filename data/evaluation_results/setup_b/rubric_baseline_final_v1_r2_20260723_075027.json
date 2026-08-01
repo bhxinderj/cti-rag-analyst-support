@@ -1,0 +1,691 @@
+{
+  "experiment_name": "baseline_final_v1_r2",
+  "timestamp": "2026-07-23T07:50:27.449406",
+  "judge_model": "openrouter:openai/gpt-4o-mini",
+  "source_artifact": "/Users/joben/Documents/GitHub/cti-rag-analyst-support/data/evaluation_results/setup_b/ragas_baseline_final_v1_r2_20260722_193209.json",
+  "num_samples": 28,
+  "dimensions": [
+    "prioritization",
+    "actionability",
+    "completeness",
+    "traceability"
+  ],
+  "aggregated": {
+    "n": 28,
+    "prioritization_mean": 1.5357,
+    "actionability_mean": 1.9286,
+    "completeness_mean": 1.9643,
+    "traceability_mean": 1.2143,
+    "total_mean": 1.6607,
+    "errors": 0
+  },
+  "per_template": {},
+  "per_task_type": {
+    "cross_source": {
+      "n": 8,
+      "prioritization_mean": 1.5,
+      "actionability_mean": 1.625,
+      "completeness_mean": 1.75,
+      "traceability_mean": 1.5,
+      "total_mean": 1.5938,
+      "errors": 0
+    },
+    "ioc_enrichment": {
+      "n": 7,
+      "prioritization_mean": 1.5714,
+      "actionability_mean": 2,
+      "completeness_mean": 2.1429,
+      "traceability_mean": 1.2857,
+      "total_mean": 1.75,
+      "errors": 0
+    },
+    "ttp_correlation": {
+      "n": 7,
+      "prioritization_mean": 1.7143,
+      "actionability_mean": 2.2857,
+      "completeness_mean": 2,
+      "traceability_mean": 1,
+      "total_mean": 1.75,
+      "errors": 0
+    },
+    "vulnerability_analysis": {
+      "n": 6,
+      "prioritization_mean": 1.3333,
+      "actionability_mean": 1.8333,
+      "completeness_mean": 2,
+      "traceability_mean": 1,
+      "total_mean": 1.5417,
+      "errors": 0
+    }
+  },
+  "per_difficulty": {
+    "complex": {
+      "n": 11,
+      "prioritization_mean": 1.5455,
+      "actionability_mean": 1.8182,
+      "completeness_mean": 1.9091,
+      "traceability_mean": 1.3636,
+      "total_mean": 1.6591,
+      "errors": 0
+    },
+    "moderate": {
+      "n": 14,
+      "prioritization_mean": 1.6429,
+      "actionability_mean": 2.1429,
+      "completeness_mean": 2.0714,
+      "traceability_mean": 1.1429,
+      "total_mean": 1.75,
+      "errors": 0
+    },
+    "simple": {
+      "n": 3,
+      "prioritization_mean": 1,
+      "actionability_mean": 1.3333,
+      "completeness_mean": 1.6667,
+      "traceability_mean": 1,
+      "total_mean": 1.25,
+      "errors": 0
+    }
+  },
+  "run_metadata": {
+    "snapshot_date": "2025-12-31",
+    "active_setup": "b",
+    "source_meta": {
+      "experiment_name": "baseline_final_v1_r2",
+      "retrieval_mode": "baseline",
+      "num_samples": 28,
+      "source_path": "/Users/joben/Documents/GitHub/cti-rag-analyst-support/data/evaluation_results/setup_b/ragas_baseline_final_v1_r2_20260722_193209.json"
+    }
+  },
+  "per_sample": [
+    {
+      "sample_id": "vuln_001",
+      "template": null,
+      "task_type": "vulnerability_analysis",
+      "difficulty": "simple",
+      "scores": {
+        "prioritization": 0,
+        "actionability": 1,
+        "completeness": 1,
+        "traceability": 1
+      },
+      "total": 0.75,
+      "justifications": {
+        "prioritization": "The severity signal is misleading as it incorrectly identifies the software affected and does not provide a CVSS score.",
+        "actionability": "The mitigations are generic and do not provide specific guidance or product-specific actions.",
+        "completeness": "Many key fields are missing, including the correct classification and details about the vulnerability.",
+        "traceability": "Citations are sparse and do not adequately support the claims made in the answer."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 0, \"justification\": \"The severity signal is misleading as it incorrectly identifies the software affected and does not provide a CVSS score.\"},\n  \"actionability\":   {\"score\": 1, \"justification\": \"The mitigations are generic and do not provide specific guidance or product-specific actions.\"},\n  \"completeness\":    {\"score\": 1, \"justification\": \"Many key fields are missing, including the correct classification and details about the vulnerability.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse and do not adequately support the claims made in the answer.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "vuln_002",
+      "template": null,
+      "task_type": "vulnerability_analysis",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 3,
+        "actionability": 3,
+        "completeness": 3,
+        "traceability": 1
+      },
+      "total": 2.5,
+      "justifications": {
+        "prioritization": "Severity is prominently stated at the top with clear CVSS scores and rationale for criticality.",
+        "actionability": "Specific, actionable mitigations are provided, including version updates and configuration changes.",
+        "completeness": "All expected fields are present, and no major gaps are acknowledged.",
+        "traceability": "Citations are sparse, with many factual claims lacking attribution to sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 3, \"justification\": \"Severity is prominently stated at the top with clear CVSS scores and rationale for criticality.\"},\n  \"actionability\":   {\"score\": 3, \"justification\": \"Specific, actionable mitigations are provided, including version updates and configuration changes.\"},\n  \"completeness\":    {\"score\": 3, \"justification\": \"All expected fields are present, and no major gaps are acknowledged.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, with many factual claims lacking attribution to sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "vuln_003",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is mentioned clearly, but lacks specific metrics like CVSS scores or detailed exploitation status.",
+        "actionability": "Some concrete mitigations are provided, but they are somewhat generic and lack specific product references.",
+        "completeness": "Most template fields are present, but there are minor gaps in detailing specific vulnerabilities.",
+        "traceability": "Citations are sparse, with many claims made without attribution to specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is mentioned clearly, but lacks specific metrics like CVSS scores or detailed exploitation status.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are provided, but they are somewhat generic and lack specific product references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in detailing specific vulnerabilities.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, with many claims made without attribution to specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "vuln_004",
+      "template": null,
+      "task_type": "vulnerability_analysis",
+      "difficulty": "simple",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 1,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.25,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly quantified or supported with specific metrics.",
+        "actionability": "Generic mitigations are provided, but they lack specificity and do not reference particular controls or patches.",
+        "completeness": "Most template fields are present, but there are minor gaps in specific details about the vulnerability.",
+        "traceability": "Citations are sparse, and many factual claims lack attribution to specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly quantified or supported with specific metrics.\"},\n  \"actionability\":   {\"score\": 1, \"justification\": \"Generic mitigations are provided, but they lack specificity and do not reference particular controls or patches.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in specific details about the vulnerability.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, and many factual claims lack attribution to specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "vuln_005",
+      "template": null,
+      "task_type": "vulnerability_analysis",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.5,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly tied to specific metrics like CVSS scores.",
+        "actionability": "Some concrete mitigations are provided, but they lack specific control references.",
+        "completeness": "Most template fields are present, but the combined impact of the vulnerabilities is not fully addressed.",
+        "traceability": "Citations are sparse, with many claims lacking attribution to specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly tied to specific metrics like CVSS scores.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are provided, but they lack specific control references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the combined impact of the vulnerabilities is not fully addressed.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, with many claims lacking attribution to specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "vuln_006",
+      "template": null,
+      "task_type": "vulnerability_analysis",
+      "difficulty": "simple",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is mentioned clearly, but lacks a specific CVSS score or explicit rationale tying it to concrete signals.",
+        "actionability": "The answer provides some concrete actions, such as applying specific version updates, but lacks detailed product-specific controls.",
+        "completeness": "Most template fields are present, but the answer does not explicitly mention the CVSS score or the CISA KEV listing.",
+        "traceability": "The answer references 'publicly available data' but lacks specific citations for the claims made."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is mentioned clearly, but lacks a specific CVSS score or explicit rationale tying it to concrete signals.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"The answer provides some concrete actions, such as applying specific version updates, but lacks detailed product-specific controls.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the answer does not explicitly mention the CVSS score or the CISA KEV listing.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"The answer references 'publicly available data' but lacks specific citations for the claims made.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "vuln_007",
+      "template": null,
+      "task_type": "vulnerability_analysis",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.5,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly defined or supported with a rationale.",
+        "actionability": "Some concrete mitigations are provided, but they lack specific details like patch numbers.",
+        "completeness": "Most template fields are present, but the severity details are incomplete.",
+        "traceability": "Citations are sparse, with many claims lacking specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly defined or supported with a rationale.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are provided, but they lack specific details like patch numbers.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the severity details are incomplete.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, with many claims lacking specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ioc_001",
+      "template": null,
+      "task_type": "ioc_enrichment",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is clearly mentioned, but lacks a specific rationale like CVSS score or KEV listing.",
+        "actionability": "Some concrete mitigations are provided, but they are somewhat generic and lack specific controls or IOCs.",
+        "completeness": "Most template fields are present, but there are minor gaps in specific details.",
+        "traceability": "Citations are sparse, with many claims made without clear attribution to specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is clearly mentioned, but lacks a specific rationale like CVSS score or KEV listing.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are provided, but they are somewhat generic and lack specific controls or IOCs.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in specific details.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, with many claims made without clear attribution to specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ioc_002",
+      "template": null,
+      "task_type": "ioc_enrichment",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 3,
+        "actionability": 2,
+        "completeness": 3,
+        "traceability": 2
+      },
+      "total": 2.5,
+      "justifications": {
+        "prioritization": "Severity is prominently stated at the beginning and is supported by a clear rationale linking it to the CISA KEV catalog.",
+        "actionability": "The answer provides some concrete mitigations, but they are somewhat generic and lack specific product references.",
+        "completeness": "All expected fields are present, and no major gaps are acknowledged.",
+        "traceability": "Most claims are supported by evidence, but specific citations for the sources are not provided."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 3, \"justification\": \"Severity is prominently stated at the beginning and is supported by a clear rationale linking it to the CISA KEV catalog.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"The answer provides some concrete mitigations, but they are somewhat generic and lack specific product references.\"},\n  \"completeness\":    {\"score\": 3, \"justification\": \"All expected fields are present, and no major gaps are acknowledged.\"},\n  \"traceability\":    {\"score\": 2, \"justification\": \"Most claims are supported by evidence, but specific citations for the sources are not provided.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ioc_003",
+      "template": null,
+      "task_type": "ioc_enrichment",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.5,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly tied to concrete signals like CVSS or KEV listing.",
+        "actionability": "Some concrete mitigations are present, but they lack specific details like KB numbers or configuration changes.",
+        "completeness": "Most template fields are present, but the severity and exploitation details are inaccurate.",
+        "traceability": "Sparse citations; many factual claims are not attributed to specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly tied to concrete signals like CVSS or KEV listing.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they lack specific details like KB numbers or configuration changes.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the severity and exploitation details are inaccurate.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Sparse citations; many factual claims are not attributed to specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ioc_004",
+      "template": null,
+      "task_type": "ioc_enrichment",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 2
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly tied to a concrete signal like CVSS or KEV listing.",
+        "actionability": "Some concrete mitigations are present, but they lack specific product details or configurations.",
+        "completeness": "Most template fields are present, but there are minor gaps in specific details.",
+        "traceability": "Most factual claims are cited, but not every claim has a clear citation."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly tied to a concrete signal like CVSS or KEV listing.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they lack specific product details or configurations.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in specific details.\"},\n  \"traceability\":    {\"score\": 2, \"justification\": \"Most factual claims are cited, but not every claim has a clear citation.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ioc_005",
+      "template": null,
+      "task_type": "ioc_enrichment",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.5,
+      "justifications": {
+        "prioritization": "Severity is mentioned but buried in the text; not actionable at a glance.",
+        "actionability": "Some concrete items are present, but they lack specific product references or detailed guidance.",
+        "completeness": "Most template fields are present, but there are minor gaps in the details about the vulnerability.",
+        "traceability": "Sparse citations; many factual claims are unattributed."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but buried in the text; not actionable at a glance.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete items are present, but they lack specific product references or detailed guidance.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in the details about the vulnerability.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Sparse citations; many factual claims are unattributed.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ioc_006",
+      "template": null,
+      "task_type": "ioc_enrichment",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is clearly visible with CVSS scores provided, but lacks a clear rationale linking to exploitation status.",
+        "actionability": "Some concrete mitigations are present, but they are somewhat generic and lack specific product guidance.",
+        "completeness": "Most template fields are present, but the exploitation status and the number of affected products are acknowledged as gaps.",
+        "traceability": "Citations are sparse, with many factual claims made without attribution."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is clearly visible with CVSS scores provided, but lacks a clear rationale linking to exploitation status.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they are somewhat generic and lack specific product guidance.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the exploitation status and the number of affected products are acknowledged as gaps.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, with many factual claims made without attribution.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ioc_007",
+      "template": null,
+      "task_type": "ioc_enrichment",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.5,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly tied to a concrete signal like CVSS or KEV listing.",
+        "actionability": "Some concrete mitigations are present, but they are somewhat generic and lack specific product details.",
+        "completeness": "Most template fields are present, but the exploitation status is not fully addressed.",
+        "traceability": "Citations are sparse, with many claims lacking attribution to specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly tied to a concrete signal like CVSS or KEV listing.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they are somewhat generic and lack specific product details.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the exploitation status is not fully addressed.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse, with many claims lacking attribution to specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ttp_001",
+      "template": null,
+      "task_type": "ttp_correlation",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is mentioned clearly with reference to specific techniques, but lacks a concrete rationale like CVSS scores.",
+        "actionability": "The answer provides some specific mitigations, but they are somewhat generic and lack specific product references.",
+        "completeness": "Most template fields are present, but the answer does not explicitly flag any missing fields.",
+        "traceability": "Some claims are made without citations, and the evidence provided lacks specific source markers."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is mentioned clearly with reference to specific techniques, but lacks a concrete rationale like CVSS scores.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"The answer provides some specific mitigations, but they are somewhat generic and lack specific product references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the answer does not explicitly flag any missing fields.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Some claims are made without citations, and the evidence provided lacks specific source markers.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ttp_002",
+      "template": null,
+      "task_type": "ttp_correlation",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is clearly visible with CVSS scores provided, but lacks a prominent rationale tying it to concrete signals.",
+        "actionability": "Some concrete mitigations are present, but they are somewhat generic and lack specific product references.",
+        "completeness": "Most template fields are present, but there are minor gaps in detailing specific actor groups and exploitation status.",
+        "traceability": "Sparse citations are present, with many factual claims lacking specific source attribution."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is clearly visible with CVSS scores provided, but lacks a prominent rationale tying it to concrete signals.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they are somewhat generic and lack specific product references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in detailing specific actor groups and exploitation status.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Sparse citations are present, with many factual claims lacking specific source attribution.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ttp_003",
+      "template": null,
+      "task_type": "ttp_correlation",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 3,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 2.0,
+      "justifications": {
+        "prioritization": "Severity is mentioned clearly, but lacks a specific CVSS score or direct reference to a known exploitation status.",
+        "actionability": "Specific mitigations are provided, including KB numbers for patches and actionable recommendations for access control.",
+        "completeness": "Most template fields are present, but the answer does not explicitly mention the MITRE ATT&CK technique associated with the vulnerabilities.",
+        "traceability": "Some claims are made without citations, particularly regarding the identification of vulnerabilities and threat actor campaigns."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is mentioned clearly, but lacks a specific CVSS score or direct reference to a known exploitation status.\"},\n  \"actionability\":   {\"score\": 3, \"justification\": \"Specific mitigations are provided, including KB numbers for patches and actionable recommendations for access control.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but the answer does not explicitly mention the MITRE ATT&CK technique associated with the vulnerabilities.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Some claims are made without citations, particularly regarding the identification of vulnerabilities and threat actor campaigns.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ttp_004",
+      "template": null,
+      "task_type": "ttp_correlation",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.5,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly actionable at a glance.",
+        "actionability": "Some concrete mitigations are present, but they are somewhat generic.",
+        "completeness": "Most template fields are present, but there are minor gaps in specific details.",
+        "traceability": "Sparse citations are present, with many factual claims unattributed."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly actionable at a glance.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they are somewhat generic.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in specific details.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Sparse citations are present, with many factual claims unattributed.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ttp_005",
+      "template": null,
+      "task_type": "ttp_correlation",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is clearly visible with a rationale explaining the impact of the techniques.",
+        "actionability": "Some concrete mitigations are present, but they include generic recommendations without specific product references.",
+        "completeness": "Most template fields are present, but there are minor gaps in detailing the techniques.",
+        "traceability": "Some claims are made without citations, and the evidence section lacks specific source markers."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is clearly visible with a rationale explaining the impact of the techniques.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they include generic recommendations without specific product references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in detailing the techniques.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Some claims are made without citations, and the evidence section lacks specific source markers.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ttp_006",
+      "template": null,
+      "task_type": "ttp_correlation",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 3,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 2.0,
+      "justifications": {
+        "prioritization": "Severity is clearly visible with a rationale provided through the mention of specific techniques.",
+        "actionability": "Discrete, specific mitigations are provided that an analyst could hand to an operator.",
+        "completeness": "Most template fields are present, but there are minor gaps in the evidence section.",
+        "traceability": "Sparse citations are present, with many factual claims unattributed."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is clearly visible with a rationale provided through the mention of specific techniques.\"},\n  \"actionability\":   {\"score\": 3, \"justification\": \"Discrete, specific mitigations are provided that an analyst could hand to an operator.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in the evidence section.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Sparse citations are present, with many factual claims unattributed.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "ttp_007",
+      "template": null,
+      "task_type": "ttp_correlation",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.5,
+      "justifications": {
+        "prioritization": "Severity is mentioned but buried in the text; not actionable at a glance.",
+        "actionability": "Some concrete items are present, but they are somewhat generic and lack specific product references.",
+        "completeness": "Most template fields are present, but there are minor gaps in detailing specific techniques.",
+        "traceability": "Sparse citations; many factual claims are unattributed."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but buried in the text; not actionable at a glance.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete items are present, but they are somewhat generic and lack specific product references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in detailing specific techniques.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Sparse citations; many factual claims are unattributed.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "cross_001",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 0,
+        "actionability": 2,
+        "completeness": 1,
+        "traceability": 1
+      },
+      "total": 1.0,
+      "justifications": {
+        "prioritization": "The severity signal is misleading as it incorrectly identifies the vulnerability and does not provide a CVSS score or rationale.",
+        "actionability": "The answer provides some concrete mitigations, including applying a patch and disabling a specific module, but lacks specific details like a KB number.",
+        "completeness": "Several key fields are missing, including the correct product affected and whether it is in the CISA KEV.",
+        "traceability": "There are sparse citations, and many factual claims, such as the vulnerability's details, are unattributed."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 0, \"justification\": \"The severity signal is misleading as it incorrectly identifies the vulnerability and does not provide a CVSS score or rationale.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"The answer provides some concrete mitigations, including applying a patch and disabling a specific module, but lacks specific details like a KB number.\"},\n  \"completeness\":    {\"score\": 1, \"justification\": \"Several key fields are missing, including the correct product affected and whether it is in the CISA KEV.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"There are sparse citations, and many factual claims, such as the vulnerability's details, are unattributed.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "cross_002",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 2
+      },
+      "total": 2.0,
+      "justifications": {
+        "prioritization": "Severity is clearly visible with a rationale, but it lacks a prominent display at the top.",
+        "actionability": "Some concrete mitigations are present, but they are somewhat generic and lack specific product references.",
+        "completeness": "Most template fields are present, but there are minor gaps in detailing the third CVE.",
+        "traceability": "Most factual claims are cited, but not every claim has a clear citation."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is clearly visible with a rationale, but it lacks a prominent display at the top.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they are somewhat generic and lack specific product references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in detailing the third CVE.\"},\n  \"traceability\":    {\"score\": 2, \"justification\": \"Most factual claims are cited, but not every claim has a clear citation.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "cross_003",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 1,
+        "completeness": 2,
+        "traceability": 1
+      },
+      "total": 1.25,
+      "justifications": {
+        "prioritization": "Severity ratings are mentioned but not clearly prioritized or rationalized for all CVEs.",
+        "actionability": "Generic mitigations are provided, but they lack specificity and actionable details.",
+        "completeness": "Most template fields are present, but there is a significant gap in the exploitation status for one CVE.",
+        "traceability": "Citations are sparse and do not clearly attribute all factual claims to specific sources."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity ratings are mentioned but not clearly prioritized or rationalized for all CVEs.\"},\n  \"actionability\":   {\"score\": 1, \"justification\": \"Generic mitigations are provided, but they lack specificity and actionable details.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there is a significant gap in the exploitation status for one CVE.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Citations are sparse and do not clearly attribute all factual claims to specific sources.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "cross_004",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 2
+      },
+      "total": 2.0,
+      "justifications": {
+        "prioritization": "Severity is clearly visible with CVSS scores provided, but lacks a prominent rationale tying it to concrete signals.",
+        "actionability": "Some concrete mitigations are present, but they are somewhat generic and lack specific product references.",
+        "completeness": "Most template fields are present, but there is a minor gap regarding the exact number of affected products.",
+        "traceability": "Most factual claims are cited with sources, but not every claim has a clear citation."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is clearly visible with CVSS scores provided, but lacks a prominent rationale tying it to concrete signals.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Some concrete mitigations are present, but they are somewhat generic and lack specific product references.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there is a minor gap regarding the exact number of affected products.\"},\n  \"traceability\":    {\"score\": 2, \"justification\": \"Most factual claims are cited with sources, but not every claim has a clear citation.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "cross_005",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "moderate",
+      "scores": {
+        "prioritization": 1,
+        "actionability": 1,
+        "completeness": 1,
+        "traceability": 1
+      },
+      "total": 1.0,
+      "justifications": {
+        "prioritization": "Severity is mentioned but not clearly tied to a specific rationale or concrete signals.",
+        "actionability": "Generic mitigations are provided, but they lack specificity and do not reference specific controls or configurations.",
+        "completeness": "Many fields are missing, including specific CVSS score and details from NVD and CISA.",
+        "traceability": "Sparse citations are present, but many factual claims are unattributed."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 1, \"justification\": \"Severity is mentioned but not clearly tied to a specific rationale or concrete signals.\"},\n  \"actionability\":   {\"score\": 1, \"justification\": \"Generic mitigations are provided, but they lack specificity and do not reference specific controls or configurations.\"},\n  \"completeness\":    {\"score\": 1, \"justification\": \"Many fields are missing, including specific CVSS score and details from NVD and CISA.\"},\n  \"traceability\":    {\"score\": 1, \"justification\": \"Sparse citations are present, but many factual claims are unattributed.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "cross_006",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 1,
+        "completeness": 2,
+        "traceability": 2
+      },
+      "total": 1.75,
+      "justifications": {
+        "prioritization": "Severity is mentioned clearly with a CVSS score, but it lacks a clear rationale tying it to concrete signals.",
+        "actionability": "Generic mitigations are provided, but they lack specificity and do not reference specific controls or patches.",
+        "completeness": "Most template fields are present, but there are minor gaps in detailing the contributions of each source.",
+        "traceability": "Most factual claims are cited, but not every claim has a clear citation marker."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is mentioned clearly with a CVSS score, but it lacks a clear rationale tying it to concrete signals.\"},\n  \"actionability\":   {\"score\": 1, \"justification\": \"Generic mitigations are provided, but they lack specificity and do not reference specific controls or patches.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are present, but there are minor gaps in detailing the contributions of each source.\"},\n  \"traceability\":    {\"score\": 2, \"justification\": \"Most factual claims are cited, but not every claim has a clear citation marker.\"}\n}",
+      "error": null
+    },
+    {
+      "sample_id": "cross_007",
+      "template": null,
+      "task_type": "cross_source",
+      "difficulty": "complex",
+      "scores": {
+        "prioritization": 2,
+        "actionability": 2,
+        "completeness": 2,
+        "traceability": 2
+      },
+      "total": 2.0,
+      "justifications": {
+        "prioritization": "Severity is mentioned clearly with CVSS scores, but the rationale lacks explicit mention of their exploitation status.",
+        "actionability": "Mitigations are present but are somewhat generic, lacking specific controls or configurations.",
+        "completeness": "Most template fields are covered, but there are minor gaps in detailing ransomware associations.",
+        "traceability": "Most claims are cited, but not every factual statement has a corresponding citation."
+      },
+      "raw_response": "{\n  \"prioritization\":  {\"score\": 2, \"justification\": \"Severity is mentioned clearly with CVSS scores, but the rationale lacks explicit mention of their exploitation status.\"},\n  \"actionability\":   {\"score\": 2, \"justification\": \"Mitigations are present but are somewhat generic, lacking specific controls or configurations.\"},\n  \"completeness\":    {\"score\": 2, \"justification\": \"Most template fields are covered, but there are minor gaps in detailing ransomware associations.\"},\n  \"traceability\":    {\"score\": 2, \"justification\": \"Most claims are cited, but not every factual statement has a corresponding citation.\"}\n}",
+      "error": null
+    }
+  ],
+  "output_path": "/Users/joben/Documents/GitHub/cti-rag-analyst-support/data/evaluation_results/setup_b/rubric_baseline_final_v1_r2_20260723_075027.json"
+}

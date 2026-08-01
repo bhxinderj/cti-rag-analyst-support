@@ -56,7 +56,17 @@ def _parse_snapshot_cutoff(snapshot_date: str | None):
 
 
 def _filter_documents_by_snapshot(documents: list, snapshot_date: str | None):
-    """Keep only documents whose publication/update state fits the snapshot cutoff."""
+    """Keep only documents published on or before the snapshot cutoff.
+
+    Corpus definition: documents *published* <= snapshot_date. The
+    modification timestamp is deliberately ignored — sources like NVD
+    re-analyze prominent CVEs continuously, so filtering on
+    ``modified_date`` silently removes exactly the high-profile entries
+    an evaluation cares about (3 081 NVD CVEs published in range had
+    been dropped this way, including 47 KEV-listed ones). A document
+    fetched after the cutoff may therefore carry post-cutoff edits;
+    the fetch date is documented in the thesis alongside the cutoff.
+    """
     snapshot_cutoff = _parse_snapshot_cutoff(snapshot_date)
     if snapshot_cutoff is None:
         return list(documents), []
@@ -64,12 +74,8 @@ def _filter_documents_by_snapshot(documents: list, snapshot_date: str | None):
     kept = []
     dropped = []
     for document in documents:
-        timestamps = [
-            timestamp.date()
-            for timestamp in (document.published_date, document.modified_date)
-            if timestamp is not None
-        ]
-        if any(timestamp > snapshot_cutoff for timestamp in timestamps):
+        published = document.published_date
+        if published is not None and published.date() > snapshot_cutoff:
             dropped.append(document)
         else:
             kept.append(document)
@@ -336,6 +342,7 @@ def cmd_evaluate(args):
     run_metadata = {
         "snapshot_date": config["data"].get("snapshot_date"),
         "active_setup": config["data"].get("active_setup", "default"),
+        "generation_llm": getattr(chain, "generation_model_label", "unknown"),
     }
 
     # Evaluate
