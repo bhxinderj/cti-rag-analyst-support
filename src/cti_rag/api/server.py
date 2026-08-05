@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..rag.chain import RAGChain
+from ..rag.conversation import ConversationState, resolve_question
 from ..rag.extended import ExtendedChain
 from ..utils.config import load_config, get_project_root
 from .schemas import HealthResponse, QueryRequest, QueryResponse, SourceDocument
@@ -57,13 +58,26 @@ async def query(req: QueryRequest):
         if req.extended:
             extended = _get_extended_chain()
             generation_model = extended.generation_model_label
-            response = await asyncio.to_thread(extended.query, req.question)
-        elif req.templated:
-            chain = _get_chain(req.mode)
-            response = await asyncio.to_thread(chain.query_templated, req.question)
+            condense_llm = extended.llm
         else:
             chain = _get_chain(req.mode)
-            response = await asyncio.to_thread(chain.query, req.question)
+            # Local mode condenses locally — nothing leaves the machine.
+            condense_llm = chain.llm
+
+        state = ConversationState(
+            last_question=req.last_question, last_entities=list(req.last_entities)
+        )
+        resolved = await asyncio.to_thread(
+            resolve_question, req.question, state, condense_llm
+        )
+        pipeline_question = resolved.question
+
+        if req.extended:
+            response = await asyncio.to_thread(extended.query, pipeline_question)
+        elif req.templated:
+            response = await asyncio.to_thread(chain.query_templated, pipeline_question)
+        else:
+            response = await asyncio.to_thread(chain.query, pipeline_question)
     except HTTPException:
         raise
     except Exception as exc:
@@ -84,7 +98,7 @@ async def query(req: QueryRequest):
     ]
 
     return QueryResponse(
-        query=response.query,
+        query=req.question,
         answer=response.answer,
         sources=sources,
         retrieval_mode=response.retrieval_mode,
@@ -96,6 +110,12 @@ async def query(req: QueryRequest):
         grounding_warnings=response.grounding_warnings,
         pipeline="extended" if req.extended else ("templated" if req.templated else "legacy"),
         generation_model=generation_model,
+        resolved_question=(
+            resolved.question if resolved.method != "passthrough" else None
+        ),
+        resolution_method=(
+            resolved.method if resolved.method != "passthrough" else None
+        ),
         template=response.template or None,
         routing_decision=response.routing_decision or None,
         l1_block=response.l1_block or None,

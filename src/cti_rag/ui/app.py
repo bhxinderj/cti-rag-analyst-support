@@ -344,7 +344,28 @@ def check_backend_health() -> dict | None:
     return None
 
 
-def query_rag(question: str, mode: str, templated: bool, extended: bool = False) -> dict | None:
+def _conversation_state() -> dict:
+    """Extract the rolling condense state from the chat history."""
+    last_question = None
+    last_entities: list[str] = []
+    for msg in reversed(st.session_state.messages):
+        if msg["role"] == "user" and last_question is None:
+            last_question = msg["content"]
+        if msg["role"] == "assistant" and not last_entities:
+            routing = (msg.get("meta") or {}).get("routing_decision") or {}
+            last_entities = routing.get("primary_entities") or []
+        if last_question and last_entities:
+            break
+    return {"last_question": last_question, "last_entities": last_entities}
+
+
+def query_rag(
+    question: str,
+    mode: str,
+    templated: bool,
+    extended: bool = False,
+    conversation_state: dict | None = None,
+) -> dict | None:
     try:
         resp = requests.post(
             f"{API_URL}/api/query",
@@ -353,6 +374,7 @@ def query_rag(question: str, mode: str, templated: bool, extended: bool = False)
                 "mode": mode,
                 "templated": templated,
                 "extended": extended,
+                **(conversation_state or {}),
             },
             timeout=300,
         )
@@ -486,6 +508,9 @@ def _render_answer(content: str, meta: dict) -> None:
     separating it from regular answers makes the behaviour legible for
     analysts (and on camera) instead of reading like a thin answer.
     """
+    if meta.get("resolved_question"):
+        method = "carry-over" if meta.get("resolution_method") == "carry_over" else "condensed"
+        st.caption(f"🧭 Interpreted as ({method}): *{meta['resolved_question']}*")
     if meta.get("abstention_reason"):
         st.info(
             "**Abstained — insufficient evidence in the retrieved context.**\n\n"
@@ -537,6 +562,9 @@ if "messages" not in st.session_state:
 
 def _handle_query(question: str) -> None:
     """Run a query through the backend and append the exchange to chat history."""
+    # Snapshot the condense state BEFORE appending the current question —
+    # otherwise the wrapper would see the current turn as "previous".
+    conversation_state = _conversation_state()
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
@@ -549,7 +577,7 @@ def _handle_query(question: str) -> None:
         else:
             spinner_label = "Retrieving and generating…"
         with st.spinner(spinner_label):
-            result = query_rag(question, mode, templated, extended)
+            result = query_rag(question, mode, templated, extended, conversation_state)
 
         if result:
             meta = {
@@ -562,6 +590,8 @@ def _handle_query(question: str) -> None:
                 "template": result.get("template"),
                 "routing_decision": result.get("routing_decision"),
                 "abstention_reason": result.get("abstention_reason"),
+                "resolved_question": result.get("resolved_question"),
+                "resolution_method": result.get("resolution_method"),
             }
             _render_answer(result["answer"], meta)
             _render_sources(result["sources"], meta)

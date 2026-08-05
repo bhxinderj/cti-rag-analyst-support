@@ -20,6 +20,17 @@ class QueryRequest(BaseModel):
             "context leave the local machine. Overrides `templated`/`mode`."
         ),
     )
+    # Conversation wrapper (v1): the client supplies minimal rolling state;
+    # the API stays stateless. Generation never sees the history — only the
+    # resolved standalone question reaches the frozen pipeline.
+    last_question: str | None = Field(
+        default=None,
+        description="Previous user question, for condense-then-retrieve.",
+    )
+    last_entities: list[str] = Field(
+        default_factory=list,
+        description="Primary entities of the previous routing decision.",
+    )
 
 
 class SourceDocument(BaseModel):
@@ -46,6 +57,9 @@ class QueryResponse(BaseModel):
     # Phase-2 templated-pipeline fields (None when the legacy path was used).
     pipeline: str = "legacy"
     generation_model: str | None = None
+    # Conversation wrapper: set when the question was rewritten before retrieval.
+    resolved_question: str | None = None
+    resolution_method: str | None = None
     template: str | None = None
     routing_decision: dict | None = None
     l1_block: str | None = None
