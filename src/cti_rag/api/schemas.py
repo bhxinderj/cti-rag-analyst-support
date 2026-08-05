@@ -12,6 +12,14 @@ class QueryRequest(BaseModel):
         default=False,
         description="Use Phase-2 templated pipeline (router + fact bundle + L1/L2 templates).",
     )
+    extended: bool = Field(
+        default=False,
+        description=(
+            "Extended Analysis mode: hosted generation with analyst-assist "
+            "instructions and deeper retrieval. Question and retrieved "
+            "context leave the local machine. Overrides `templated`/`mode`."
+        ),
+    )
 
 
 class SourceDocument(BaseModel):
@@ -37,6 +45,7 @@ class QueryResponse(BaseModel):
     grounding_warnings: list[str] = []
     # Phase-2 templated-pipeline fields (None when the legacy path was used).
     pipeline: str = "legacy"
+    generation_model: str | None = None
     template: str | None = None
     routing_decision: dict | None = None
     l1_block: str | None = None

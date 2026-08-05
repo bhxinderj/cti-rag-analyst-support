@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..rag.chain import RAGChain
+from ..rag.extended import ExtendedChain
 from ..utils.config import load_config, get_project_root
 from .schemas import HealthResponse, QueryRequest, QueryResponse, SourceDocument
 
@@ -29,6 +30,7 @@ app.add_middleware(
 )
 
 _chains: dict[str, RAGChain] = {}
+_extended_chain: ExtendedChain | None = None
 
 
 def _get_chain(mode: str) -> RAGChain:
@@ -37,14 +39,33 @@ def _get_chain(mode: str) -> RAGChain:
     return _chains[mode]
 
 
+def _get_extended_chain() -> ExtendedChain:
+    global _extended_chain
+    if _extended_chain is None:
+        try:
+            _extended_chain = ExtendedChain()
+        except RuntimeError as exc:
+            # Typically: missing OPENROUTER_API_KEY in the server env.
+            raise HTTPException(status_code=503, detail=str(exc))
+    return _extended_chain
+
+
 @app.post("/api/query", response_model=QueryResponse)
 async def query(req: QueryRequest):
-    chain = _get_chain(req.mode)
+    generation_model: str | None = None
     try:
-        if req.templated:
+        if req.extended:
+            extended = _get_extended_chain()
+            generation_model = extended.generation_model_label
+            response = await asyncio.to_thread(extended.query, req.question)
+        elif req.templated:
+            chain = _get_chain(req.mode)
             response = await asyncio.to_thread(chain.query_templated, req.question)
         else:
+            chain = _get_chain(req.mode)
             response = await asyncio.to_thread(chain.query, req.question)
+    except HTTPException:
+        raise
     except Exception as exc:
         logger.exception("Query failed")
         raise HTTPException(status_code=500, detail=str(exc))
@@ -73,7 +94,8 @@ async def query(req: QueryRequest):
         grounded=response.abstention_reason is None,
         abstention_reason=response.abstention_reason,
         grounding_warnings=response.grounding_warnings,
-        pipeline="templated" if req.templated else "legacy",
+        pipeline="extended" if req.extended else ("templated" if req.templated else "legacy"),
+        generation_model=generation_model,
         template=response.template or None,
         routing_decision=response.routing_decision or None,
         l1_block=response.l1_block or None,
