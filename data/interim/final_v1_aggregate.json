@@ -296,53 +296,67 @@
       ]
     },
     "templated_hostedgen_haiku45": {
-      "n_runs": 1,
+      "n_runs": 3,
       "metrics": {
         "faithfulness": {
-          "mean": 0.8249,
-          "std": null,
+          "mean": 0.8212,
+          "std": 0.0168,
           "per_run": [
-            0.8249
+            0.8249,
+            0.8358,
+            0.8029
           ],
           "effective_n": 28
         },
         "answer_relevancy": {
-          "mean": 0.5735,
-          "std": null,
+          "mean": 0.5941,
+          "std": 0.0478,
           "per_run": [
-            0.5735
+            0.5735,
+            0.6488,
+            0.5602
           ],
           "effective_n": 28
         },
         "answer_correctness": {
-          "mean": 0.5823,
-          "std": null,
+          "mean": 0.5615,
+          "std": 0.0206,
           "per_run": [
-            0.5823
+            0.5823,
+            0.5411,
+            0.5611
           ],
           "effective_n": 28
         },
         "context_precision": {
-          "mean": 0.7716,
-          "std": null,
+          "mean": 0.7479,
+          "std": 0.0207,
           "per_run": [
-            0.7716
+            0.7716,
+            0.7387,
+            0.7333
           ],
           "effective_n": 28
         },
         "context_recall": {
-          "mean": 0.6268,
-          "std": null,
+          "mean": 0.5966,
+          "std": 0.0264,
           "per_run": [
-            0.6268
+            0.6268,
+            0.578,
+            0.5851
           ],
           "effective_n": 28
         }
       },
       "relevancy_zero_counts": [
+        8,
+        5,
         8
       ],
       "abstention_counts": [
+        0,
+        0,
         0
       ]
     }
@@ -550,59 +564,69 @@
       }
     },
     "templated_hostedgen_haiku45": {
-      "n_runs": 1,
+      "n_runs": 3,
       "dimensions": {
         "prioritization": {
-          "mean": 2.6429,
-          "std": null,
+          "mean": 2.6667,
+          "std": 0.0412,
           "per_run": [
+            2.6429,
+            2.7143,
             2.6429
           ]
         },
         "actionability": {
-          "mean": 1.8929,
-          "std": null,
+          "mean": 1.9048,
+          "std": 0.0206,
           "per_run": [
-            1.8929
+            1.8929,
+            1.8929,
+            1.9286
           ]
         },
         "completeness": {
-          "mean": 2.0357,
-          "std": null,
+          "mean": 2.0595,
+          "std": 0.0206,
           "per_run": [
-            2.0357
+            2.0357,
+            2.0714,
+            2.0714
           ]
         },
         "traceability": {
           "mean": 2.9286,
-          "std": null,
+          "std": 0.0,
           "per_run": [
+            2.9286,
+            2.9286,
             2.9286
           ]
         },
         "total": {
-          "mean": 2.375,
-          "std": null,
+          "mean": 2.3899,
+          "std": 0.0136,
           "per_run": [
-            2.375
+            2.375,
+            2.4018,
+            2.3929
           ]
         }
       },
       "per_template": {
         "CrossSourceCompare": {
-          "mean": 2.25,
-          "std": 0.25,
-          "n_samples": 7
+          "mean": 2.2619,
+          "std": 0.311,
+          "n_samples": 21
         },
         "ThreatContext": {
-          "mean": 2.3571,
-          "std": 0.3181,
-          "n_samples": 7
+          "mean": 2.369,
+          "std": 0.3124,
+          "n_samples": 21
         },
         "VulnTriage": {
-          "mean": 2.4464,
-          "std": 0.2627,
-          "n_samples": 14
+          "mean": 2.4643,
+          "std": 0.2623,
+          "n_samples": 42
         }
       }
     }
