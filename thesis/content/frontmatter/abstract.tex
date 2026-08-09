@@ -1,1 +1,35 @@
-tbd
+% Mirror of content/frontmatter/kurzfassung.tex — keep the content
+% identical (distilled from Section 5.1 and the RQ boxes in 4.7).
+Cyber Threat Intelligence (CTI) requires analysts to correlate threat
+information from heterogeneous sources under time pressure. Large
+Language Models (LLMs) can support this work but face three limits in
+direct use: outdated parametric knowledge, hallucination, and missing
+provenance.
+
+This master's thesis examines how Retrieval-Augmented Generation (RAG)
+can improve the quality, reliability, and operational usefulness of
+CTI analysis and threat-hunting workflows. An open-source prototype is
+designed, implemented, and evaluated that ingests four curated CTI
+sources (NVD, CISA KEV, CISA advisories, MISP; 84,982 documents) into
+a provenance-preserving index. Hybrid retrieval combines BM25 and
+dense vector search with cross-encoder reranking; answer generation is
+layered: verifiable facts are rendered deterministically from passage
+metadata, and a locally deployed 8B model contributes only the
+narrative, with enforced, validated citations and explicit abstention
+without evidence.
+
+The evaluation compares six configurations, from a non-retrieval
+baseline to a hosted ablation, on a frozen index state with 28 queries
+across four analyst task types and three runs per configuration,
+scored with RAGAS, field coverage, and a four-dimension analyst rubric
+complemented by scenario analysis. The central finding is that answer
+correctness stays at baseline level while traceability rises from 1.23
+to 2.56: on this query set, retrieval buys verifiability rather than
+raw correctness.
+
+The scientific contribution comprises workflow-level empirical
+evidence for RAG in CTI, the finding that generic RAG metrics and
+analyst-oriented measures diverge, and a reference model with eight
+empirically grounded design principles. The practical contribution is
+a reproducible, locally deployable system together with a quantified
+local-versus-hosted trade-off.
