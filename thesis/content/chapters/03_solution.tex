@@ -3,7 +3,7 @@
 % Einzige Heimat fuer: Designkriterien (3.2) und Evaluationsdesign (3.8).
 % Architektur begruendet nichts neu, sondern referenziert Kriterien-IDs.
 % ======================================================================
-\chapter{Solution: Design and Implementation}
+\chapter{Solution: design and implementation}
 \label{ch:solution}
 
 \section{Task formulation}
@@ -46,226 +46,548 @@ operationalizes SRQ1.
 
 \section{Requirements and design criteria}
 \label{sec:requirements}
-% TODO: EINZIGE Stelle fuer Designkriterien. Aus Forschungsluecken
-% (\ref{sec:research-gap}) UND Workflow-Engpaessen B1--B3 (\ref{sec:cti})
-% ableiten --- im Einleitungstext der Section beide Quellen explizit nennen.
-% Rueckverfolgbarkeitskette: B/G -> Criterion -> Result -> RQ-Antwort.
-% Zuordnung (fuer Herleitungstext): C1 <- B3/G1, C2 <- B1/G1, C3 <- G3,
-% C4 <- G2, C5 <- B1/G2, C6 <- Proposal-Vorgabe (open-source only).
 
-% Kriterien-Entwuerfe direkt aus SotA Kap. 4.2 "Implications for this
-% thesis" + Proposal (open-source only). Beim Schreiben: pro Kriterium
-% 1--2 Saetze Herleitung mit Gap-Bezug (G1--G3), dann nur noch per ID
-% referenzieren.
-\begin{table}[htbp]
+The design of the prototype follows six criteria. They are derived from
+the workflow bottlenecks B1--B3 (Section~\ref{sec:cti}), the research gaps
+G1--G3 (Section~\ref{sec:research-gap}), and the scope set in
+Section~\ref{sec:scope}, which restricts the prototype to open-source
+components and local deployment. Table~\ref{tab:design-criteria} lists the
+criteria with their origin and the research question they serve;
+Section~\ref{sec:assessment} assesses the prototype against them.
+
+\begin{table}[H]
     \centering
     \small
-    \begin{tabular}{lp{0.62\textwidth}ll}
+    \begin{tabular}{lp{0.58\textwidth}ll}
         \toprule
-        \textbf{ID} & \textbf{Design criterion} & \textbf{Gap} & \textbf{Ref.} \\
+        \textbf{ID} & \textbf{Design criterion} & \textbf{Origin} & \textbf{Ref.} \\
         \midrule
-        C1 & Evidence-linked outputs: explicit, source-based citations for
-             key claims to support traceability and reduce verification
-             effort & G1 & SRQ1 \\
-        C2 & Hybrid retrieval as a baseline: combined lexical (BM25) and
-             semantic retrieval with optional reranking & G1 & SRQ1 \\
-        C3 & Source integrity and reliability: curated ingestion and
-             source-reliability signals to limit misinformation risk & G3 & MRQ \\
+        C1 & Evidence-linked outputs: every key claim carries an explicit
+             citation of the retrieved source & B3, G1 & SRQ1 \\
+        C2 & Hybrid retrieval: combined lexical (BM25) and semantic
+             retrieval with reranking & B1, G1 & SRQ1 \\
+        C3 & Source integrity: ingestion restricted to curated,
+             authoritative sources with traceable source metadata & G3 & MRQ \\
         C4 & Scenario-based evaluation: assessment on representative CTI
              analyst tasks beyond offline metrics & G2 & SRQ2 \\
-        C5 & Analyst-oriented presentation: structured outputs matching
-             analyst intent (task coverage, clarity, transparency) & G2 & SRQ2 \\
-        C6 & Open-source, locally deployable stack (data protection,
-             reproducibility, cost) & --- & MRQ \\
+        C5 & Analyst-oriented presentation: outputs structured along task
+             coverage, clarity, and transparency & B1, G2 & SRQ2 \\
+        C6 & Open-source, locally deployable stack & Scope & MRQ \\
         \bottomrule
     \end{tabular}
-    \caption{Design criteria with traceability to research gaps and research questions}
+    \caption{Design criteria with traceability to bottlenecks, research
+             gaps, and research questions}
     \label{tab:design-criteria}
 \end{table}
 
+C1 and C2 respond to the verification and overload bottlenecks. Outputs
+without provenance cannot be acted on (B3), so every generated claim must
+be attributable to a cited source (C1); this implements the grounding
+constraint of the task formulation
+(Equation~\ref{eq:generation}). CTI text combines exact identifiers such
+as CVE numbers with strongly varying terminology (B1), which single-strategy
+retrieval serves poorly (Section~\ref{sec:cti}); retrieval therefore
+combines lexical and semantic search and reranks the merged candidates
+(C2).
+
+C3 responds to G3: because RAG pipelines can propagate manipulated or
+low-quality content, ingestion is limited to a curated set of
+authoritative CTI sources, and every indexed passage keeps metadata that
+identifies its origin. The prototype does not score source credibility at
+query time; this boundary is revisited in Section~\ref{sec:limitations}.
+
+C4 and C5 constrain the evaluation and the presentation layer. Offline
+metrics alone say little about operational usefulness (G2), so the
+evaluation includes representative analyst scenarios (C4), and answers are
+structured to match analyst needs rather than optimized for generic
+quality scores (C5).
+
+C6 fixes the deployment constraint from the scope: an open-source, locally
+deployable stack keeps sensitive analyst queries on premises, avoids
+licensing dependencies, and makes the experiments reproducible.
+
 \section{System architecture}
 \label{sec:architecture}
-% TODO: Komponenten und Datenfluss beschreiben. Designentscheidungen NUR
-% per Kriterien-ID begruenden ("addresses C2"), keine erneute Herleitung.
-...
 
-% TODO Abbildung: Export aus docs/architecture/cti_rag_architecture_overview.drawio
-% -> images/ (PDF/PNG). Konkrete Instanz von \ref{fig:rag-pipeline}.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{cti_rag_architecture_overview}
-%     \caption{System architecture of the CTI-RAG prototype}
-%     \label{fig:architecture}
-% \end{figure}
+Figure~\ref{fig:architecture} shows the prototype as a container view
+following the C4 model \parencite{brown2018c4}. Two paths separate
+building the system from using it: an offline path ingests sources and
+builds the retrieval artifacts, and an online path serves analyst queries.
+The architecture instantiates the generic RAG pipeline of
+Figure~\ref{fig:rag-pipeline}. In the figure, the numbered markers trace
+an analyst query through the online path, and the circled letters locate
+the notation of Section~\ref{sec:task-formulation} in the system.
+
+\begin{landscape}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{cti_rag_architecture_overview}
+    \caption{System architecture of the prototype (C4 container view).
+             Numbered markers trace the online query path; circled letters
+             locate the notation of Section~\ref{sec:task-formulation}.}
+    \label{fig:architecture}
+\end{figure}
+\end{landscape}
+
+On the online path, the analyst submits a query $q$ through the Streamlit
+workbench, which calls a FastAPI backend, or directly through the command
+line (step~1). The RAGChain component orchestrates each request: a query
+router selects one of three task templates (vulnerability triage, threat
+context, cross-source comparison), onto which the four task types of the
+evaluation map (step~2, Section~\ref{sec:test-set}). The
+HybridRetriever implements $R$: it runs BM25 search over a JSON artifact
+using a CTI-aware tokenizer and vector search over the ChromaDB store
+(step~3), merges both rankings by reciprocal rank fusion, and reranks the
+merged candidates with a cross-encoder (step~4, C2). The resulting context
+$\mathcal{C}_k$ (step~5) is passed to the generation model $g$, a
+Llama~3.1 8B Instruct model served by the local Ollama runtime (step~6). A
+citation normalization step maps generated claims to their source passages
+and enforces grounding: when the retrieved evidence does not support an
+answer, the system abstains instead of generating one (step~7, C1). All
+models and stores run locally (C6).
+
+The offline path keeps the corpus curated (C3): source downloaders and
+parsers pull the four CTI sources (NVD, CISA KEV, CISA advisories, MISP),
+store raw snapshots, and produce the document corpus $\mathcal{D}$, from
+which the CTIIndexer builds the two retrieval artifacts with per-passage
+source metadata. The evaluation harness drives the same RAGChain that
+serves analysts, so measured behavior equals operational behavior; its
+judge model is configurable between local and hosted providers
+(Section~\ref{sec:evaluation-design}).
 
 \section{Data ingestion and preprocessing}
 \label{sec:ingestion}
-% TODO: Quellenkorpus (welche CTI-Quellen, Umfang), Parsing, Chunking,
-% Metadaten.
-...
 
-% TODO Tabelle: Korpus-Statistik aus dem Index ziehen.
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{llrr}
-%         \toprule
-%         \textbf{Source} & \textbf{Document type} & \textbf{Documents} & \textbf{Chunks} \\
-%         \midrule
-%         CVE/NVD & ... & ... & ... \\
-%         CISA advisories & ... & ... & ... \\
-%         MISP & ... & ... & ... \\
-%         Vendor reports & ... & ... & ... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Corpus statistics of the ingested CTI sources}
-%     \label{tab:corpus-stats}
-% \end{table}
+The corpus combines four curated CTI sources (C3): CVE entries from the
+NVD, restricted to high and critical severity (CVSS $\geq 7.0$) and the
+years 2020--2025; the CISA Known Exploited Vulnerabilities (KEV) catalog;
+CISA security advisories; and MISP threat-sharing events. The corpus is a
+fixed snapshot for reproducibility: entries published up to 2025-12-31,
+fetched on 2026-03-28. Source downloaders store the raw material (JSON,
+HTML, RSS) unchanged, and source-specific parsers normalize it into a
+unified document model.
+
+Preprocessing follows a CTI-aware chunking strategy: one CTI artifact,
+such as one CVE entry or one KEV record, becomes one passage, so that
+identifiers, scores, and remediation facts stay together. Passages are
+capped at 512 tokens; only oversized documents are split with a 50-token
+overlap. Table~\ref{tab:corpus-stats} shows the resulting corpus:
+$\mathcal{D}$ contains 84{,}982 documents, and because most CTI artifacts
+fit into a single passage, $\mathcal{P}$ contains 84{,}991 passages ---
+only nine advisories required splitting. Every passage carries structured
+metadata, including source, title, severity, CVSS score and vector, CVE
+and CWE identifiers, affected products, and publication and modification
+dates. This metadata preserves provenance for citation (C1, C3) and
+supports exact-identifier matching during retrieval
+(Section~\ref{sec:retrieval}).
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{llrr}
+        \toprule
+        \textbf{Source} & \textbf{Content} & \textbf{Documents} & \textbf{Passages} \\
+        \midrule
+        NVD & CVE entries (CVSS $\geq 7.0$, 2020--2025) & 82{,}282 & 82{,}282 \\
+        CISA KEV & known exploited vulnerabilities & 1{,}484 & 1{,}484 \\
+        CISA advisories & security advisories & 1{,}028 & 1{,}037 \\
+        MISP & threat-sharing events & 188 & 188 \\
+        \midrule
+        Total & & 84{,}982 & 84{,}991 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Corpus statistics of the evaluated index (snapshot: published
+             $\leq$ 2025-12-31, fetched 2026-03-28)}
+    \label{tab:corpus-stats}
+\end{table}
 
 \section{Hybrid retrieval and reranking}
 \label{sec:retrieval}
-% TODO: dense + BM25, Fusion, Reranker. Kein eigenes Diagramm ---
-% der Fluss steckt in \ref{fig:architecture}.
-...
 
-% TODO Tabelle: Werte aus configs/settings.yaml uebernehmen.
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{llp{0.42\textwidth}}
-%         \toprule
-%         \textbf{Component} & \textbf{Model / method} & \textbf{Parameters} \\
-%         \midrule
-%         Sparse retrieval & BM25 & ... \\
-%         Dense retrieval & <embedding model> & ... \\
-%         Fusion & ... & ... \\
-%         Reranking & <cross-encoder> & top-k = ... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Retrieval pipeline configuration}
-%     \label{tab:retrieval-config}
-% \end{table}
+The retrieval function $R$ from Equation~\ref{eq:retrieval} runs two
+retrievers in parallel over the same passage set $\mathcal{P}$. Sparse
+retrieval uses BM25 with a CTI-aware tokenizer that preserves hyphenated
+identifiers such as \texttt{CVE-2021-44228} or \texttt{CWE-79} as single
+tokens, so that exact identifier matches are not destroyed by standard
+tokenization. Dense retrieval embeds the query with BGE-small-en-v1.5 and
+searches the ChromaDB store by cosine similarity. Each retriever returns
+its 20 highest-ranked candidates.
+
+The two rankings are merged by reciprocal rank fusion. Rank-based fusion
+avoids calibrating lexical and semantic scores against each other, which
+have incompatible scales. A cross-encoder then scores each query--passage
+pair in the fused pool and selects the final context: with the reranker's
+$k = 5$, this yields the context $\mathcal{C}_k$ of the task formulation.
+After reranking, a small exact-identifier bonus keeps passages that
+literally contain a queried CTI identifier visible without dominating the
+reranker's relevance judgment. This pipeline implements C2;
+Table~\ref{tab:retrieval-config} lists the configuration.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{llp{0.4\textwidth}}
+        \toprule
+        \textbf{Stage} & \textbf{Model / method} & \textbf{Parameters} \\
+        \midrule
+        Sparse retrieval & BM25, CTI-aware tokenizer & top-$k$ = 20 \\
+        Dense retrieval & BGE-small-en-v1.5 (384 dim.) & cosine similarity,
+            top-$k$ = 20 \\
+        Fusion & reciprocal rank fusion & $k_{\mathrm{RRF}}$ = 60,
+            pool size 20 \\
+        Reranking & cross-encoder ms-marco-MiniLM-L-6-v2 & top-$k$ = 5
+            (final context) \\
+        Entity boost & exact-identifier bonus & weight 1.0, applied after
+            reranking \\
+        \bottomrule
+    \end{tabular}
+    \caption{Retrieval pipeline configuration (from the frozen
+             \texttt{evaluated-v1} state)}
+    \label{tab:retrieval-config}
+\end{table}
 
 \section{Context assembly, answer generation and citation}
 \label{sec:generation}
-% TODO: Kontextaufbau, Prompt-Struktur (Verweis auf Anhang Prompt Templates),
-% Grounding-/Zitiermechanismus, Refusal-Verhalten bei fehlender Evidenz.
-...
 
-% TODO Listing: gekuerztes System-Prompt mit Zitier-Instruktion
-% (aus src/cti_rag/rag/prompts.py); Vollversion in Anhang B.
-% \begin{lstlisting}[caption={System prompt with citation instruction (excerpt)},
-%                    label={lst:system-prompt}]
-% ...
-% \end{lstlisting}
+The five passages of $\mathcal{C}_k$ are assembled into the prompt as
+numbered blocks, each exposing a citation label, the source type, the
+title, and the content. Citation labels are the plain document
+identifiers, such as \texttt{nvd\_CVE-2024-3094}; longer composite labels
+proved impractical because the 8B model could not reproduce them
+verbatim, which caused valid citations to be lost in normalization.
+
+Generation runs in one of two modes. The \emph{legacy} mode sends a
+single prompt whose system instruction enforces grounding: the model may
+use only the retrieved context, must end every claim with an inline
+citation label, must not invent labels, and must answer in a fixed
+section structure (summary, relevance, mitigations, evidence, gaps).
+Listing~\ref{lst:system-prompt} shows the core of this instruction; the
+complete templates are reproduced in Appendix~\ref{app:prompts}. The
+\emph{templated} mode, the main design contribution of the prototype,
+splits the answer into layers. Layer~1 is rendered deterministically from
+the structured metadata of the retrieved passages (CVSS scores, CWE
+identifiers, KEV dates, triage signals) without any LLM involvement, so
+these fields cannot be hallucinated. The LLM contributes only the Layer-2
+narrative (exploitation context, mitigations), grounded in the retrieved
+passages via inline citations (C1, C5). Which template is applied follows
+the query router (Section~\ref{sec:architecture}).
+
+Two safeguards close the loop. Before generation, a context-support check
+abstains with an explicit analyst-facing message when retrieval returns
+no usable evidence, implementing the abstention behavior required by the
+grounding constraint of Equation~\ref{eq:generation}. After generation, a
+citation normalization step resolves every cited label against the
+passages that were actually retrieved, repairing near-miss labels and
+discarding lines whose citations cannot be resolved. The non-retrieval
+baseline (V0) uses the same section structure and a knowledge-cutoff
+instruction matching the corpus snapshot, but no citations --- keeping
+the comparison with the grounded configurations fair.
+
+\begin{lstlisting}[caption={System prompt with citation instruction
+                   (excerpt; full version in Appendix~\ref{app:prompts})},
+                   label={lst:system-prompt}]
+You are a Cyber Threat Intelligence (CTI) analyst assistant. Your role
+is to help security analysts by providing accurate, source-grounded
+intelligence based only on the retrieved context.
+
+Rules:
+1. Use ONLY the retrieved context. Do not use prior knowledge or fill
+   gaps from memory.
+2. If the context is insufficient, say so explicitly and name what is
+   missing.
+3. Every factual statement, recommendation, or interpretation that
+   comes from the context MUST end with an inline citation using the
+   exact Citation Label shown for that chunk. Example:
+   "Apply updates per vendor instructions [cisa_kev_CVE-2024-1709]."
+4. Never invent a citation label. Only use Citation Labels that appear
+   verbatim in the retrieved context.
+[...]
+10. In Recommended actions / Mitigations, include only actions
+    explicitly supported by the context. If none are supported, write
+    exactly: "No reliable mitigation guidance is present in the
+    retrieved context."
+\end{lstlisting}
 
 \section{Implementation}
 \label{sec:implementation}
-% TODO: Technologie-Stack, Verweis auf Repository (Anhang).
-% Hinweis: MCP-/Agent-Erweiterung hier nur kurz erwaehnen oder ganz in
-% Future Work (\ref{sec:future-work}) verschieben.
-...
 
-% TODO Tabelle: Komponenten nach Salmas Vorbild (ihre Tabelle 11).
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{lp{0.22\textwidth}p{0.45\textwidth}}
-%         \toprule
-%         \textbf{Path} & \textbf{Function} & \textbf{Details} \\
-%         \midrule
-%         src/cti\_rag/ingestion/ & ... & ... \\
-%         src/cti\_rag/retrieval/ & Hybrid retrieval & ... \\
-%         src/cti\_rag/rag/ & Chain, prompts & ... \\
-%         src/cti\_rag/evaluation/ & RAGAS evaluation & ... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Prototype components with path, function, and technical details}
-%     \label{tab:components}
-% \end{table}
+The prototype is implemented in Python~3.12 as a single repository
+(Appendix~\ref{app:repository}). LangChain~0.3 provides the orchestration
+layer with integrations for Ollama, Hugging Face models, and ChromaDB;
+\texttt{rank-bm25} implements the sparse index,
+\texttt{sentence-transformers} serves the embedding and reranking models,
+and RAGAS~0.2 drives the automated evaluation. Analyst access runs
+through a FastAPI backend with a Streamlit workbench; the agent interface
+uses the MCP Python SDK. Every component of the evaluated pipeline is
+open-source and runs locally (C6); a hosted model appears only in the
+optional extended mode (Section~\ref{sec:mcp-interface}) and in the
+ablation configuration V5, both outside the evaluated path.
+Table~\ref{tab:components} maps the modules to their functions.
 
-% TODO Abbildung: UI-Screenshot (Chat-Ansicht mit Pipeline-Flow-Card oder
-% Landing Page). Druckbarkeit des Dark-Themes pruefen, ggf. helles Theme.
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lp{0.2\textwidth}p{0.42\textwidth}}
+        \toprule
+        \textbf{Path} & \textbf{Function} & \textbf{Details} \\
+        \midrule
+        src/cti\_rag/ingestion/ & source acquisition & downloaders and
+            parsers for NVD, CISA KEV, CISA advisories, and MISP; unified
+            document model \\
+        src/cti\_rag/retrieval/ & indexing and retrieval & CTI-aware BM25
+            indexer, ChromaDB collection, hybrid retriever with RRF and
+            reranking \\
+        src/cti\_rag/rag/ & orchestration and generation & query router,
+            triage templates (L1/L2), prompts, citation normalization,
+            abstention \\
+        src/cti\_rag/evaluation/ & evaluation harness & RAGAS runner,
+            field coverage, analyst rubric \\
+        src/cti\_rag/api/, ui/ & analyst access & FastAPI backend,
+            Streamlit workbench \\
+        src/cti\_rag/mcp/ & agent interface & stdio MCP server with a
+            deterministic query tool \\
+        \bottomrule
+    \end{tabular}
+    \caption{Prototype components with path, function, and technical details}
+    \label{tab:components}
+\end{table}
+
+The prototype was developed and operated on consumer hardware: a MacBook
+Air with an Apple M4 chip and 24\,GB of unified memory, running
+macOS~26. All models execute locally --- the generation model through the
+Ollama runtime, the embedding and reranking models through
+\texttt{sentence-transformers} on Apple's Metal backend. No dedicated GPU
+server is involved: the complete pipeline, including 8B-model generation,
+runs on analyst-grade hardware, which substantiates the local-deployment
+criterion (C6). The exact software versions of the evaluation runs are
+listed in Section~\ref{sec:experimental-setup}.
+
+Table~\ref{tab:tech-selection} documents the component selection. The
+selection is justified against the design criteria rather than a formal
+scoring model; for the generation model, the local-versus-hosted decision
+is additionally checked empirically in the ablation
+(Section~\ref{sec:results-ablation}). The embedding model was chosen for
+its retrieval quality relative to its footprint on the MTEB benchmark
+\parencite{muennighoff2023mteb}.
+
+% TODO: Alternativen-Spalte bitte bestaetigen/korrigieren --- es sollen
+% die real erwogenen Kandidaten stehen, nicht nachkonstruierte.
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{p{0.14\textwidth}p{0.24\textwidth}p{0.2\textwidth}p{0.28\textwidth}}
+        \toprule
+        \textbf{Component} & \textbf{Selected} & \textbf{Alternatives
+        considered} & \textbf{Rationale} \\
+        \midrule
+        Generation model & Llama 3.1 8B Instruct (Ollama, q5\_K\_M)
+            & Mistral 7B, Qwen 2.5 7B; hosted model (V5)
+            & C6: fits 24\,GB unified memory; empirical check in
+              Sec.~\ref{sec:results-ablation} \\
+        Embedding model & BGE-small-en-v1.5 (384 dim.)
+            & e5-small-v2, all-MiniLM-L6-v2
+            & C2, C6: MTEB retrieval quality at small footprint \\
+        Sparse index & rank-bm25 with custom CTI tokenizer
+            & Elasticsearch, OpenSearch
+            & C2, C6: exact identifier matching, no server dependency \\
+        Vector store & ChromaDB
+            & FAISS, Qdrant
+            & C6: embedded, persistent, open-source \\
+        Reranker & ms-marco-MiniLM-L-6-v2
+            & bge-reranker-base
+            & C2: precision gain at acceptable latency \\
+        Orchestration & LangChain 0.3
+            & LlamaIndex, Haystack
+            & C6: mature Ollama, Chroma, and Hugging Face integrations \\
+        \bottomrule
+    \end{tabular}
+    \caption{Technology selection with rationale against the design criteria}
+    \label{tab:tech-selection}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ui_chat_view}
+    \caption{Analyst workbench of the prototype: task-template cards,
+             pipeline and backend status in the sidebar, and the head of
+             a grounded response}
+    \label{fig:ui-overview}
+\end{figure}
+
+\subsection{Agent interface via MCP}
+\label{sec:mcp-interface}
+
+Beyond the analyst-facing workbench, the prototype exposes its pipeline
+to agentic clients through a Model Context Protocol (MCP) stdio server.
+The server publishes a single deterministic tool,
+\texttt{cti\_query\_tool}, which runs the query router, hybrid retrieval,
+fact-bundle extraction, and Layer-1 rendering --- but no LLM generation
+--- and responds in roughly 1.2 seconds. This cut is deliberate: full
+generation on the local model takes a median of 85 seconds and up to
+three minutes per answer, which exceeds typical MCP client timeouts,
+whereas the deterministic fact layer is fast, reproducible, and grounded
+by construction. An extended assist mode
+that adds hosted generation on top of this interface exists as a
+documented feature but is not part of the evaluation; it is discussed as
+future work (Section~\ref{sec:future-work}).
+
+% TODO Abbildung: MCP-Transkript frisch generieren mit `make mcp-demo`,
+% Export nach thesis/images/mcp_transcript.{pdf,png}.
 % \begin{figure}[htbp]
 %     \centering
-%     \includegraphics[width=\textwidth]{ui_chat_view}
-%     \caption{Analyst-facing user interface of the prototype}
-%     \label{fig:ui-overview}
+%     \includegraphics[width=\textwidth]{mcp_transcript}
+%     \caption{MCP client transcript of a deterministic
+%              \texttt{cti\_query\_tool} call}
+%     \label{fig:mcp-transcript}
 % \end{figure}
 
 \section{Evaluation design}
 \label{sec:evaluation-design}
-% EINZIGE Stelle fuer das Evaluationsdesign (frueheres 2.4 ist hier aufgegangen).
+
+The evaluation design fixes four elements before any result is
+interpreted: the query set, the metrics, the configurations under
+comparison, and the protocol.
 
 \subsection{Test set construction}
 \label{sec:test-set}
-% TODO: Query-Set (Anzahl, Kategorien, Erstellung, Ground Truth),
-% Verweis auf Anhang C.
-...
 
-% TODO Tabelle: Query-Set-Uebersicht.
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{lrp{0.5\textwidth}}
-%         \toprule
-%         \textbf{Task category} & \textbf{Queries} & \textbf{Example query} \\
-%         \midrule
-%         Vulnerability assessment & ... & ... \\
-%         IOC enrichment & ... & ... \\
-%         Threat actor context & ... & ... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Evaluation query set by CTI task category}
-%     \label{tab:query-set}
-% \end{table}
+The query set contains 28 queries across the four CTI task types:
+vulnerability analysis (6), IOC enrichment (7), TTP correlation (7), and
+cross-source comparison (8). Table~\ref{tab:query-set} gives one example
+per type; Appendix~\ref{app:query-set} lists the full set. Each query
+defines its expected router template, a ground truth as a list of
+individual facts, the fields a complete answer must cover, and a
+difficulty level. The router assignment is asserted by unit tests, so
+every query reaches the template it was designed for.
 
-\subsection{RAGAS metrics}
+Every ground-truth fact is verifiable against the indexed snapshot: the
+ground truths were reviewed against the corpus, open enumeration
+questions were narrowed to named entity sets so that the correct answer
+set is uniquely retrievable, and facts without snapshot backing were
+removed. Temporal references use absolute dates aligned with the snapshot
+cutoff of 2025-12-31.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lrp{0.5\textwidth}}
+        \toprule
+        \textbf{Task type} & \textbf{Queries} & \textbf{Example query} \\
+        \midrule
+        Vulnerability analysis & 6 & ``What is CVE-2024-3094 and what is
+            its impact?'' \\
+        IOC enrichment & 7 & \dots \\ % TODO: Beispiele aus eval_queries.yaml
+        TTP correlation & 7 & \dots \\ % TODO
+        Cross-source comparison & 8 & \dots \\ % TODO
+        \bottomrule
+    \end{tabular}
+    \caption{Evaluation query set by CTI task type (28 queries in total)}
+    \label{tab:query-set}
+\end{table}
+
+\subsection{Evaluation metrics}
 \label{sec:ragas-metrics}
-% TODO: verwendete Metriken definieren (faithfulness, answer relevancy,
-% context precision/recall, ...), Judge-Modell, Konfiguration.
-...
 
-% TODO Tabelle: Metrik-Definitionen kompakt.
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{lp{0.5\textwidth}l}
-%         \toprule
-%         \textbf{Metric} & \textbf{Measures} & \textbf{Range} \\
-%         \midrule
-%         Faithfulness & ... & 0--1 \\
-%         Answer relevancy & ... & 0--1 \\
-%         Context precision & ... & 0--1 \\
-%         Context recall & ... & 0--1 \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Evaluation metrics used in this thesis}
-%     \label{tab:metrics}
-% \end{table}
+Three metric groups cover complementary quality aspects
+(Table~\ref{tab:metrics}). The RAGAS framework \parencite{es2023ragas}
+scores faithfulness, answer relevancy, answer correctness, context
+precision, and context recall; an LLM judge performs the scoring, and the
+ground-truth facts of the query set serve as references where the metric
+requires them. The judge model (gpt-4o-mini) deliberately differs from
+the hosted generation model of the ablation (V5) to avoid self-preference
+bias. RAGAS receives the Layer-2 narrative without the gaps section and
+without template-mandated absence statements: the judge's non-committal
+classifier nulls answers that contain absence phrasing, and Layer~1 is
+metadata-grounded by construction, so it needs no LLM-based grounding
+check. % Pflichtnote 2 --- in 4.1 nur noch referenzieren.
+
+Field coverage measures task-specific completeness: for each query, it
+checks deterministically which of the expected fields, such as CVSS
+score, affected products, or KEV remediation actions, appear in the
+answer. This metric operationalizes criterion C4 beyond generic quality
+scores. The analyst rubric assesses each answer on four dimensions with
+a 0--3 scale: prioritization, actionability, completeness, and
+traceability.
+% TODO klaeren (Engineering): Formulierung zum Rubric-Scoring bestaetigen
+% (automatisiert durch Judge-Modell pro Lauf?).
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lp{0.45\textwidth}l}
+        \toprule
+        \textbf{Metric} & \textbf{Measures} & \textbf{Basis} \\
+        \midrule
+        Faithfulness & claims supported by the retrieved context & judge \\
+        Answer relevancy & answer addresses the query & judge \\
+        Answer correctness & agreement with the ground-truth facts & judge + GT \\
+        Context precision & retrieved passages relevant to the query & judge \\
+        Context recall & ground-truth facts covered by the context & judge + GT \\
+        Field coverage & expected task fields present in the answer & deterministic \\
+        Analyst rubric & prioritization, actionability, completeness,
+            traceability (0--3 each) & rubric \\
+        \bottomrule
+    \end{tabular}
+    \caption{Evaluation metrics of the final series}
+    \label{tab:metrics}
+\end{table}
 
 \subsection{Baseline and variant configurations}
 \label{sec:baselines}
-% TODO: Konfigurationsmatrix; Setup A/B dokumentieren. Kapitel 4.1
-% verweist NUR hierher, keine Wiederholung dort.
-...
 
-% TODO Tabelle: Konfigurationsmatrix (wichtigste Tabelle von 3.7).
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{llll}
-%         \toprule
-%         \textbf{ID} & \textbf{Configuration} & \textbf{Retrieval} & \textbf{Generation model} \\
-%         \midrule
-%         V0 & Non-retrieval baseline & --- & local 8B \\
-%         V1 & Sparse-only & BM25 & local 8B \\
-%         V2 & Dense-only & vector & local 8B \\
-%         V3 & Hybrid & BM25 + vector & local 8B \\
-%         V4 & Hybrid + reranking & BM25 + vector + rerank & local 8B \\
-%         V5 & Ablation: hosted model & wie V4 & hosted \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Baseline and variant configurations}
-%     \label{tab:configurations}
-% \end{table}
+Table~\ref{tab:configurations} defines the six configurations. They vary
+along two axes: the retrieval strategy (none, sparse, dense, hybrid) and
+the generation mode (legacy prompt or templated pipeline,
+Section~\ref{sec:generation}). V0 instantiates the non-retrieval baseline
+$a_0$ of the task formulation. V1--V3 isolate the retrieval strategies
+under the legacy prompt. V4 adds the templated pipeline on top of the
+hybrid retriever and is the primary configuration of this thesis; the
+comparison V3 versus V4 therefore isolates the effect of the templated
+generation. V5 repeats V4 with a hosted generation model as an ablation.
+Cross-encoder reranking is uniformly active in V1--V5 and deliberately
+not ablated separately. A second index setup (Setup~A) was used during
+development and is descoped from the final evaluation series.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{llllr}
+        \toprule
+        \textbf{ID} & \textbf{Configuration} & \textbf{Retrieval} & \textbf{Generation} & \textbf{n} \\
+        \midrule
+        V0 & no-retrieval baseline & --- & local 8B, legacy & 3 \\
+        V1 & BM25 only & sparse & local 8B, legacy & 3 \\
+        V2 & vector only & dense & local 8B, legacy & 3 \\
+        V3 & hybrid (RRF) & sparse + dense & local 8B, legacy & 3 \\
+        V4 & hybrid + templated pipeline & sparse + dense & local 8B, templated & 3 \\
+        V5 & V4 with hosted generator & sparse + dense & Haiku 4.5, templated & 3 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Configuration matrix of the final evaluation series.
+             Cross-encoder reranking is active in V1--V5 and not ablated
+             separately.}
+    \label{tab:configurations}
+\end{table}
 
 \subsection{Experimental protocol}
 \label{sec:protocol}
-% TODO: Ablauf, Reproduzierbarkeit (Seeds, Versionen, Hardware),
-% Fairness-Bedingungen der Vergleiche.
-...
+
+All configurations run on the same frozen state: the index of
+Section~\ref{sec:ingestion}, the prompts of
+Appendix~\ref{app:prompts}, and the retrieval parameters of
+Table~\ref{tab:retrieval-config} are tagged and unchanged across the
+series. Every configuration, including the hosted ablation, is executed three
+times, because single runs scatter by about $\pm 0.05$ through
+generation variance; all reported numbers are three-run means with
+standard deviations. Generation uses a temperature of 0.1; the
+judge model and its configuration stay fixed across all runs.
+
+The scenario-based assessment in
+Section~\ref{sec:representative-outputs} is a critical self-evaluation:
+the author rates representative outputs along the predefined rubric of
+Appendix~\ref{app:query-set}. This design keeps the judgment criteria
+fixed before the results and is named as a limitation in
+Section~\ref{sec:limitations}. All evaluation artifacts, including raw
+scores and run logs, are versioned in the repository
+(Appendix~\ref{app:repository}) together with the batch runner that
+reproduces the series.

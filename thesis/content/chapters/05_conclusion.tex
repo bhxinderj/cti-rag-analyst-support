@@ -2,7 +2,7 @@
 % Kapitel 5 — Conclusion, Limitations and Outlook (Budget: ~2 Seiten)
 % Schlank halten: KEINE erneute Ergebnisdiskussion (die steht in Kap. 4).
 % ======================================================================
-\chapter{Conclusion, Limitations and Outlook}
+\chapter{Conclusion, limitations and outlook}
 \label{ch:conclusion}
 
 \section{Summary and contributions}
@@ -14,8 +14,17 @@
 \section{Limitations}
 \label{sec:limitations}
 % TODO: methodische Einschraenkungen als Bullets (vgl. Salma 5.2):
-% Korpusgroesse/-auswahl, Query-Set-Umfang, LLM-as-judge-Bias,
-% keine Nutzerstudie, Einzelsprache, ...
+% Korpusgroesse/-auswahl, Query-Set-Umfang (28), LLM-as-judge-Bias
+% (+ Beleg: Non-Committal-Klassifikator traf 8B UND Haiku ---
+% modell-agnostische Judge-Metrik-Kritik),
+% Query-Set nennt prominente CVEs -> beguenstigt parametrische Baseline
+% systematisch,
+% Selbstevaluierungs-Bias (szenariobasierte Bewertung durch den Autor,
+% mitigiert durch das vorab definierte Raster in Anhang C),
+% keine Nutzerstudie, Einzelsprache, C3 ohne Laufzeit-Credibility-Scoring,
+% Context Precision/Recall sind referenzbasierte, LLM-gejudgte Proxys,
+% KEINE klassischen IR-Metriken; Qrels-basierte Ranking-Evaluation bleibt
+% Future Work (per-Stage-Retrieval-Traces liegen in den Artefakten vor), ...
 ...
 
 \section{Future work}
@@ -24,7 +33,8 @@
 % (a) praktische Roadmap (z.B. MCP-/Agent-Integration, Feed-Anbindung,
 %     Multi-User-Betrieb),
 % (b) wissenschaftliche Anschlussmoeglichkeiten (Nutzerstudie mit Analysten,
-%     groessere Korpora, weitere Modellvergleiche).
+%     groessere Korpora, weitere Modellvergleiche, Qrels-basierte
+%     IR-Evaluation auf Basis der vorhandenen Retrieval-Traces).
 ...
 
 % TODO Abbildung: Roadmap-Kaskade nach Salmas Vorbild (Abb. 8 bei ihr):

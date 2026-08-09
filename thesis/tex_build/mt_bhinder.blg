@@ -1,15 +1,15 @@
 [0] Config.pm:307> INFO - This is Biber 2.19
 [0] Config.pm:310> INFO - Logfile is 'tex_build/mt_bhinder.blg'
-[90] biber-darwin:340> INFO - === Sat Jul 18, 2026, 16:48:09
-[115] Biber.pm:419> INFO - Reading 'tex_build/mt_bhinder.bcf'
-[238] Biber.pm:979> INFO - Found 21 citekeys in bib section 0
-[274] Biber.pm:4419> INFO - Processing section 0
-[298] Biber.pm:4610> INFO - Looking for bibtex file 'references.bib' for section 0
-[303] bibtex.pm:1713> INFO - LaTeX decoding ...
-[329] bibtex.pm:1519> INFO - Found BibTeX data source 'references.bib'
-[622] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
-[622] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
-[622] Biber.pm:4239> INFO - Sorting list 'nyt/global//global/global' of type 'entry' with template 'nyt' and locale 'en-US'
-[623] Biber.pm:4245> INFO - No sort tailoring available for locale 'en-US'
-[655] bbl.pm:660> INFO - Writing 'tex_build/mt_bhinder.bbl' with encoding 'UTF-8'
-[677] bbl.pm:763> INFO - Output to tex_build/mt_bhinder.bbl
+[25] biber-darwin:340> INFO - === Sun Aug  9, 2026, 20:38:34
+[30] Biber.pm:419> INFO - Reading 'tex_build/mt_bhinder.bcf'
+[59] Biber.pm:979> INFO - Found 23 citekeys in bib section 0
+[65] Biber.pm:4419> INFO - Processing section 0
+[69] Biber.pm:4610> INFO - Looking for bibtex file 'references.bib' for section 0
+[70] bibtex.pm:1713> INFO - LaTeX decoding ...
+[76] bibtex.pm:1519> INFO - Found BibTeX data source 'references.bib'
+[151] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[151] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[151] Biber.pm:4239> INFO - Sorting list 'nyt/global//global/global' of type 'entry' with template 'nyt' and locale 'en-US'
+[151] Biber.pm:4245> INFO - No sort tailoring available for locale 'en-US'
+[160] bbl.pm:660> INFO - Writing 'tex_build/mt_bhinder.bbl' with encoding 'UTF-8'
+[166] bbl.pm:763> INFO - Output to tex_build/mt_bhinder.bbl

@@ -10,9 +10,23 @@
 \usepackage{listings}
 \usepackage{float} % erlaubt [H] fuer harte Float-Platzierung
 \usepackage{longtable} % seitenumbrechende Tabellen
+\usepackage{pdflscape} % echte Querformat-Seiten (PDF-Viewer zeigt horizontal)
 % Absatzstil: kein Erstzeilen-Einzug, stattdessen vertikaler Abstand
 % zwischen Absaetzen (Blockstil wie in der Salma-Arbeit).
 \usepackage{parskip}
+
+% Bibliografie: kein haengender Einzug in den Folgezeilen, dafuer
+% kleiner Abstand zwischen den Eintraegen.
+\setlength{\bibhang}{0pt}
+\setlength{\bibitemsep}{0.6\baselineskip}
+
+% Sentence Case auch fuer die generierten Verzeichnis-Titel
+% (Konsistenz mit den Kapitel-/Section-Ueberschriften).
+\addto\captionsenglish{%
+    \renewcommand*{\listfigurename}{List of figures}%
+    \renewcommand*{\listtablename}{List of tables}%
+}
+\renewcommand*{\listacroname}{List of abbreviations}
 \graphicspath{{images/}}
 
 % Stil fuer Prompt-/Code-Listings (z.B. lst:system-prompt in Kap. 3.5)
@@ -24,14 +38,31 @@
     xleftmargin=2mm,
     captionpos=b}
 
-% Box fuer Forschungsfragen (Kap. 1) und deren Beantwortung (Kap. 4),
-% nach dem Vorbild der Salma-Arbeit.
+% Box fuer Forschungsfragen (Kap. 1) und deren Beantwortung (Kap. 4).
+% Schlichter Rahmen: duenne graue Linie, weisser Koerper, hellgraue
+% Titelzeile, eckige Kanten.
+% Box fuer Antwort-Auszuege in Kap. 4 (gleiche Optik wie rqbox).
+\newtcolorbox{responsebox}[1]{%
+    breakable,
+    sharp corners,
+    colback=gray!2,
+    colframe=black!60,
+    colbacktitle=black!8,
+    coltitle=black,
+    fonttitle=\bfseries\small,
+    fontupper=\small,
+    title={#1},
+    boxrule=0.5pt,
+    left=2mm, right=2mm, top=1.5mm, bottom=1.5mm}
+
 \newtcolorbox{rqbox}[1]{%
     breakable,
-    colback=blue!4!white,
-    colframe=blue!35!black,
-    title={#1},
+    sharp corners,
+    colback=white,
+    colframe=black!60,
+    colbacktitle=black!8,
+    coltitle=black,
     fonttitle=\bfseries,
+    title={#1},
     boxrule=0.5pt,
-    arc=1mm,
     left=2mm, right=2mm, top=1.5mm, bottom=1.5mm}

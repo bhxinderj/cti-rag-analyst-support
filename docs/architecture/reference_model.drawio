@@ -1,0 +1,120 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="reference_model" id="ref-page-1">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1250" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Local deployment boundary -->
+        <mxCell id="frame" value="Local deployment boundary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#334155;dashed=1;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=12;fontStyle=2;fontColor=#334155;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="990" height="560" as="geometry" />
+        </mxCell>
+
+        <!-- Analyst -->
+        <mxCell id="analyst" value="Security analyst" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#334155;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="20" width="150" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Interaction layer -->
+        <mxCell id="l1" value="Analyst interaction layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#C7D2FE;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=12;fontStyle=1;fontColor=#3730A3;" vertex="1" parent="1">
+          <mxGeometry x="90" y="140" width="930" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="l1a" value="Task-oriented&#10;query interface" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="110" y="180" width="250" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="l1b" value="Triage-structured&#10;answer view" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="390" y="180" width="270" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="l1c" value="Evidence inspection:&#10;cited vs. retrieved context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="690" y="180" width="300" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Reasoning layer -->
+        <mxCell id="l2" value="Reasoning layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFEFF;strokeColor=#A5F3FC;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=12;fontStyle=1;fontColor=#155E75;" vertex="1" parent="1">
+          <mxGeometry x="90" y="275" width="930" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="l2a" value="Task router" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0e8088;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="110" y="315" width="180" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="l2b" value="Deterministic fact layer&#10;(from metadata)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0e8088;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="310" y="315" width="220" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="l2c" value="Grounded narrative&#10;generation (LLM)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0e8088;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="550" y="315" width="220" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="l2d" value="Citation validation&#10;+ abstention" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0e8088;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="790" y="315" width="210" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Knowledge layer -->
+        <mxCell id="l3" value="Knowledge layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#93C5FD;verticalAlign=top;align=left;spacingLeft=12;spacingTop=6;fontSize=12;fontStyle=1;fontColor=#1D4ED8;" vertex="1" parent="1">
+          <mxGeometry x="90" y="410" width="930" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="l3a" value="Hybrid index: lexical + semantic,&#10;identifier-aware tokenization" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D4ED8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="110" y="448" width="500" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="l3b" value="Per-passage provenance&#10;metadata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1D4ED8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="640" y="448" width="360" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- Source layer -->
+        <mxCell id="l4" value="Curated, authoritative CTI sources — versioned snapshots" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#FDBA74;fontSize=12;fontStyle=1;fontColor=#9A3412;" vertex="1" parent="1">
+          <mxGeometry x="90" y="530" width="930" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- Governance bar -->
+        <mxCell id="gov" value="Evaluation and governance: task-specific completeness (field coverage) · judged quality metrics · analyst rubric" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#6EE7B7;fontSize=12;fontStyle=1;fontColor=#047857;" vertex="1" parent="1">
+          <mxGeometry x="90" y="605" width="930" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Hosted opt-in (outside boundary) -->
+        <mxCell id="hosted" value="Hosted generation&#10;model (opt-in)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;dashed=1;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="300" width="140" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="ehosted" value="data egress" style="endArrow=classic;startArrow=none;html=1;dashed=1;strokeColor=#EA580C;fontSize=11;fontStyle=2;exitX=1;exitY=0.58;entryX=0;entryY=0.5;" edge="1" parent="1" source="l2" target="hosted">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Vertical connections -->
+        <mxCell id="ea" style="endArrow=classic;startArrow=classic;html=1;strokeColor=#475569;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="analyst" target="l1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" style="endArrow=classic;startArrow=classic;html=1;strokeColor=#475569;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="l1" target="l2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" style="endArrow=classic;startArrow=classic;html=1;strokeColor=#475569;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="l2" target="l3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e34" style="endArrow=none;startArrow=classic;html=1;strokeColor=#475569;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="l3" target="l4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Principle badges -->
+        <mxCell id="p1" value="P1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1005" y="542" width="30" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="P2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="595" y="440" width="30" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="P3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="515" y="307" width="30" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="P4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="985" y="307" width="30" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" value="P5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="975" y="172" width="30" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" value="P6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="262" y="116" width="30" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p7" value="P7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="345" y="172" width="30" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="p8" value="P8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F172A;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1005" y="619" width="30" height="22" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

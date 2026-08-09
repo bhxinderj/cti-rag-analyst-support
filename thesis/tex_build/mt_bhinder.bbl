@@ -100,6 +100,31 @@
       \field{title}{{LLM}-Powered Threat Intelligence: A Retrieval-Augmented Generation Approach for Cyber Attack Investigation}
       \field{year}{2025}
     \endentry
+    \entry{brown2018c4}{misc}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=0653a11aad687a389587e0000e0f4a13}{%
+           family={Brown},
+           familyi={B\bibinitperiod},
+           given={Simon},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{fullhash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{bibnamehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{authorbibnamehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{authornamehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{authorfullhash}{0653a11aad687a389587e0000e0f4a13}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{\url{https://c4model.com}}
+      \field{title}{The {C4} Model for Visualising Software Architecture}
+      \field{year}{2018}
+    \endentry
     \entry{chen2023benchmarking}{misc}{}
       \name{author}{4}{}{%
         {{un=0,uniquepart=base,hash=85049970055d4a4c563f4721339feab4}{%
@@ -568,6 +593,49 @@
       \field{note}{arXiv preprint arXiv:2308.05374}
       \field{title}{Trustworthy {LLMs}: A Survey and Guideline for Evaluating Large Language Models' Alignment}
       \field{year}{2023}
+    \endentry
+    \entry{muennighoff2023mteb}{misc}{}
+      \name{author}{4}{}{%
+        {{un=0,uniquepart=base,hash=a2deb8466aa6f0edfe3cc805f9d776d8}{%
+           family={Muennighoff},
+           familyi={M\bibinitperiod},
+           given={Niklas},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=7e23a2299cdee311801c2b68b3546f59}{%
+           family={Tazi},
+           familyi={T\bibinitperiod},
+           given={Nouamane},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=eccb5bd5a544d5a8424f7859f9627fbd}{%
+           family={Magne},
+           familyi={M\bibinitperiod},
+           given={Loïc},
+           giveni={L\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=da9947b27b0d1c4c912e2b391426d443}{%
+           family={Reimers},
+           familyi={R\bibinitperiod},
+           given={Nils},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{fullhash}{b3fdeb2c71ba43d99b696106bc69cf8a}
+      \strng{bibnamehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{authorbibnamehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{authornamehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{authorfullhash}{b3fdeb2c71ba43d99b696106bc69cf8a}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{arXiv preprint arXiv:2210.07316}
+      \field{title}{{MTEB}: Massive Text Embedding Benchmark}
+      \field{year}{2022}
     \endentry
     \entry{palacin2021threat}{book}{}
       \name{author}{1}{}{%

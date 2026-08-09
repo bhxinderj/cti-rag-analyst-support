@@ -321,10 +321,11 @@ urlcolor=TWblue, urlbordercolor=white}
   \null\vspace{8pt}
   \setcounter{page}{-9}
 
-\ifdraft{\hspace*{-30pt}\scalebox{1.85}{\sffamily\textbf\doctypeprint -- DRAFT}}{\hspace*{-30pt}\scalebox{1.85}{\sffamily\textbf\doctypeprint}}
+% Einzuege vereinheitlicht auf -24pt (Kante von Ort/Datum), vorher -30/-34pt
+\ifdraft{\hspace*{-24pt}\scalebox{1.85}{\sffamily\textbf\doctypeprint -- DRAFT}}{\hspace*{-24pt}\scalebox{1.85}{\sffamily\textbf\doctypeprint}}
 \vspace{17pt}
 
-\hspace*{-34pt}\scalebox{1.5}{%
+\hspace*{-24pt}\scalebox{1.5}{%
     \begin{minipage}{0.72\linewidth}
       \Ifstr{\sprache}{german}{%
         \Ifstr{\doctype}{MASTERARBEIT}{zur Erlangung des akademischen Grades\\\glqq{}Master of Science in Engineering\grqq{}\\im Studiengang}{%
@@ -338,22 +339,22 @@ urlcolor=TWblue, urlbordercolor=white}
     \end{minipage}}
 
   \vspace{54.7pt}
-  \hspace*{-30pt}\begin{minipage}{0.9625\linewidth}
+  \hspace*{-24pt}\begin{minipage}{0.9625\linewidth}
    \huge\bfseries\sffamily \@title
 \end{minipage}\vspace{47pt}
 
 \Large
-\hspace*{-34pt}%
+\hspace*{-24pt}%
 \Ifstr{\sprache}{german}{Ausgef{\"u}hrt von:~}{By:~}%
 \begin{minipage}[t]{0.5\linewidth}\@author\end{minipage}%
 \vspace{0.33\baselineskip}%
 
-\hspace*{-34pt}%
+\hspace*{-24pt}%
 \Ifstr{\sprache}{german}{Personenkennzeichen:~}{Student Number:~}%
 \begin{minipage}[t]{0.25\linewidth}\@studentnumber\end{minipage}%
 \vspace{\baselineskip}%
 
-\hspace*{-34pt}%
+\hspace*{-24pt}%
 \ifx\@secondsupervisor\@empty%
 \ifx\@supervisordesc\@empty%
 \Ifstr{\sprache}{german}{BegutachterIn:~}{Supervisor:~}%
