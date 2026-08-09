@@ -419,7 +419,7 @@ with st.sidebar:
 
     extended = st.toggle(
         "☁️ Extended Analysis",
-        value=False,
+        value=True,
         help=(
             "Hosted generation (Claude Haiku 4.5 via OpenRouter) with "
             "analyst-assist guidance and deeper retrieval (top-8). "
