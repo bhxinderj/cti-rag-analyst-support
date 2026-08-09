@@ -1,13 +1,46 @@
 \chapter{Representative system outputs}
 \label{app:outputs}
 
-% TODO: vollstaendige Antworten (V4, Lauf r1) fuer die in Kap. 4.4
-% gezeigten Queries, jeweils mit Query, kompletter Antwort inkl. aller
-% Zitate und der V0-Kontrastantwort:
-% - 4.4.1: vuln-Query (Auswahl bei Asset-Session, z.B. vuln_001)
-% - 4.4.2: ioc_003 (MOVEit CVE-2023-34362)
-% - 4.4.3: ttp_005 (Ransomware Impact / TA0040)
-% - 4.4.4: cross_003 (Drei-CVE-Vergleich NVD vs. KEV)
-% Quelle: data/evaluation_results/setup_b/ragas_hybrid_templated_final_v1_r1_*.json
-% bzw. ragas_baseline_final_v1_r1_*.json (V0).
-... Inhalt ...
+This appendix reproduces the complete answers behind the scenario
+walk-throughs of Section~\ref{sec:representative-outputs}: for each of
+the four scenario queries, the full answer of the primary
+configuration (V4, run r1) and, as contrast, the answer of the
+non-retrieval baseline (V0, run r1). The listings are taken verbatim
+from the versioned run artifacts
+(Appendix~\ref{app:repository}); non-ASCII characters are normalized
+for typesetting. Citation labels of the form
+\texttt{[Source:~...]} resolve against the retrieved passages
+(Section~\ref{sec:generation}); the baseline answers carry no
+citations by design.
+
+\section*{vuln\_001 --- vulnerability analysis (Section~\ref{sec:scenario-vuln})}
+
+\subsection*{V4, templated hybrid}
+\input{content/appendix/outputs/vuln_001_v4}
+
+\subsection*{V0, non-retrieval baseline}
+\input{content/appendix/outputs/vuln_001_v0}
+
+\section*{ioc\_003 --- IOC enrichment (Section~\ref{sec:scenario-ioc})}
+
+\subsection*{V4, templated hybrid}
+\input{content/appendix/outputs/ioc_003_v4}
+
+\subsection*{V0, non-retrieval baseline}
+\input{content/appendix/outputs/ioc_003_v0}
+
+\section*{ttp\_005 --- TTP correlation (Section~\ref{sec:scenario-ttp})}
+
+\subsection*{V4, templated hybrid}
+\input{content/appendix/outputs/ttp_005_v4}
+
+\subsection*{V0, non-retrieval baseline}
+\input{content/appendix/outputs/ttp_005_v0}
+
+\section*{cross\_003 --- cross-source comparison (Section~\ref{sec:scenario-cross})}
+
+\subsection*{V4, templated hybrid}
+\input{content/appendix/outputs/cross_003_v4}
+
+\subsection*{V0, non-retrieval baseline}
+\input{content/appendix/outputs/cross_003_v0}

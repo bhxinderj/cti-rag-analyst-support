@@ -1,12 +1,57 @@
 \chapter{Evaluation query set and assessment criteria}
 \label{app:query-set}
 
-% TODO: (1) vollstaendige Query-Liste aus configs/eval_queries.yaml als
-% Tabelle (ID | Task type | Query | Ground-truth points/required fields);
-% Kap. \ref{sec:test-set} zeigt nur die Uebersicht.
-% (2) Bewertungsraster der szenariobasierten Evaluation: die VIER
-% Rubric-Dimensionen (prioritization, actionability, completeness,
-% traceability; Skala 0--3) mit kurzer Definition je Dimension ---
-% Grundlage fuer Kap. \ref{sec:representative-outputs} und
-% \ref{sec:protocol}.
-... Inhalt ...
+Table~\ref{tab:query-set-full} lists the complete query set of the
+final evaluation series. Each query additionally defines its expected
+router template, a ground truth as a list of individual facts, the
+required fields for the field-coverage check, and a difficulty level
+(Section~\ref{sec:test-set}); the full definitions, including all
+ground-truth facts, are versioned in the repository
+(\texttt{configs/eval\_queries.yaml},
+Appendix~\ref{app:repository}).
+
+\begingroup
+\small
+\input{tables/query_set_full}
+\endgroup
+
+\section*{Rubric dimension definitions}
+
+The analyst rubric of Section~\ref{sec:ragas-metrics} scores every
+answer on four dimensions with an integer 0--3 scale.
+Table~\ref{tab:rubric-definitions} states the definition of each
+dimension together with its lowest and highest score anchor; the
+scoring instruction given to the judge model contains the full
+four-step scale and is part of the evaluation module in the
+repository.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lp{0.26\textwidth}p{0.24\textwidth}p{0.26\textwidth}}
+        \toprule
+        \textbf{Dimension} & \textbf{Judges} & \textbf{Score 0} &
+        \textbf{Score 3} \\
+        \midrule
+        Prioritization & severity signal visibility and rationale &
+            no severity signal, or severity contradicts the ground
+            truth &
+            severity prominent at the top with a rationale tied to
+            concrete signals (CVSS, KEV, ransomware use) \\
+        Actionability & defensive guidance quality &
+            no mitigations, or only generic advice &
+            discrete, source-grounded mitigations an analyst could
+            hand to an operator \\
+        Completeness & template-field coverage &
+            major fields silently missing &
+            all expected fields present, or missing fields explicitly
+            flagged as gaps \\
+        Traceability & citation quality &
+            no citations, or citations without a retrieved source &
+            every factual claim cited with a correct source label \\
+        \bottomrule
+    \end{tabular}
+    \caption{Rubric dimensions with their lowest and highest score
+             anchors (0--3 integer scale)}
+    \label{tab:rubric-definitions}
+\end{table}

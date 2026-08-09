@@ -51,6 +51,6 @@
 \contentsline {chapter}{\numberline {A}Prototype repository}{43}{appendix.A}%
 \contentsline {chapter}{\numberline {B}Prompt templates}{44}{appendix.B}%
 \contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{48}{appendix.C}%
-\contentsline {chapter}{\numberline {D}Additional results}{49}{appendix.D}%
-\contentsline {chapter}{\numberline {E}Representative system outputs}{50}{appendix.E}%
+\contentsline {chapter}{\numberline {D}Additional results}{52}{appendix.D}%
+\contentsline {chapter}{\numberline {E}Representative system outputs}{54}{appendix.E}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

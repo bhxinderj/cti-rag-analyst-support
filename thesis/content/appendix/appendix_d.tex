@@ -1,7 +1,33 @@
 \chapter{Additional results}
 \label{app:additional-results}
 
-% TODO: Detailtabellen, die in Kap. \ref{ch:results} keinen Platz haben:
-% per-Query-Metriken, vollstaendige Konfigurationsvergleiche, Judge-
-% Konfiguration der RAGAS-Laeufe.
-... Inhalt ...
+\section*{Judge configuration}
+
+All RAGAS and rubric scores of the final series were produced by the
+judge model \texttt{gpt-4o-mini} (accessed via OpenRouter), configured
+identically across all configurations and runs. The RAGAS input
+follows the rule of Section~\ref{sec:ragas-metrics}: rated is the
+Layer-2 narrative without the gaps section
+(\texttt{ragas\_answer\_field: l2\_output\_sans\_gaps} in the run
+metadata). The rubric judge re-rates the stored answers of each run
+against the dimension definitions of
+Appendix~\ref{app:query-set}. Every run artifact records the judge
+model, the snapshot date (2025-12-31), and the per-sample scores; the
+artifacts are versioned in the repository
+(Appendix~\ref{app:repository}).
+
+\section*{Per-query results of the primary configuration}
+
+Table~\ref{tab:per-query-v4} reports the per-query RAGAS scores of the
+templated hybrid pipeline (V4) as three-run means, complementing the
+aggregate view of Table~\ref{tab:generation-results}. The spread
+across queries is wide: on average, cross-source queries reach the
+highest answer correctness (0.65) and vulnerability queries the
+highest context recall (0.75), while the open TTP-correlation queries
+mark the lower end (correctness 0.34). The aggregate means of
+Chapter~\ref{ch:results} average over this heterogeneity.
+
+\begingroup
+\small
+\input{tables/per_query_v4}
+\endgroup

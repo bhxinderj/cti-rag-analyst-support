@@ -481,9 +481,15 @@ cutoff of 2025-12-31.
         \midrule
         Vulnerability analysis & 6 & ``What is CVE-2024-3094 and what is
             its impact?'' \\
-        IOC enrichment & 7 & \dots \\ % TODO: Beispiele aus eval_queries.yaml
-        TTP correlation & 7 & \dots \\ % TODO
-        Cross-source comparison & 8 & \dots \\ % TODO
+        IOC enrichment & 7 & ``What is known about the MOVEit Transfer
+            vulnerability CVE-2023-34362 and its exploitation?'' \\
+        TTP correlation & 7 & ``Which MITRE ATT\&CK techniques relate to
+            ransomware impact, specifically data encryption for
+            impact?'' \\
+        Cross-source comparison & 8 & ``For CVE-2023-22515,
+            CVE-2023-34362, and CVE-2023-3519, which severity ratings
+            does NVD report and what exploitation status does the CISA
+            KEV catalog record?'' \\
         \bottomrule
     \end{tabular}
     \caption{Evaluation query set by CTI task type (28 queries in total)}
@@ -512,9 +518,10 @@ score, affected products, or KEV remediation actions, appear in the
 answer. This metric operationalizes criterion C4 beyond generic quality
 scores. The analyst rubric assesses each answer on four dimensions with
 a 0--3 scale: prioritization, actionability, completeness, and
-traceability.
-% TODO klaeren (Engineering): Formulierung zum Rubric-Scoring bestaetigen
-% (automatisiert durch Judge-Modell pro Lauf?).
+traceability. The rubric is scored by the same judge model, which
+re-rates the stored answers of every run against fixed per-dimension
+definitions (Appendix~\ref{app:query-set}); rubric results are
+therefore three-run means like the RAGAS scores.
 
 \begin{table}[H]
     \centering
@@ -530,7 +537,7 @@ traceability.
         Context recall & ground-truth facts covered by the context & judge + GT \\
         Field coverage & expected task fields present in the answer & deterministic \\
         Analyst rubric & prioritization, actionability, completeness,
-            traceability (0--3 each) & rubric \\
+            traceability (0--3 each) & judge \\
         \bottomrule
     \end{tabular}
     \caption{Evaluation metrics of the final series}

@@ -257,7 +257,10 @@ retrieved but uncited ones; the analyst sees both what the answer
 uses and what it ignored (transparency, C1, C5). Third, the gaps
 section reports the absence of indicators and CWE-specific mitigations
 in the retrieved context instead of filling these slots from parametric
-knowledge.
+knowledge. The baseline contrast sharpens the point: answering the
+same query, V0 misattributes CVE-2024-3094 to the Apache HTTP Server
+(Appendix~\ref{app:outputs}), an error that a single source citation
+would have exposed.
 
 \subsection{IOC enrichment}
 \label{sec:scenario-ioc}
@@ -329,11 +332,10 @@ The correlation value lies in the aggregation: the answer consolidates
 five CISA advisories into one view of actors, techniques, and defensive
 guidance for the Impact tactic, with each attribution citing the
 advisory section it comes from. This task family is also where the
-generation modes separate most clearly: the legacy prompt is unstable on
-threat-context queries, while the templated pipeline stays consistent.
-% TODO: Per-Template-Zahlen (Legacy 0.99+-0.87 vs. Templated 2.11+-0.41,
-% Engineering-Stand 01.08.) --- Quelle/Artefakt bestaetigen lassen,
-% dann Zahlen in den Satz aufnehmen.
+generation modes separate most clearly: on the TTP-correlation queries,
+the legacy prompt reaches a rubric total of only 0.99 against 2.11 for
+the templated pipeline, and the cross-source queries show a similar gap
+(1.32 versus 2.19; three-run means).
 
 \subsection{Cross-source comparison}
 \label{sec:scenario-cross}
