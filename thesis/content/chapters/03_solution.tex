@@ -426,20 +426,25 @@ fact-bundle extraction, and Layer-1 rendering --- but no LLM generation
 generation on the local model takes a median of 85.2 seconds and up to
 three minutes per answer, which exceeds typical MCP client timeouts,
 whereas the deterministic fact layer is fast, reproducible, and grounded
-by construction. An extended assist mode
+by construction. Figure~\ref{fig:mcp-transcript} shows one complete
+exchange: the client discovers the published tool, submits a triage
+query, and receives the layered fact block with its sources. An
+extended assist mode
 that adds hosted generation on top of this interface exists as a
 documented feature but is not part of the evaluation; it is discussed as
 future work (Section~\ref{sec:future-work}).
 
-% TODO Abbildung: MCP-Transkript frisch generieren mit `make mcp-demo`,
-% Export nach thesis/images/mcp_transcript.{pdf,png}.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{mcp_transcript}
-%     \caption{MCP client transcript of a deterministic
-%              \texttt{cti\_query\_tool} call}
-%     \label{fig:mcp-transcript}
-% \end{figure}
+% Transkript-Quelle: docs/architecture/mcp_transcript.txt (make mcp-demo),
+% Figur-Export via scripts/mcp_transcript_to_tex.py + pdflatex.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{mcp_transcript}
+    \caption{MCP client transcript of a deterministic
+             \texttt{cti\_query\_tool} call (\texttt{make mcp-demo}):
+             the triage lookup for CVE-2023-4966 is answered from the
+             fact layer in 1.1 seconds, with no model invoked}
+    \label{fig:mcp-transcript}
+\end{figure}
 
 \section{Evaluation design}
 \label{sec:evaluation-design}

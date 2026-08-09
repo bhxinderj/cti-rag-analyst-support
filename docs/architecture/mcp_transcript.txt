@@ -1,0 +1,38 @@
+Tools: cti_query_tool
+
+> cti_query_tool('What is CVE-2023-4966 (Citrix Bleed) and how severe is it?')
+
+## CVE-2023-4966 — CVE-2023-4966
+
+**Triage Signal:** HIGH — Prioritize
+**Rationale:** CVSS 7.5 + active KEV listing + known ransomware use
+
+**Vulnerability Facts** (deterministic)
+- CVSS: 7.5 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)
+- CWE: CWE-119
+- Severity (source-reported): HIGH
+
+**Affected Products** (deterministic from CPE)
+- Citrix NetScaler Application Delivery Controller
+- `Citrix NetScaler ADC and NetScaler Gateway`
+
+**KEV Status** (deterministic)
+- Listed in CISA KEV: yes
+- Date added: 2023-10-18
+- Remediation due: 2023-11-08
+- Known ransomware use: yes
+- CISA required action: Apply mitigations and kill all active and persistent sessions per vendor instructions [https://www.netscaler.com/blog/news/cve-2023-4966-critical-security-update-now-available-for-netscaler-adc-and-netscaler-gateway/] OR discontinue use of the product if mitigations are unavailable.
+
+**Source Inconsistencies** (deterministic)
+- Severity label disagrees across retrieved sources.
+
+**Sources (7)**
+- `cisa_advisory_AA23-325A_cve_2023_4966` (cisa_advisory)
+- `cisa_advisory_AA23-325A_incident_response` (cisa_advisory)
+- `cisa_advisory_AA23-325A_hunting_guidance` (cisa_advisory)
+- `cisa_advisory_AA23-325A_summary` (cisa_advisory)
+- `cisa_advisory_AA23-325A_resources` (cisa_advisory)
+- `nvd_CVE-2023-4966` (nvd)
+- `cisa_kev_CVE-2023-4966` (cisa_kev)
+
+_Template: VulnTriage · deterministic facts, no model invoked · 1129 ms_
