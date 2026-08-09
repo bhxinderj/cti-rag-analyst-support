@@ -1849,6 +1849,10 @@ INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex9
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8t.tfm
+INPUT ./images//generation_results.pdf
+INPUT images//generation_results.pdf
+INPUT ./images//generation_results.pdf
+INPUT ./images//generation_results.pdf
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvr8t.vf
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8r.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvr8t.vf
@@ -1860,6 +1864,10 @@ INPUT tables/rubric_final_v1.tex
 INPUT ./tables/rubric_final_v1.tex
 INPUT ./tables/rubric_final_v1.tex
 INPUT tables/rubric_final_v1.tex
+INPUT ./images//rubric_results.pdf
+INPUT images//rubric_results.pdf
+INPUT ./images//rubric_results.pdf
+INPUT ./images//rubric_results.pdf
 INPUT ./images//scenario_vuln_answer.png
 INPUT images//scenario_vuln_answer.png
 INPUT ./images//scenario_vuln_answer.png

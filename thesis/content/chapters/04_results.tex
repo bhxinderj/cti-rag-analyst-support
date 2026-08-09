@@ -55,7 +55,8 @@ the Layer-2 narrative, not the deterministic Layer-1 block.
 
 Table~\ref{tab:generation-results} reports the RAGAS scores of all
 configurations. Every value is a three-run mean with standard
-deviation (Section~\ref{sec:protocol}).
+deviation (Section~\ref{sec:protocol});
+Figure~\ref{fig:generation-results} shows the same results per metric.
 
 \begin{table}[H]
     \centering
@@ -97,14 +98,20 @@ Section~\ref{sec:representative-outputs}. The vector-only configuration
 Section~\ref{sec:results-ablation} traces this to its failure on exact
 CTI identifiers.
 
-% TODO Abbildung: Chart zu \ref{tab:generation-results} per Skript aus
-% den Eval-JSONs.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{generation_results}
-%     \caption{Generation quality by configuration and metric}
-%     \label{fig:generation-results}
-% \end{figure}
+% Figur-Quelle: scripts/plot_generation_results.py aus
+% data/interim/final_v1_aggregate.json (gleiche Basis wie die Tabelle).
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{generation_results}
+    \caption{RAGAS scores by configuration (three-run means; error bars
+             show one standard deviation; labeled are the primary
+             configuration V4 and the best value per metric).
+             Faithfulness and the context metrics are undefined for the
+             non-retrieval baseline (V0); the BM25 faithfulness peak is
+             the abstention artifact noted in
+             Table~\ref{tab:generation-results}.}
+    \label{fig:generation-results}
+\end{figure}
 
 \section{Baseline comparison and ablation}
 \label{sec:results-ablation}
@@ -184,9 +191,23 @@ Appendix~\ref{app:additional-results}.
     \label{tab:rubric-results}
 \end{table}
 
+% Figur-Quelle: scripts/plot_rubric_results.py aus
+% data/interim/final_v1_aggregate.json (gleiche Basis wie die Tabelle).
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{rubric_results}
+    \caption{Analyst rubric scores by configuration (0--3 per dimension,
+             three-run means; error bars show one standard deviation;
+             labeled are the primary configuration V4, the baseline, and
+             the best value per dimension; V1 and V2 were not
+             rubric-scored)}
+    \label{fig:rubric-results}
+\end{figure}
+
 The templated pipeline reaches a rubric total of 2.29, compared to 1.67
 for the legacy prompt and 1.66 for the non-retrieval baseline. The
-dimension profile of the baseline is the central finding of this table:
+dimension profile of the baseline is the central finding of this table
+(Figure~\ref{fig:rubric-results}):
 its actionability (1.87) exceeds the legacy configuration (1.10) and
 almost matches the templated pipeline (1.77), while its traceability
 collapses to 1.23. The baseline produces recommendations that sound

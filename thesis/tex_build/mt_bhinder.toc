@@ -27,27 +27,27 @@
 \contentsline {section}{\numberline {4.1}Experimental setup}{21}{section.4.1}%
 \contentsline {section}{\numberline {4.2}Generation quality}{22}{section.4.2}%
 \contentsline {section}{\numberline {4.3}Baseline comparison and ablation}{23}{section.4.3}%
-\contentsline {paragraph}{\nonumberline Retrieval versus parametric knowledge.}{23}{paragraph*.26}%
-\contentsline {paragraph}{\nonumberline Retrieval strategy.}{23}{paragraph*.28}%
-\contentsline {paragraph}{\nonumberline Generation mode.}{24}{paragraph*.30}%
-\contentsline {paragraph}{\nonumberline Local versus hosted generation.}{24}{paragraph*.32}%
-\contentsline {section}{\numberline {4.4}Scenario-based evaluation of representative outputs}{24}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}Vulnerability analysis}{25}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}IOC enrichment}{25}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}TTP correlation}{27}{subsection.4.4.3}%
+\contentsline {paragraph}{\nonumberline Retrieval versus parametric knowledge.}{24}{paragraph*.27}%
+\contentsline {paragraph}{\nonumberline Retrieval strategy.}{24}{paragraph*.29}%
+\contentsline {paragraph}{\nonumberline Generation mode.}{24}{paragraph*.31}%
+\contentsline {paragraph}{\nonumberline Local versus hosted generation.}{24}{paragraph*.33}%
+\contentsline {section}{\numberline {4.4}Scenario-based evaluation of representative outputs}{25}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Vulnerability analysis}{26}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}IOC enrichment}{26}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}TTP correlation}{28}{subsection.4.4.3}%
 \contentsline {subsection}{\numberline {4.4.4}Cross-source comparison}{28}{subsection.4.4.4}%
-\contentsline {section}{\numberline {4.5}Assessment against the design criteria}{28}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Reference model for CTI-RAG integration}{29}{section.4.6}%
-\contentsline {section}{\numberline {4.7}Answering the research questions}{31}{section.4.7}%
+\contentsline {section}{\numberline {4.5}Assessment against the design criteria}{29}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Reference model for CTI-RAG integration}{30}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Answering the research questions}{32}{section.4.7}%
 \contentsline {chapter}{\numberline {5}Conclusion, limitations and outlook}{33}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Summary and contributions}{33}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Limitations}{33}{section.5.2}%
+\contentsline {section}{\numberline {5.1}Summary and contributions}{34}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Limitations}{34}{section.5.2}%
 \contentsline {section}{\numberline {5.3}Future work}{34}{section.5.3}%
-\contentsline {chapter}{\nonumberline Bibliography}{35}{chapter*.38}%
-\contentsline {chapter}{\nonumberline List of figures}{37}{chapter*.39}%
-\contentsline {chapter}{\nonumberline List of tables}{38}{chapter*.40}%
-\contentsline {chapter}{Documentation table of AI-based tools}{39}{section*.41}%
-\contentsline {chapter}{List of abbreviations}{40}{chapter*.42}%
+\contentsline {chapter}{\nonumberline Bibliography}{35}{chapter*.40}%
+\contentsline {chapter}{\nonumberline List of figures}{37}{chapter*.41}%
+\contentsline {chapter}{\nonumberline List of tables}{38}{chapter*.42}%
+\contentsline {chapter}{Documentation table of AI-based tools}{39}{section*.43}%
+\contentsline {chapter}{List of abbreviations}{40}{chapter*.44}%
 \contentsline {chapter}{\numberline {A}Prototype repository}{41}{appendix.A}%
 \contentsline {chapter}{\numberline {B}Prompt templates}{42}{appendix.B}%
 \contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{46}{appendix.C}%
