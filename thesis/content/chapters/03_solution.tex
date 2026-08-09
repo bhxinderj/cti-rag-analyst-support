@@ -143,7 +143,7 @@ $\mathcal{C}_k$ (step~5) is passed to the generation model $g$, a
 Llama~3.1 8B Instruct model served by the local Ollama runtime (step~6). A
 citation normalization step maps generated claims to their source passages
 and enforces grounding: when the retrieved evidence does not support an
-answer, the system abstains instead of generating one (step~7, C1). All
+answer, the prototype abstains instead of generating one (step~7, C1). All
 models and stores run locally (C6).
 
 The offline path keeps the corpus curated (C3): source downloaders and
@@ -151,8 +151,7 @@ parsers pull the four CTI sources (NVD, CISA KEV, CISA advisories, MISP),
 store raw snapshots, and produce the document corpus $\mathcal{D}$, from
 which the CTIIndexer builds the two retrieval artifacts with per-passage
 source metadata. The evaluation harness drives the same RAGChain that
-serves analysts, so measured behavior equals operational behavior; its
-judge model is configurable between local and hosted providers
+serves analysts, so measured behavior equals operational behavior
 (Section~\ref{sec:evaluation-design}).
 
 \section{Data ingestion and preprocessing}
@@ -272,7 +271,8 @@ narrative (exploitation context, mitigations), grounded in the retrieved
 passages via inline citations (C1, C5). Which template is applied follows
 the query router (Section~\ref{sec:architecture}).
 
-Two safeguards close the loop. Before generation, a context-support check
+Two safeguards enforce the grounding constraint at run time. Before
+generation, a context-support check
 abstains with an explicit analyst-facing message when retrieval returns
 no usable evidence, implementing the abstention behavior required by the
 grounding constraint of Equation~\ref{eq:generation}. After generation, a
@@ -423,7 +423,7 @@ The server publishes a single deterministic tool,
 \texttt{cti\_query\_tool}, which runs the query router, hybrid retrieval,
 fact-bundle extraction, and Layer-1 rendering --- but no LLM generation
 --- and responds in roughly 1.2 seconds. This cut is deliberate: full
-generation on the local model takes a median of 85 seconds and up to
+generation on the local model takes a median of 85.2 seconds and up to
 three minutes per answer, which exceeds typical MCP client timeouts,
 whereas the deterministic fact layer is fast, reproducible, and grounded
 by construction. An extended assist mode
@@ -448,7 +448,7 @@ The evaluation design fixes four elements before any result is
 interpreted: the query set, the metrics, the configurations under
 comparison, and the protocol.
 
-\subsection{Test set construction}
+\subsection{Query set construction}
 \label{sec:test-set}
 
 The query set contains 28 queries across the four CTI task types:

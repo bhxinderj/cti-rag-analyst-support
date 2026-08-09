@@ -44,10 +44,14 @@ This thesis designs, implements, and evaluates a RAG prototype for CTI
 analyst support. The prototype ingests representative CTI sources, including
 CVE/NVD entries, CISA advisories, MISP events, and vendor reports, into a
 unified index. A hybrid retrieval layer combines lexical search (BM25) with
-dense vector search and reranks the merged candidates. A locally deployed
-open-source LLM generates the answer from the retrieved context. Each answer
-cites the sources it draws on, so analysts can verify individual claims
-instead of trusting the output as a whole.
+dense vector search and reranks the merged candidates. Answer generation
+is layered: fields that must not be wrong, such as severity scores and
+exploitation status, are rendered deterministically from the metadata of
+the retrieved passages and cannot be hallucinated, while a locally
+deployed open-source LLM contributes only the narrative, grounded in the
+retrieved context through inline citations. Each claim cites the source
+it draws on, so analysts can verify individual claims instead of
+trusting the output as a whole.
 
 The evaluation scores answer quality with the RAGAS framework
 \parencite{es2023ragas}, task-specific completeness with a field-coverage

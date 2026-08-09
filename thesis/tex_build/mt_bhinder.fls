@@ -4,6 +4,8 @@ INPUT /usr/local/texlive/2023/texmf-dist/web2c/texmf.cnf
 INPUT /usr/local/texlive/2023/texmf-var/web2c/pdftex/pdflatex.fmt
 INPUT mt_bhinder.tex
 OUTPUT tex_build/mt_bhinder.log
+INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/acronym/acronym.sty
+INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/acronym/acronym.sty
 INPUT ./twbook.cls
 INPUT ./twbook.cls
 INPUT twbook.cls
@@ -1792,6 +1794,8 @@ INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm5
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvb8t.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvb8t.vf
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvb8r.tfm
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvro8t.vf
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvro8r.tfm
 INPUT ./content/chapters/03_solution.tex
 INPUT ./content/chapters/03_solution.tex
 INPUT ./content/chapters/03_solution.tex

@@ -54,7 +54,7 @@ the Layer-2 narrative, not the deterministic Layer-1 block.
 \label{sec:results-generation}
 
 Table~\ref{tab:generation-results} reports the RAGAS scores of all
-configurations. Every local value is a three-run mean with standard
+configurations. Every value is a three-run mean with standard
 deviation (Section~\ref{sec:protocol}).
 
 \begin{table}[H]
@@ -64,15 +64,15 @@ deviation (Section~\ref{sec:protocol}).
              Rows correspond, top to bottom, to configurations V4, V3,
              V1, V2, V0, and V5 of Table~\ref{tab:configurations}. The
              BM25-only faithfulness (0.797) is an abstention artifact
-             --- 4--5 abstentions per run with conservative, extractive
-             answers --- not a grounding advantage.}
+             (4--5 abstentions per run with conservative, extractive
+             answers), not a grounding advantage.}
     \label{tab:generation-results}
 \end{table}
 
 The templated pipeline (V4) reaches the best local values in answer
 relevancy (0.739), answer correctness (0.518), and context recall
-(0.610), and it is the only configuration that never abstains; the
-legacy prompt abstains on 7 of 28 queries. Its faithfulness (0.662)
+(0.610), and it is the only local retrieval configuration that never
+abstains; the legacy prompt abstains on 7 of 28 queries. Its faithfulness (0.662)
 stays close to the legacy configuration (0.689).
 
 Two values require care when reading the table. The highest faithfulness
@@ -134,7 +134,7 @@ CTI identifiers: it abstains on 14--15 of 28 queries per run and scores
 lowest on every metric, because embedding similarity does not reliably
 surface passages for identifier queries such as specific CVE numbers.
 The BM25-only configuration holds identifier queries but loses semantic
-coverage; its context recall of 0.427 is the lowest among the answering
+coverage: its context recall of 0.427 undercuts both hybrid
 configurations. The hybrid configuration removes the identifier failure
 and lifts context recall to 0.498, supporting the hybrid criterion (C2).
 
@@ -151,9 +151,11 @@ the retrieval.
 \paragraph{Local versus hosted generation.} Replacing the local 8B model
 with the hosted model improves faithfulness by 0.159, answer correctness
 by 0.043, and the rubric total from 2.29 to 2.39, with near-perfect
-traceability (2.93). It also reduces
-median generation latency from 85 to 6.4 seconds per query, a factor of
-thirteen.
+traceability (2.93). It also reduces median generation latency from
+85.2 to 6.4 seconds per query, a factor of thirteen. Answer relevancy
+is the one metric where the hosted model scores lower; the footnote in
+Section~\ref{sec:results-generation} traces this to the frozen
+relevancy filter rather than to answer quality.
 The price is the deployment model: hosted generation moves analyst
 queries off premises and gives up the local-deployment property that C6
 demands. The evaluated prototype therefore keeps the local model as its
@@ -177,8 +179,8 @@ Appendix~\ref{app:additional-results}.
     \caption{Analyst-oriented rubric scores (0--3 per dimension,
              three-run means). Rows correspond, top to bottom, to
              configurations V4, V3, V0, and V5 of
-             Table~\ref{tab:configurations}; the retrieval-only variants
-             V1 and V2 were not rubric-scored.}
+             Table~\ref{tab:configurations}; the single-strategy
+             configurations V1 and V2 were not rubric-scored.}
     \label{tab:rubric-results}
 \end{table}
 
@@ -188,7 +190,7 @@ dimension profile of the baseline is the central finding of this table:
 its actionability (1.87) exceeds the legacy configuration (1.10) and
 almost matches the templated pipeline (1.77), while its traceability
 collapses to 1.23. The baseline produces recommendations that sound
-actionable but cannot be traced to evidence --- precisely the failure
+actionable but cannot be traced to evidence, precisely the failure
 mode that bottleneck B3 describes and criterion C1 is designed to
 prevent. The hosted ablation leads every dimension (total 2.39,
 traceability 2.93); Section~\ref{sec:results-ablation} weighs this
@@ -226,12 +228,12 @@ templated pipeline and the local model.
 
 Three properties of this response carry the assessment. First, the
 deterministic head grades the finding as HIGH and states its rationale
---- CVSS 10.0, but no KEV listing and no ransomware evidence in the
-corpus snapshot --- so the prioritization is not only given but
-explained. Second, every narrative claim ends in a citation, and the
+(CVSS 10.0, but no KEV listing and no ransomware evidence in the
+corpus snapshot), so the prioritization is explained rather than merely
+asserted. Second, every narrative claim ends in a citation, and the
 source panel distinguishes the two cited passages from the three
-retrieved but uncited ones; the analyst sees not only what the answer
-uses but also what it ignored (transparency, C1, C5). Third, the gaps
+retrieved but uncited ones; the analyst sees both what the answer
+uses and what it ignored (transparency, C1, C5). Third, the gaps
 section reports the absence of indicators and CWE-specific mitigations
 in the retrieved context instead of filling these slots from parametric
 knowledge.
@@ -269,8 +271,8 @@ The answer passes seven of eight field-coverage checks. The
 deterministic head answers the triage question at a glance
 (prioritization), and the only recommended action is the one the KEV
 record supports (actionability without invention). The gaps section
-names what the corpus does not provide --- concrete indicator values for
-this CVE --- instead of fabricating them; for an enrichment query, this
+names what the corpus does not provide (concrete indicator values for
+this CVE) instead of fabricating them; for an enrichment query, this
 explicit statement of absence is the intended behavior of the grounding
 design (transparency, C1).
 
@@ -347,7 +349,7 @@ averaging them away. The same answer also shows the residual weakness of
 the narrative layer: its gaps section claims that the exploitation
 status of CVE-2023-34362 is missing, although the Layer-1 table records
 the KEV listing of exactly that CVE. The layered design contains such
-inconsistencies --- the deterministic facts remain correct --- but does
+inconsistencies (the deterministic facts remain correct) but does
 not eliminate them; Section~\ref{sec:limitations} returns to this
 point.
 
@@ -393,11 +395,11 @@ instead of a research task. The overload bottleneck (B1) is addressed
 from two sides: hybrid retrieval keeps identifier queries reliable where
 single strategies fail, and the templated output presents each answer in
 a fixed triage structure. The recency bottleneck (B2) is addressed by
-design --- the offline path can re-index updated sources at any time ---
-but not demonstrated empirically, because the evaluation deliberately
+design, since the offline path can re-index updated sources at any
+time, but not demonstrated empirically: the evaluation deliberately
 ran on a frozen snapshot for reproducibility.
 
-Two judgments deserve their qualification. C3 is fulfilled only
+Two judgments require qualification. C3 is fulfilled only
 partially: ingestion is restricted to curated sources and every passage
 keeps its provenance, but the prototype does not assess source
 credibility at query time, as stated in Section~\ref{sec:requirements}.
@@ -423,9 +425,9 @@ feature outside the evaluated configuration
 The empirical findings generalize beyond the prototype into a reference
 model for integrating RAG into CTI and threat-hunting workflows
 (Figure~\ref{fig:reference-model}). The model organizes an integration
-into four layers inside a local deployment boundary --- curated sources,
+into four layers inside a local deployment boundary: curated sources,
 a provenance-preserving knowledge layer, a layered reasoning stage, and
-an analyst interaction layer --- flanked by an evaluation and governance
+an analyst interaction layer, flanked by an evaluation and governance
 function. Eight design principles, marked P1--P8 in the figure, locate
 the empirically grounded decisions; Table~\ref{tab:principles} states
 each principle with the evidence it rests on.
@@ -487,7 +489,7 @@ each principle with the evidence it rests on.
 
 The model reads as adoption guidance: an organization integrating RAG
 into CTI work starts at the source layer and moves upward, and every
-principle names the failure it prevents --- P2 the identifier collapse
+principle names the failure it prevents: P2 the identifier collapse
 of semantic-only retrieval, P3 and P4 the unverifiable fluency of
 ungrounded generation, P6 the silent loss of data control. The model is
 derived from one prototype, one corpus, and one query set; transferring
@@ -503,9 +505,10 @@ Section~\ref{sec:research-questions}; each answer names the evidence it
 rests on.
 
 \begin{rqbox}{MRQ}
-    \emph{How can a RAG system leveraging LLMs improve the quality,
-    reliability, and operational usefulness of CTI analysis and
-    threat-hunting workflows?}\\[4pt]
+    \emph{How can a Retrieval-Augmented Generation (RAG) system
+    leveraging Large Language Models improve the quality, reliability,
+    and operational usefulness of Cyber Threat Intelligence (CTI)
+    analysis and Threat-Hunting workflows?}\\[4pt]
     \textbf{Answer:} By grounding a locally deployed LLM in a curated,
     provenance-preserving corpus through hybrid retrieval and a layered,
     citation-enforcing generation pipeline. The improvement lies less in
@@ -534,9 +537,10 @@ rests on.
     relevance, while factual accuracy on this query set stays comparable
     to the parametric baseline, which the prominent CVEs of the query
     set favor. The decisive gain is that retrieved facts are verifiable
-    and current by construction: the corpus snapshot extends beyond any
-    training cutoff, and claims without evidence are abstained from
-    rather than generated.\\[4pt]
+    and current by construction: the indexed snapshot, not the
+    generation model's training cutoff, determines what the prototype
+    knows, and claims without evidence are abstained from rather than
+    generated.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
         \item Answer relevancy 0.739 vs.\ 0.685, correctness 0.518 vs.\
