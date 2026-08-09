@@ -1,0 +1,634 @@
+{
+  "ragas": {
+    "templated_hybrid": {
+      "n_runs": 3,
+      "metrics": {
+        "faithfulness": {
+          "mean": 0.6618,
+          "std": 0.0205,
+          "per_run": [
+            0.6796,
+            0.6663,
+            0.6394
+          ],
+          "effective_n": 28
+        },
+        "answer_relevancy": {
+          "mean": 0.7387,
+          "std": 0.024,
+          "per_run": [
+            0.76,
+            0.7434,
+            0.7127
+          ],
+          "effective_n": 28
+        },
+        "answer_correctness": {
+          "mean": 0.5185,
+          "std": 0.0161,
+          "per_run": [
+            0.5367,
+            0.5128,
+            0.506
+          ],
+          "effective_n": 28
+        },
+        "context_precision": {
+          "mean": 0.733,
+          "std": 0.0032,
+          "per_run": [
+            0.7297,
+            0.7331,
+            0.7362
+          ],
+          "effective_n": 28
+        },
+        "context_recall": {
+          "mean": 0.6101,
+          "std": 0.0086,
+          "per_run": [
+            0.6196,
+            0.603,
+            0.6077
+          ],
+          "effective_n": 28
+        }
+      },
+      "relevancy_zero_counts": [
+        0,
+        1,
+        2
+      ],
+      "abstention_counts": [
+        0,
+        0,
+        0
+      ]
+    },
+    "legacy_hybrid": {
+      "n_runs": 3,
+      "metrics": {
+        "faithfulness": {
+          "mean": 0.6894,
+          "std": 0.0231,
+          "per_run": [
+            0.7118,
+            0.6906,
+            0.6658
+          ],
+          "effective_n": 28
+        },
+        "answer_relevancy": {
+          "mean": 0.5701,
+          "std": 0.0325,
+          "per_run": [
+            0.5534,
+            0.5495,
+            0.6076
+          ],
+          "effective_n": 28
+        },
+        "answer_correctness": {
+          "mean": 0.5003,
+          "std": 0.0116,
+          "per_run": [
+            0.5106,
+            0.4876,
+            0.5026
+          ],
+          "effective_n": 28
+        },
+        "context_precision": {
+          "mean": 0.7492,
+          "std": 0.0049,
+          "per_run": [
+            0.7515,
+            0.7436,
+            0.7526
+          ],
+          "effective_n": 28
+        },
+        "context_recall": {
+          "mean": 0.498,
+          "std": 0.0086,
+          "per_run": [
+            0.4917,
+            0.4946,
+            0.5077
+          ],
+          "effective_n": 28
+        }
+      },
+      "relevancy_zero_counts": [
+        11,
+        11,
+        9
+      ],
+      "abstention_counts": [
+        7,
+        7,
+        7
+      ]
+    },
+    "bm25_only": {
+      "n_runs": 3,
+      "metrics": {
+        "faithfulness": {
+          "mean": 0.797,
+          "std": 0.001,
+          "per_run": [
+            0.797,
+            0.798,
+            0.796
+          ],
+          "effective_n": 28
+        },
+        "answer_relevancy": {
+          "mean": 0.5983,
+          "std": 0.0197,
+          "per_run": [
+            0.5844,
+            0.6208,
+            0.5898
+          ],
+          "effective_n": 28
+        },
+        "answer_correctness": {
+          "mean": 0.4929,
+          "std": 0.0107,
+          "per_run": [
+            0.4845,
+            0.4891,
+            0.5049
+          ],
+          "effective_n": 28
+        },
+        "context_precision": {
+          "mean": 0.7346,
+          "std": 0.012,
+          "per_run": [
+            0.7424,
+            0.7406,
+            0.7208
+          ],
+          "effective_n": 28
+        },
+        "context_recall": {
+          "mean": 0.4274,
+          "std": 0.0119,
+          "per_run": [
+            0.4155,
+            0.4274,
+            0.4393
+          ],
+          "effective_n": 28
+        }
+      },
+      "relevancy_zero_counts": [
+        10,
+        9,
+        10
+      ],
+      "abstention_counts": [
+        4,
+        5,
+        5
+      ]
+    },
+    "vector_only": {
+      "n_runs": 3,
+      "metrics": {
+        "faithfulness": {
+          "mean": 0.6642,
+          "std": 0.005,
+          "per_run": [
+            0.6665,
+            0.6585,
+            0.6676
+          ],
+          "effective_n": 28
+        },
+        "answer_relevancy": {
+          "mean": 0.419,
+          "std": 0.0213,
+          "per_run": [
+            0.3944,
+            0.4325,
+            0.43
+          ],
+          "effective_n": 28
+        },
+        "answer_correctness": {
+          "mean": 0.4033,
+          "std": 0.0084,
+          "per_run": [
+            0.4052,
+            0.4106,
+            0.394
+          ],
+          "effective_n": 28
+        },
+        "context_precision": {
+          "mean": 0.5929,
+          "std": 0.001,
+          "per_run": [
+            0.5935,
+            0.5917,
+            0.5935
+          ],
+          "effective_n": 28
+        },
+        "context_recall": {
+          "mean": 0.3734,
+          "std": 0.0072,
+          "per_run": [
+            0.3679,
+            0.3708,
+            0.3815
+          ],
+          "effective_n": 28
+        }
+      },
+      "relevancy_zero_counts": [
+        16,
+        15,
+        15
+      ],
+      "abstention_counts": [
+        14,
+        15,
+        15
+      ]
+    },
+    "baseline": {
+      "n_runs": 3,
+      "metrics": {
+        "answer_relevancy": {
+          "mean": 0.6851,
+          "std": 0.0191,
+          "per_run": [
+            0.6993,
+            0.6633,
+            0.6925
+          ],
+          "effective_n": 28
+        },
+        "answer_correctness": {
+          "mean": 0.5024,
+          "std": 0.0144,
+          "per_run": [
+            0.4933,
+            0.4947,
+            0.519
+          ],
+          "effective_n": 28
+        }
+      },
+      "relevancy_zero_counts": [
+        6,
+        7,
+        6
+      ],
+      "abstention_counts": [
+        0,
+        0,
+        0
+      ]
+    },
+    "templated_hostedgen_haiku45": {
+      "n_runs": 3,
+      "metrics": {
+        "faithfulness": {
+          "mean": 0.8212,
+          "std": 0.0168,
+          "per_run": [
+            0.8249,
+            0.8358,
+            0.8029
+          ],
+          "effective_n": 28
+        },
+        "answer_relevancy": {
+          "mean": 0.5941,
+          "std": 0.0478,
+          "per_run": [
+            0.5735,
+            0.6488,
+            0.5602
+          ],
+          "effective_n": 28
+        },
+        "answer_correctness": {
+          "mean": 0.5615,
+          "std": 0.0206,
+          "per_run": [
+            0.5823,
+            0.5411,
+            0.5611
+          ],
+          "effective_n": 28
+        },
+        "context_precision": {
+          "mean": 0.7479,
+          "std": 0.0207,
+          "per_run": [
+            0.7716,
+            0.7387,
+            0.7333
+          ],
+          "effective_n": 28
+        },
+        "context_recall": {
+          "mean": 0.5966,
+          "std": 0.0264,
+          "per_run": [
+            0.6268,
+            0.578,
+            0.5851
+          ],
+          "effective_n": 28
+        }
+      },
+      "relevancy_zero_counts": [
+        8,
+        5,
+        8
+      ],
+      "abstention_counts": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "rubric": {
+    "templated_hybrid": {
+      "n_runs": 3,
+      "dimensions": {
+        "prioritization": {
+          "mean": 2.5476,
+          "std": 0.0206,
+          "per_run": [
+            2.5714,
+            2.5357,
+            2.5357
+          ]
+        },
+        "actionability": {
+          "mean": 1.7738,
+          "std": 0.1487,
+          "per_run": [
+            1.8214,
+            1.8929,
+            1.6071
+          ]
+        },
+        "completeness": {
+          "mean": 2.2738,
+          "std": 0.0545,
+          "per_run": [
+            2.3214,
+            2.2143,
+            2.2857
+          ]
+        },
+        "traceability": {
+          "mean": 2.5595,
+          "std": 0.0824,
+          "per_run": [
+            2.6071,
+            2.6071,
+            2.4643
+          ]
+        },
+        "total": {
+          "mean": 2.2887,
+          "std": 0.0574,
+          "per_run": [
+            2.3304,
+            2.3125,
+            2.2232
+          ]
+        }
+      },
+      "per_template": {
+        "CrossSourceCompare": {
+          "mean": 2.1071,
+          "std": 0.2446,
+          "n_samples": 21
+        },
+        "ThreatContext": {
+          "mean": 2.1071,
+          "std": 0.4075,
+          "n_samples": 21
+        },
+        "VulnTriage": {
+          "mean": 2.4702,
+          "std": 0.3544,
+          "n_samples": 42
+        }
+      }
+    },
+    "legacy_hybrid": {
+      "n_runs": 3,
+      "dimensions": {
+        "prioritization": {
+          "mean": 1.7381,
+          "std": 0.0206,
+          "per_run": [
+            1.75,
+            1.7143,
+            1.75
+          ]
+        },
+        "actionability": {
+          "mean": 1.0952,
+          "std": 0.0899,
+          "per_run": [
+            1,
+            1.1071,
+            1.1786
+          ]
+        },
+        "completeness": {
+          "mean": 2.0119,
+          "std": 0.0824,
+          "per_run": [
+            1.9643,
+            1.9643,
+            2.1071
+          ]
+        },
+        "traceability": {
+          "mean": 1.8214,
+          "std": 0.0945,
+          "per_run": [
+            1.7143,
+            1.8571,
+            1.8929
+          ]
+        },
+        "total": {
+          "mean": 1.6666,
+          "std": 0.0627,
+          "per_run": [
+            1.6071,
+            1.6607,
+            1.7321
+          ]
+        }
+      },
+      "per_template": {
+        "CrossSourceCompare": {
+          "mean": 1.5119,
+          "std": 0.9403,
+          "n_samples": 21
+        },
+        "ThreatContext": {
+          "mean": 0.9881,
+          "std": 0.8677,
+          "n_samples": 21
+        },
+        "VulnTriage": {
+          "mean": 2.0833,
+          "std": 0.9826,
+          "n_samples": 42
+        }
+      }
+    },
+    "baseline": {
+      "n_runs": 3,
+      "dimensions": {
+        "prioritization": {
+          "mean": 1.5357,
+          "std": 0.0357,
+          "per_run": [
+            1.5714,
+            1.5357,
+            1.5
+          ]
+        },
+        "actionability": {
+          "mean": 1.8691,
+          "std": 0.0744,
+          "per_run": [
+            1.8929,
+            1.9286,
+            1.7857
+          ]
+        },
+        "completeness": {
+          "mean": 2.0238,
+          "std": 0.0743,
+          "per_run": [
+            2,
+            1.9643,
+            2.1071
+          ]
+        },
+        "traceability": {
+          "mean": 1.2262,
+          "std": 0.0206,
+          "per_run": [
+            1.2143,
+            1.2143,
+            1.25
+          ]
+        },
+        "total": {
+          "mean": 1.6637,
+          "std": 0.0051,
+          "per_run": [
+            1.6696,
+            1.6607,
+            1.6607
+          ]
+        }
+      },
+      "per_template": {
+        "CrossSourceCompare": {
+          "mean": 1.6786,
+          "std": 0.3635,
+          "n_samples": 21
+        },
+        "ThreatContext": {
+          "mean": 1.7381,
+          "std": 0.2434,
+          "n_samples": 21
+        },
+        "VulnTriage": {
+          "mean": 1.619,
+          "std": 0.5007,
+          "n_samples": 42
+        }
+      }
+    },
+    "templated_hostedgen_haiku45": {
+      "n_runs": 3,
+      "dimensions": {
+        "prioritization": {
+          "mean": 2.6667,
+          "std": 0.0412,
+          "per_run": [
+            2.6429,
+            2.7143,
+            2.6429
+          ]
+        },
+        "actionability": {
+          "mean": 1.9048,
+          "std": 0.0206,
+          "per_run": [
+            1.8929,
+            1.8929,
+            1.9286
+          ]
+        },
+        "completeness": {
+          "mean": 2.0595,
+          "std": 0.0206,
+          "per_run": [
+            2.0357,
+            2.0714,
+            2.0714
+          ]
+        },
+        "traceability": {
+          "mean": 2.9286,
+          "std": 0.0,
+          "per_run": [
+            2.9286,
+            2.9286,
+            2.9286
+          ]
+        },
+        "total": {
+          "mean": 2.3899,
+          "std": 0.0136,
+          "per_run": [
+            2.375,
+            2.4018,
+            2.3929
+          ]
+        }
+      },
+      "per_template": {
+        "CrossSourceCompare": {
+          "mean": 2.2619,
+          "std": 0.311,
+          "n_samples": 21
+        },
+        "ThreatContext": {
+          "mean": 2.369,
+          "std": 0.3124,
+          "n_samples": 21
+        },
+        "VulnTriage": {
+          "mean": 2.4643,
+          "std": 0.2623,
+          "n_samples": 42
+        }
+      }
+    }
+  }
+}

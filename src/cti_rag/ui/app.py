@@ -93,6 +93,7 @@ section[data-testid="stSidebar"] h2 {
 .pill.template  { background: rgba(167, 139, 250, 0.12); color: #c4b5fd; border-color: rgba(167, 139, 250, 0.25); }
 .pill.timing    { background: rgba(148, 163, 184, 0.10); color: #cbd5e1; border-color: rgba(148, 163, 184, 0.20); }
 .pill.legacy    { background: rgba(250, 204, 21, 0.10); color: #fde68a; border-color: rgba(250, 204, 21, 0.25); }
+.pill.extended  { background: rgba(52, 211, 153, 0.12); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.30); }
 
 /* --- Source cards --- */
 .src-card {
@@ -156,6 +157,12 @@ details[data-testid="stExpander"] summary {
     color: #e2e8f0 !important;
     font-size: 0.95rem !important;
     padding: 10px 14px !important;
+    /* The !important padding breaks Streamlit's autosize measurement and
+       inflates the empty textarea to ~270px, pushing the landing hero out
+       of the scroll-to-bottom viewport. Pin it to sane bounds instead. */
+    height: auto !important;
+    min-height: 44px !important;
+    max-height: 120px !important;
 }
 [data-testid="stChatInput"] textarea:focus {
     outline: none !important;
@@ -241,7 +248,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
 /* --- Landing (welcome) screen --- */
 .landing-wrap {
     max-width: 860px;
-    margin: 4vh auto 10px auto;
+    margin: 1.5vh auto 6px auto;
     text-align: center;
 }
 .landing-badge {
@@ -255,7 +262,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
     background: rgba(56, 189, 248, 0.08);
     border: 1px solid rgba(56, 189, 248, 0.25);
     font-weight: 600;
-    margin-bottom: 22px;
+    margin-bottom: 12px;
 }
 .landing-title {
     font-size: 2.6rem;
@@ -272,8 +279,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
     font-size: 1.02rem;
     line-height: 1.65;
     max-width: 680px;
-    margin: 0 auto 30px auto;
-    transform: translateX(90px);
+    margin: 0 auto 16px auto;
 }
 .landing-sub strong { color: #cbd5e1; font-weight: 600; }
 .landing-examples-title {
@@ -282,7 +288,7 @@ section[data-testid="stSidebar"] button[kind="secondary"]:hover {
     text-transform: uppercase;
     letter-spacing: 0.16em;
     text-align: center;
-    margin: 28px 0 14px 0;
+    margin: 12px 0 10px 0;
 }
 
 /* --- Template example cards on the landing screen --- */
@@ -338,11 +344,38 @@ def check_backend_health() -> dict | None:
     return None
 
 
-def query_rag(question: str, mode: str, templated: bool) -> dict | None:
+def _conversation_state() -> dict:
+    """Extract the rolling condense state from the chat history."""
+    last_question = None
+    last_entities: list[str] = []
+    for msg in reversed(st.session_state.messages):
+        if msg["role"] == "user" and last_question is None:
+            last_question = msg["content"]
+        if msg["role"] == "assistant" and not last_entities:
+            routing = (msg.get("meta") or {}).get("routing_decision") or {}
+            last_entities = routing.get("primary_entities") or []
+        if last_question and last_entities:
+            break
+    return {"last_question": last_question, "last_entities": last_entities}
+
+
+def query_rag(
+    question: str,
+    mode: str,
+    templated: bool,
+    extended: bool = False,
+    conversation_state: dict | None = None,
+) -> dict | None:
     try:
         resp = requests.post(
             f"{API_URL}/api/query",
-            json={"question": question, "mode": mode, "templated": templated},
+            json={
+                "question": question,
+                "mode": mode,
+                "templated": templated,
+                "extended": extended,
+                **(conversation_state or {}),
+            },
             timeout=300,
         )
         resp.raise_for_status()
@@ -384,6 +417,24 @@ with st.sidebar:
     )
     templated = pipeline_choice.startswith("Templated")
 
+    extended = st.toggle(
+        "☁️ Extended Analysis",
+        value=True,
+        help=(
+            "Hosted generation (Claude Haiku 4.5 via OpenRouter) with "
+            "analyst-assist guidance and deeper retrieval (top-8). "
+            "Faster and more detailed — but your question and the "
+            "retrieved context LEAVE this machine. The locally evaluated "
+            "configuration is the Templated pipeline above."
+        ),
+    )
+    if extended:
+        st.caption(
+            "⚠️ **Data leaves the local machine.** Question + retrieved "
+            "context are sent to a hosted model. Not part of the evaluated "
+            "configuration."
+        )
+
     st.divider()
     st.header("Backend Status")
     health = check_backend_health()
@@ -417,7 +468,13 @@ def _pills(meta: dict) -> str:
     template = meta.get("template")
     parts = []
     pipeline_cls = "pill" if pipeline == "templated" else "pill legacy"
+    if pipeline == "extended":
+        pipeline_cls = "pill extended"
     parts.append(f'<span class="{pipeline_cls}">pipeline · {pipeline}</span>')
+    if pipeline == "extended" and meta.get("generation_model"):
+        parts.append(
+            f'<span class="pill extended">☁️ {meta["generation_model"]}</span>'
+        )
     if template:
         parts.append(f'<span class="pill template">template · {template}</span>')
     parts.append(
@@ -444,6 +501,35 @@ def _source_card_html(src: dict, cited: bool) -> str:
     )
 
 
+def _render_answer(content: str, meta: dict) -> None:
+    """Render an assistant answer; abstentions get a distinct callout.
+
+    An abstention is a deliberate, evidence-based refusal — visually
+    separating it from regular answers makes the behaviour legible for
+    analysts (and on camera) instead of reading like a thin answer.
+    """
+    if meta.get("resolved_question"):
+        method = "carry-over" if meta.get("resolution_method") == "carry_over" else "condensed"
+        st.caption(f"🧭 Interpreted as ({method}): *{meta['resolved_question']}*")
+    if meta.get("abstention_reason"):
+        st.info(
+            "**Abstained — insufficient evidence in the retrieved context.**\n\n"
+            f"{meta['abstention_reason']} No answer was generated; the model "
+            "was not invoked.",
+            icon="🛡️",
+        )
+        return
+    if meta.get("pipeline") == "extended":
+        st.caption(
+            "☁️ Extended Analysis — generated by a hosted model "
+            f"({meta.get('generation_model', 'hosted')}); question and "
+            "retrieved context left the local machine. Citations still "
+            "reference only the local snapshot. Not part of the evaluated "
+            "configuration."
+        )
+    st.markdown(content)
+
+
 def _render_sources(sources: list[dict], meta: dict):
     """Render source documents and metadata below the answer."""
     cited = [s for s in sources if s.get("cited_in_answer")]
@@ -453,7 +539,7 @@ def _render_sources(sources: list[dict], meta: dict):
 
     if meta.get("grounding_warnings"):
         for warning in meta["grounding_warnings"]:
-            st.warning(warning, icon=":warning:")
+            st.warning(warning, icon="⚠️")
 
     routing = meta.get("routing_decision")
     if routing:
@@ -476,31 +562,38 @@ if "messages" not in st.session_state:
 
 def _handle_query(question: str) -> None:
     """Run a query through the backend and append the exchange to chat history."""
+    # Snapshot the condense state BEFORE appending the current question —
+    # otherwise the wrapper would see the current turn as "previous".
+    conversation_state = _conversation_state()
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
 
     with st.chat_message("assistant"):
-        spinner_label = (
-            "Routing → retrieving → generating (templated)…"
-            if templated
-            else "Retrieving and generating…"
-        )
+        if extended:
+            spinner_label = "Routing → retrieving (top-8) → hosted generation…"
+        elif templated:
+            spinner_label = "Routing → retrieving → generating (templated)…"
+        else:
+            spinner_label = "Retrieving and generating…"
         with st.spinner(spinner_label):
-            result = query_rag(question, mode, templated)
+            result = query_rag(question, mode, templated, extended, conversation_state)
 
         if result:
-            st.markdown(result["answer"])
-
             meta = {
                 "retrieval_time_ms": result["retrieval_time_ms"],
                 "generation_time_ms": result["generation_time_ms"],
                 "total_time_ms": result["total_time_ms"],
                 "grounding_warnings": result.get("grounding_warnings", []),
                 "pipeline": result.get("pipeline", "legacy"),
+                "generation_model": result.get("generation_model"),
                 "template": result.get("template"),
                 "routing_decision": result.get("routing_decision"),
+                "abstention_reason": result.get("abstention_reason"),
+                "resolved_question": result.get("resolved_question"),
+                "resolution_method": result.get("resolution_method"),
             }
+            _render_answer(result["answer"], meta)
             _render_sources(result["sources"], meta)
 
             st.session_state.messages.append({
@@ -583,7 +676,10 @@ if not st.session_state.messages and "pending_question" not in st.session_state:
 else:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+            if msg["role"] == "assistant":
+                _render_answer(msg["content"], msg.get("meta", {}))
+            else:
+                st.markdown(msg["content"])
             if msg["role"] == "assistant" and "sources" in msg:
                 _render_sources(msg["sources"], msg.get("meta", {}))
 
