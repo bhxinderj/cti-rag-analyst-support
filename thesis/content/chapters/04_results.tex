@@ -119,55 +119,87 @@ CTI identifiers.
 The configuration matrix isolates three effects: retrieval versus
 parametric knowledge (V0 against the grounded configurations), the
 retrieval strategy (V1--V3), and the generation mode (V3 against V4).
-The hosted ablation (V5) adds the deployment dimension. All numbers
-refer to Tables~\ref{tab:generation-results}
-and~\ref{tab:rubric-results}.
+The hosted ablation (V5) adds the deployment dimension.
+Table~\ref{tab:ablation-deltas} reports each comparison as metric
+deltas, and the paragraphs below give the reading.
+
+\begin{table}[H]
+    \centering
+    \small
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{llrrrrrrrr}
+        \toprule
+        \textbf{Comparison} & \textbf{Effect isolated} &
+        $\Delta$\,\textbf{Faith.} & $\Delta$\,\textbf{Rel.} &
+        $\Delta$\,\textbf{Corr.} & $\Delta$\,\textbf{Prec.} &
+        $\Delta$\,\textbf{Rec.} & $\Delta$\,\textbf{Rubric} &
+        $\Delta$\,\textbf{Trace.} & $\Delta$\,\textbf{Abst.} \\
+        \midrule
+        V0 $\to$ V4 & retrieval with templated generation
+            & --- & $+0.054$ & $+0.016$ & --- & --- & $+0.63$
+            & $+1.33$ & $\pm 0$ \\
+        V1 $\to$ V3 & hybrid over sparse retrieval
+            & $-0.108$ & $-0.028$ & $+0.007$ & $+0.014$ & $+0.071$
+            & --- & --- & $+2$ \\
+        V2 $\to$ V3 & hybrid over dense retrieval
+            & $+0.025$ & $+0.151$ & $+0.097$ & $+0.156$ & $+0.125$
+            & --- & --- & $-8$ \\
+        V3 $\to$ V4 & templated generation
+            & $-0.027$ & $+0.169$ & $+0.018$ & $-0.016$ & $+0.112$
+            & $+0.62$ & $+0.74$ & $-7$ \\
+        V4 $\to$ V5 & hosted generation
+            & $+0.159$ & $-0.145$\,$^{\dagger}$ & $+0.043$ & $+0.015$
+            & $-0.013$ & $+0.10$ & $+0.37$ & $\pm 0$ \\
+        \bottomrule
+    \end{tabular}}
+    \caption{Ablation effects as deltas between configuration pairs,
+             computed from the three-run means of
+             Tables~\ref{tab:generation-results}
+             and~\ref{tab:rubric-results} (---: metric undefined or
+             configuration not rubric-scored; $^{\dagger}$~measurement
+             artifact of the relevancy filter,
+             Section~\ref{sec:results-generation};
+             $\Delta$\,Abst.\ in queries per run)}
+    \label{tab:ablation-deltas}
+\end{table}
 
 \paragraph{Retrieval versus parametric knowledge.} On this query set,
 retrieval buys verifiability rather than raw correctness. The baseline
 answers prominent, well-documented CVEs from parametric knowledge at a
-correctness level comparable to the grounded configurations (0.502
-versus 0.518 for V4); the query set names prominent CVEs and therefore
-favors the baseline systematically, which
-Section~\ref{sec:limitations} records as a limitation. The rubric
-separates the configurations where RAGAS does not: the baseline's
-traceability of 1.23 against 2.56 for V4 means that an analyst cannot
-verify the baseline's claims --- and unverifiable output cannot be acted
-on in CTI work (B3, C1).
+comparable correctness level --- the query set names prominent CVEs and
+therefore favors the baseline systematically
+(Section~\ref{sec:limitations}). The rubric separates what RAGAS does
+not: a traceability of 1.23 against 2.56 for V4 means that an analyst
+cannot verify the baseline's claims, and unverifiable output cannot be
+acted on in CTI work (B3, C1).
 
 \paragraph{Retrieval strategy.} Each single-strategy retriever fails in
-a characteristic way. The vector-only configuration collapses on exact
-CTI identifiers: it abstains on 14--15 of 28 queries per run and scores
-lowest on every metric, because embedding similarity does not reliably
-surface passages for identifier queries such as specific CVE numbers.
-The BM25-only configuration holds identifier queries but loses semantic
-coverage: its context recall of 0.427 undercuts both hybrid
-configurations. The hybrid configuration removes the identifier failure
-and lifts context recall to 0.498, supporting the hybrid criterion (C2).
+a characteristic way: the vector-only configuration collapses on exact
+CTI identifiers and abstains on 14--15 of 28 queries per run, while the
+BM25-only configuration holds identifier queries but loses semantic
+coverage. The hybrid configuration removes the identifier failure and
+recovers context recall on both fronts, supporting the hybrid
+criterion (C2).
 
 \paragraph{Generation mode.} V3 and V4 share the same retriever, so
-their differences follow from the generation mode. The templated
-pipeline raises answer relevancy by 0.169 and context recall by 0.112,
-lifts the rubric total from 1.67 to 2.29, and reduces abstentions from
-seven to zero; the higher context recall likely reflects this abstention
-difference, since abstained queries leave ground-truth facts uncovered.
-This comparison carries the main design contribution of the thesis: the
-gains come from structuring the answer, not from changing the model or
-the retrieval.
+their deltas isolate the templated pipeline: answer relevancy and
+context recall rise, abstentions drop from seven to zero, and the
+rubric total climbs from 1.67 to 2.29; the recall gain likely reflects
+the abstention difference, since abstained queries leave ground-truth
+facts uncovered. This comparison carries the main design contribution
+of the thesis: the gains come from structuring the answer, not from
+changing the model or the retrieval.
 
-\paragraph{Local versus hosted generation.} Replacing the local 8B model
-with the hosted model improves faithfulness by 0.159, answer correctness
-by 0.043, and the rubric total from 2.29 to 2.39, with near-perfect
-traceability (2.93). It also reduces median generation latency from
-85.2 to 6.4 seconds per query, a factor of thirteen. Answer relevancy
-is the one metric where the hosted model scores lower; the footnote in
-Section~\ref{sec:results-generation} traces this to the frozen
-relevancy filter rather than to answer quality.
-The price is the deployment model: hosted generation moves analyst
-queries off premises and gives up the local-deployment property that C6
-demands. The evaluated prototype therefore keeps the local model as its
-primary configuration and treats hosted generation as an option whose
-benefit is now quantified.
+\paragraph{Local versus hosted generation.} The hosted model improves
+faithfulness, answer correctness, and traceability (2.93) and reduces
+median generation latency from 85.2 to 6.4 seconds per query, a factor
+of thirteen; its lower answer relevancy is the filter artifact
+described in Section~\ref{sec:results-generation}. The price is the
+deployment model: hosted generation moves analyst queries off premises
+and gives up the local-deployment property that C6 demands. The
+evaluated prototype therefore keeps the local model as its primary
+configuration and treats hosted generation as an option whose benefit
+is now quantified.
 
 \section{Scenario-based evaluation of representative outputs}
 \label{sec:representative-outputs}
