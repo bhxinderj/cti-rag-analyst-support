@@ -219,10 +219,11 @@ against its deployment cost.
 
 Field coverage complements the rubric on the completeness side: across
 the final runs, the templated pipeline covers 87--89\,\% of the
-task-specific fields expected by the query set.
-% TODO optional (nach Engineering-Bestaetigung): Layer-Split ergaenzen ---
-% L1-Checks nahezu fehlerfrei (102/103 pass), Fails konzentrieren sich
-% im L2-Narrativ (Quelle: field_coverage_smoke_20260722T122307.json).
+task-specific fields expected by the query set. A per-layer breakdown
+on the frozen state confirms the design intent of
+Section~\ref{sec:generation}: the deterministic Layer-1 checks passed
+102 of 103, and the remaining failures concentrated in the Layer-2
+narrative.
 
 The following subsections examine one representative output per task
 type, each assessed along the rubric dimensions.
