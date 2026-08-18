@@ -15,9 +15,9 @@ executed against the index of Section~\ref{sec:ingestion}, on the
 machine described in Section~\ref{sec:implementation}, over the full
 query set with three runs per configuration
 (Section~\ref{sec:protocol}). A batch runner executes the series
-end-to-end; the raw scores and run logs are versioned in the repository
+end-to-end. The raw scores and run logs are versioned in the repository
 (Appendix~\ref{app:repository}). Table~\ref{tab:environment} lists the
-models and software versions involved; the complete environment is
+models and software versions involved. The complete environment is
 pinned in \texttt{requirements-evaluated-v1.lock} in the repository.
 
 \begin{table}[H]
@@ -55,7 +55,7 @@ the Layer-2 narrative, not the deterministic Layer-1 block.
 
 Table~\ref{tab:generation-results} reports the RAGAS scores of all
 configurations. Every value is a three-run mean with standard
-deviation (Section~\ref{sec:protocol});
+deviation (Section~\ref{sec:protocol}).
 Figure~\ref{fig:generation-results} shows the same results per metric.
 
 \begin{table}[H]
@@ -71,11 +71,11 @@ Figure~\ref{fig:generation-results} shows the same results per metric.
 The templated pipeline (V4) reaches the best local values in answer
 relevancy (0.739), answer correctness (0.518), and context recall
 (0.610), and it is the only local retrieval configuration that never
-abstains; the legacy prompt abstains on 7 of 28 queries. Its faithfulness (0.662)
+abstains. The legacy prompt abstains on 7 of 28 queries. Its faithfulness (0.662)
 stays close to the legacy configuration (0.689).
 
 Two values require care when reading the table. The highest faithfulness
-belongs to the BM25-only configuration (0.797); as noted in the caption,
+belongs to the BM25-only configuration (0.797). As noted in the caption,
 this reflects its abstention behavior, not better grounding: the
 configuration declines the queries it cannot support and answers the
 remaining ones close to the retrieved text. The relevancy of the hosted
@@ -89,10 +89,10 @@ Section~\ref{sec:results-ablation}.
 The non-retrieval baseline (V0) reads well in isolation: its answer
 relevancy (0.685) and answer correctness (0.502) sit at the level of the
 grounded configurations. Faithfulness and the context metrics are
-undefined without retrieval; what the fluent surface hides becomes
+undefined without retrieval. What the fluent surface hides becomes
 visible in the rubric results of
 Section~\ref{sec:representative-outputs}. The vector-only configuration
-(V2) is the weakest across all metrics;
+(V2) is the weakest across all metrics.
 Section~\ref{sec:results-ablation} traces this to its failure on exact
 CTI identifiers.
 
@@ -164,8 +164,8 @@ deltas, and the paragraphs below give the reading.
 \paragraph{Retrieval versus parametric knowledge.} On this query set,
 retrieval buys verifiability rather than raw correctness. The baseline
 answers prominent, well-documented CVEs from parametric knowledge at a
-comparable correctness level --- the query set names prominent CVEs and
-therefore favors the baseline systematically
+comparable correctness level, since the query set names prominent CVEs
+and therefore favors the baseline systematically
 (Section~\ref{sec:limitations}). The rubric separates what RAGAS does
 not: a traceability of 1.23 against 2.56 for V4 means that an analyst
 cannot verify the baseline's claims, and unverifiable output cannot be
@@ -182,7 +182,7 @@ criterion (C2).
 \paragraph{Generation mode.} V3 and V4 share the same retriever, so
 their deltas isolate the templated pipeline: answer relevancy and
 context recall rise, abstentions drop from seven to zero, and the
-rubric total climbs from 1.67 to 2.29; the recall gain likely reflects
+rubric total climbs from 1.67 to 2.29. The recall gain likely reflects
 the abstention difference, since abstained queries leave ground-truth
 facts uncovered. This comparison carries the main design contribution
 of the thesis: the gains come from structuring the answer, not from
@@ -191,7 +191,7 @@ changing the model or the retrieval.
 \paragraph{Local versus hosted generation.} The hosted model improves
 faithfulness, answer correctness, and traceability (2.93) and reduces
 median generation latency from 85.2 to 6.4 seconds per query, a factor
-of thirteen; its lower answer relevancy is the filter artifact
+of thirteen. Its lower answer relevancy is the filter artifact
 described in Section~\ref{sec:results-generation}. The price is the
 deployment model: hosted generation moves analyst queries off premises
 and gives up the local-deployment property that C6 demands. The
@@ -242,7 +242,7 @@ collapses to 1.23. The baseline produces recommendations that sound
 actionable but cannot be traced to evidence, precisely the failure
 mode that bottleneck B3 describes and criterion C1 is designed to
 prevent. The hosted ablation leads every dimension (total 2.39,
-traceability 2.93); Section~\ref{sec:results-ablation} weighs this
+traceability 2.93). Section~\ref{sec:results-ablation} weighs this
 against its deployment cost.
 
 Field coverage complements the rubric on the completeness side: across
@@ -262,7 +262,7 @@ type, each assessed along the rubric dimensions.
 Query \texttt{vuln\_001} asks what CVE-2024-3094, the xz-utils
 supply-chain backdoor, is and what its impact is.
 Figure~\ref{fig:scenario-vuln} shows the workbench response to a live
-query against the evaluated configuration; the status pills confirm the
+query against the evaluated configuration. The status pills confirm the
 templated pipeline and the local model.
 
 \begin{figure}[htbp]
@@ -270,8 +270,8 @@ templated pipeline and the local model.
     \includegraphics[width=0.82\textwidth]{scenario_vuln_answer}
     \caption{Workbench response to query \texttt{vuln\_001} (live query,
              configuration V4). The deterministic head reports the triage
-             signal with its rationale; every narrative claim carries a
-             citation; the source panel separates cited from retrieved
+             signal with its rationale. Every narrative claim carries a
+             citation. The source panel separates cited from retrieved
              but uncited context.}
     \label{fig:scenario-vuln}
 \end{figure}
@@ -282,7 +282,7 @@ deterministic head grades the finding as HIGH and states its rationale
 corpus snapshot), so the prioritization is explained rather than merely
 asserted. Second, every narrative claim ends in a citation, and the
 source panel distinguishes the two cited passages from the three
-retrieved but uncited ones; the analyst sees both what the answer
+retrieved but uncited ones. The analyst sees both what the answer
 uses and what it ignored (transparency, C1, C5). Third, the gaps
 section reports the absence of indicators and CWE-specific mitigations
 in the retrieved context instead of filling these slots from parametric
@@ -295,12 +295,12 @@ would have exposed.
 \label{sec:scenario-ioc}
 
 Query \texttt{ioc\_003} asks what is known about the MOVEit Transfer
-vulnerability CVE-2023-34362 and its exploitation; the router assigns
+vulnerability CVE-2023-34362 and its exploitation. The router assigns
 the vulnerability-triage template. The excerpt shows the deterministic
-head and two narrative claims; Appendix~\ref{app:outputs} reproduces the
+head and two narrative claims. Appendix~\ref{app:outputs} reproduces the
 full answer.
 
-\begin{responsebox}{ioc\_003 --- ``What is known about the MOVEit
+\begin{responsebox}{ioc\_003 -- ``What is known about the MOVEit
 Transfer vulnerability CVE-2023-34362 and its exploitation?'' (V4,
 excerpt)}
 \textbf{Triage Signal:} CRITICAL --- Immediate attention\\
@@ -325,7 +325,7 @@ deterministic head answers the triage question at a glance
 (prioritization), and the only recommended action is the one the KEV
 record supports (actionability without invention). The gaps section
 names what the corpus does not provide (concrete indicator values for
-this CVE) instead of fabricating them; for an enrichment query, this
+this CVE) instead of fabricating them. For an enrichment query, this
 explicit statement of absence is the intended behavior of the grounding
 design (transparency, C1).
 
@@ -333,9 +333,9 @@ design (transparency, C1).
 \label{sec:scenario-ttp}
 
 Query \texttt{ttp\_005} asks which MITRE ATT\&CK techniques relate to
-ransomware impact; the router assigns the threat-context template.
+ransomware impact. The router assigns the threat-context template.
 
-\begin{responsebox}{ttp\_005 --- ``Which MITRE ATT\&CK techniques relate
+\begin{responsebox}{ttp\_005 -- ``Which MITRE ATT\&CK techniques relate
 to ransomware impact, specifically data encryption for impact?'' (V4,
 excerpt)}
 \textbf{ATT\&CK Context:} Tactic: Impact (TA0040)\\[4pt]
@@ -364,16 +364,16 @@ advisory section it comes from. This task family is also where the
 generation modes separate most clearly: on the TTP-correlation queries,
 the legacy prompt reaches a rubric total of only 0.99 against 2.11 for
 the templated pipeline, and the cross-source queries show a similar gap
-(1.32 versus 2.19; three-run means).
+(1.32 versus 2.19, three-run means).
 
 \subsection{Cross-source comparison}
 \label{sec:scenario-cross}
 
 Query \texttt{cross\_003} asks for the NVD severity ratings and the KEV
-exploitation status of three 2023 CVEs; the router assigns the
+exploitation status of three 2023 CVEs. The router assigns the
 cross-source-comparison template.
 
-\begin{responsebox}{cross\_003 --- ``For CVE-2023-22515, CVE-2023-34362,
+\begin{responsebox}{cross\_003 -- ``For CVE-2023-22515, CVE-2023-34362,
 and CVE-2023-3519, which severity ratings does NVD report and what
 exploitation status does the CISA KEV catalog record?'' (V4, excerpt)}
 \textbf{Summary:} Entities evaluated: 3; with data from NVD and CISA
@@ -402,7 +402,7 @@ the narrative layer: its gaps section claims that the exploitation
 status of CVE-2023-34362 is missing, although the Layer-1 table records
 the KEV listing of exactly that CVE. The layered design contains such
 inconsistencies (the deterministic facts remain correct) but does
-not eliminate them; Section~\ref{sec:limitations} returns to this
+not eliminate them. Section~\ref{sec:limitations} returns to this
 point.
 
 \clearpage % 4.5 nicht als Ueberschrift am Seitenende beginnen lassen
@@ -465,8 +465,8 @@ Section~\ref{sec:limitations}.
 
 One scope note guards the C6 judgment: it refers to the evaluated
 configurations V0--V4, which contain no hosted dependency. The hosted
-model of the ablation (V5) is an evaluation instrument --- the measured
-counterfactual of giving up local deployment --- and the evaluation
+model of the ablation (V5) is an evaluation instrument (the measured
+counterfactual of giving up local deployment), and the evaluation
 judge is measurement instrumentation, not part of the artifact. The
 optional extended mode calls a hosted model and is documented as a
 feature outside the evaluated configuration
@@ -483,7 +483,7 @@ into four layers inside a local deployment boundary: curated sources,
 a provenance-preserving knowledge layer, a layered reasoning stage, and
 an analyst interaction layer, flanked by an evaluation and governance
 function. Eight design principles, marked P1--P8 in the figure, locate
-the empirically grounded decisions; Table~\ref{tab:principles} states
+the empirically grounded decisions. Table~\ref{tab:principles} states
 each principle with the evidence it rests on.
 
 \begin{figure}[H]
@@ -500,7 +500,7 @@ into CTI work starts at the source layer and moves upward, and every
 principle names the failure it prevents: P2 the identifier collapse
 of semantic-only retrieval, P3 and P4 the unverifiable fluency of
 ungrounded generation, P6 the silent loss of data control. The model is
-derived from one prototype, one corpus, and one query set; transferring
+derived from one prototype, one corpus, and one query set. Transferring
 it to other corpora and organizations requires validation, which
 Section~\ref{sec:limitations} records and
 Section~\ref{sec:future-work} takes up.
@@ -558,7 +558,7 @@ Section~\ref{sec:future-work} takes up.
 \enlargethispage{3\baselineskip}
 
 The boxes below answer the research questions of
-Section~\ref{sec:research-questions}; each answer names the evidence it
+Section~\ref{sec:research-questions}. Each answer names the evidence it
 rests on.
 
 \begin{rqbox}{MRQ}
@@ -576,20 +576,20 @@ rests on.
     \textbf{Evidence:}
     \begin{itemize}
         \item Correctness at baseline level, traceability transformed
-              (1.23 to 2.56) --- Sections~\ref{sec:results-generation}
+              from 1.23 to 2.56 (Sections~\ref{sec:results-generation}
               and~\ref{sec:results-ablation},
-              Table~\ref{tab:rubric-results}
+              Table~\ref{tab:rubric-results})
         \item Five of six design criteria fulfilled, bottlenecks B1 and
-              B3 addressed --- Section~\ref{sec:assessment}
-        \item Reference model with eight principles ---
-              Section~\ref{sec:reference-model}
+              B3 addressed (Section~\ref{sec:assessment})
+        \item Reference model with eight principles
+              (Section~\ref{sec:reference-model})
     \end{itemize}
 \end{rqbox}
 
 \newpage
 % Drei Zeilen mehr, damit SRQ1-3 gemeinsam auf dieser Seite schliessen.
 \enlargethispage{3\baselineskip}
-\begin{rqbox}{SRQ1 --- Information retrieval and answer quality}
+\begin{rqbox}{SRQ1 -- Information retrieval and answer quality}
     \emph{To what extent does retrieval augmentation improve the
     completeness, factual accuracy, and recency of CTI information
     generated by an LLM compared to a non-retrieval baseline?}\\[4pt]
@@ -604,59 +604,63 @@ rests on.
     \textbf{Evidence:}
     \begin{itemize}
         \item Answer relevancy 0.739 vs.\ 0.685, correctness 0.518 vs.\
-              0.502, context recall 0.610 ---
-              Table~\ref{tab:generation-results}
-        \item Field coverage 87--89\,\% of expected task fields ---
-              Section~\ref{sec:representative-outputs}
-        \item Traceability 2.56 vs.\ 1.23; zero abstentions with explicit
-              absence statements --- Table~\ref{tab:rubric-results},
-              Section~\ref{sec:results-generation}
+              0.502, context recall 0.610
+              (Table~\ref{tab:generation-results})
+        \item Field coverage 87--89\,\% of expected task fields
+              (Section~\ref{sec:representative-outputs})
+        \item Traceability 2.56 vs.\ 1.23 and zero abstentions with
+              explicit absence statements
+              (Table~\ref{tab:rubric-results},
+              Section~\ref{sec:results-generation})
     \end{itemize}
 \end{rqbox}
 
-\begin{rqbox}{SRQ2 --- Practical utility and workflow support}
+\begin{rqbox}{SRQ2 -- Practical utility and workflow support}
     \emph{Which types of CTI analysis tasks can be effectively supported
     by a RAG-based LLM system, and how well do the generated outputs
     align with the informational needs of threat-hunting workflows?}\\[4pt]
     \textbf{Answer:} All four task types of the query set are supported
     end to end. Support is strongest where deterministic structure
-    carries the answer --- vulnerability analysis and cross-source
-    comparison --- and remains consistent on TTP correlation, where the
+    carries the answer (vulnerability analysis and cross-source
+    comparison) and remains consistent on TTP correlation, where the
     unstructured prompt becomes unstable. The main boundary is
     actionability: mitigation guidance can only relay what the corpus
     documents.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
         \item Vulnerability analysis and cross-source comparison:
-              triage signal with rationale; deterministic comparison
-              table with explicit source disagreements ---
-              Sections~\ref{sec:scenario-vuln} and~\ref{sec:scenario-cross}
+              triage signal with rationale and a deterministic
+              comparison table with explicit source disagreements
+              (Sections~\ref{sec:scenario-vuln}
+              and~\ref{sec:scenario-cross})
         \item IOC enrichment and TTP correlation: absence stated
-              instead of fabricated; templated pipeline consistent
-              where the legacy prompt is unstable ---
-              Sections~\ref{sec:scenario-ioc} and~\ref{sec:scenario-ttp}
-        \item Rubric total 2.29 vs.\ 1.67 (legacy) and 1.66 (baseline);
-              actionability weakest at 1.77 ---
-              Table~\ref{tab:rubric-results}
+              instead of fabricated, templated pipeline consistent
+              where the legacy prompt is unstable
+              (Sections~\ref{sec:scenario-ioc}
+              and~\ref{sec:scenario-ttp})
+        \item Rubric total 2.29 vs.\ 1.67 (legacy) and 1.66 (baseline),
+              actionability weakest at 1.77
+              (Table~\ref{tab:rubric-results})
     \end{itemize}
 \end{rqbox}
 
-\begin{rqbox}{SRQ3 --- Conceptual design}
+\begin{rqbox}{SRQ3 -- Conceptual design}
     \emph{How can empirical insights from the RAG-LLM prototype be
     translated into actionable design principles for integrating
     generative AI into CTI and threat-hunting workflows?}\\[4pt]
     \textbf{Answer:} The evaluation results condense into eight design
-    principles --- from curated, provenance-preserving ingestion through
-    identifier-aware hybrid retrieval and layered, citation-enforcing
-    generation to local-first deployment with hosted generation as a
-    quantified opt-in --- arranged in a four-layer reference model with
-    an evaluation and governance function. Each principle names the
+    principles, ranging from curated, provenance-preserving ingestion
+    through identifier-aware hybrid retrieval and layered,
+    citation-enforcing generation to local-first deployment with hosted
+    generation as a quantified opt-in. The principles are arranged in a
+    four-layer reference model with an evaluation and governance
+    function. Each principle names the
     empirically observed failure it prevents.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
-        \item Principles P1--P8 with per-principle empirical basis ---
-              Table~\ref{tab:principles}
-        \item Reference model locating the principles ---
-              Figure~\ref{fig:reference-model}
+        \item Principles P1--P8 with per-principle empirical basis
+              (Table~\ref{tab:principles})
+        \item Reference model locating the principles
+              (Figure~\ref{fig:reference-model})
     \end{itemize}
 \end{rqbox}

@@ -13,7 +13,7 @@ Open-Source-Prototyp konzipiert, implementiert und evaluiert, der vier
 kuratierte CTI-Quellen (NVD, CISA KEV, CISA-Advisories, MISP; 84.982
 Dokumente) in einen provenienz-erhaltenden Index \"uberf\"uhrt. Ein
 hybrides Retrieval kombiniert BM25 und dichte Vektorsuche mit
-Cross-Encoder-Reranking; die Antwortgenerierung ist geschichtet:
+Cross-Encoder-Reranking. Die Antwortgenerierung ist geschichtet:
 Verifizierbare Fakten werden deterministisch aus Passagen-Metadaten
 gerendert, ein lokal betriebenes 8B-Modell liefert ausschlie\ss lich das
 Narrativ, mit erzwungenen, validierten Zitaten und expliziter
@@ -22,7 +22,7 @@ Enthaltung ohne Evidenz.
 Die Evaluation vergleicht sechs Konfigurationen -- von der
 retrieval-freien Baseline bis zur gehosteten Ablation -- auf einem
 eingefrorenen Index-Stand mit 28 Queries \"uber vier
-Analyst-Task-Typen und drei L\"aufen je Konfiguration; bewertet wird
+Analyst-Task-Typen und drei L\"aufen je Konfiguration. Bewertet wird
 mit RAGAS, Field Coverage und einem vierdimensionalen
 Analysten-Rubric samt szenariobasierter Analyse. Zentrales Ergebnis:
 Die Antwortkorrektheit bleibt auf Baseline-Niveau, die

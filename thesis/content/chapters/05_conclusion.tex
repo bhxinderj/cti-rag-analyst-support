@@ -14,7 +14,7 @@ index of four curated CTI sources (84{,}982 documents), hybrid
 retrieval with reranking, and a layered generation pipeline in which
 deterministic facts are rendered from passage metadata, the LLM
 narrates only within the retrieved context, and citations are enforced
-and validated; the stack is open-source and was operated on consumer
+and validated. The stack is open-source and was operated on consumer
 hardware throughout. The evaluation compared six configurations
 (V0--V5) on a frozen index state, with 28 queries across four task
 types and three runs per configuration, complementing RAGAS metrics
@@ -44,7 +44,7 @@ The validity of the results is bounded by the following limitations:
     \item \textbf{Corpus and query set scope:} The evaluation ran on
           one frozen corpus of four curated, English-language sources
           and a query set of 28 queries. This scope supports controlled
-          comparison; transfer to other corpora, languages, and
+          comparison. Transfer to other corpora, languages, and
           organizations requires validation.
     \item \textbf{Query-set bias toward the baseline:} The query set
           names prominent, well-documented CVEs, which the parametric
@@ -60,7 +60,7 @@ The validity of the results is bounded by the following limitations:
           judge metric rather than of one model.
     \item \textbf{Context metrics are proxies:} Context precision and
           context recall are reference-based, LLM-judged proxies, not
-          classical IR metrics; document-level relevance judgments
+          classical IR metrics. Document-level relevance judgments
           (qrels) do not exist for this corpus. Per-stage retrieval
           traces are preserved in the evaluation artifacts, so a
           qrels-based ranking evaluation remains feasible future work
@@ -68,18 +68,18 @@ The validity of the results is bounded by the following limitations:
     \item \textbf{Self-evaluation without a user study:} The
           scenario-based assessment was performed by the author along
           the rubric fixed before the results
-          (Appendix~\ref{app:query-set}); no study with practicing
+          (Appendix~\ref{app:query-set}). No study with practicing
           analysts was conducted. Statements about operational
           usefulness rest on structured self-assessment.
     \item \textbf{No runtime source assessment:} Ingestion is limited
           to curated sources with preserved provenance, but the
-          prototype does not score source credibility at query time;
+          prototype does not score source credibility at query time.
           C3 is fulfilled only partially
           (Section~\ref{sec:assessment}).
     \item \textbf{Residual narrative inconsistencies:} The layered
-          design limits the impact of narrative errors --- the
-          deterministic facts remain correct --- but does not eliminate
-          them; Section~\ref{sec:scenario-cross} shows a gaps statement
+          design limits the impact of narrative errors (the
+          deterministic facts remain correct) but does not eliminate
+          them. Section~\ref{sec:scenario-cross} shows a gaps statement
           contradicting the Layer-1 table of the same answer.
 \end{itemize}
 

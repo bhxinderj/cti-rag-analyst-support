@@ -40,15 +40,15 @@ three bottlenecks, which Figure~\ref{fig:analyst-workflow} locates in the
 workflow:
 
 \begin{enumerate}
-    \item \textbf{B1 --- Information overload:} the volume, heterogeneity,
+    \item \textbf{B1 -- Information overload:} the volume, heterogeneity,
           and informal structure of threat feeds and reports exceed what
           analysts can process consistently
           \parencite{alhuzali2025llm,rastogi2023soc}.
-    \item \textbf{B2 --- Recency:} threat knowledge changes faster than
+    \item \textbf{B2 -- Recency:} threat knowledge changes faster than
           static knowledge bases, including the parametric knowledge of
           trained language models, can follow
           \parencite{paul2025proactive,chen2023benchmarking}.
-    \item \textbf{B3 --- Verification effort:} extracting information from
+    \item \textbf{B3 -- Verification effort:} extracting information from
           unstructured reports and validating it remains manual expert
           work, and outputs without transparent provenance cannot be acted
           on \parencite{rajapaksha2024rag,tseng2024llm}.
@@ -77,7 +77,7 @@ sources \parencite{gao2024rag,chen2023benchmarking}.
     \label{fig:rag-pipeline}
 \end{figure}
 
-Retrieval can be sparse, dense, or hybrid;
+Retrieval can be sparse, dense, or hybrid.
 Table~\ref{tab:retrieval-strategies} contrasts the strategies and the role
 of reranking \parencite{agnihotram2025retrieval}.
 
@@ -89,7 +89,7 @@ of reranking \parencite{agnihotram2025retrieval}.
         \textbf{Strategy} & \textbf{Principle} & \textbf{Strength} & \textbf{Limitation} \\
         \midrule
         Sparse (BM25) & exact term matching with term-frequency weighting
-            & efficient; reliable for explicit identifiers
+            & efficient, reliable for explicit identifiers
             & misses semantically equivalent formulations \\
         Dense & embeddings in a shared vector space
             & captures paraphrases and related concepts
@@ -109,7 +109,7 @@ of reranking \parencite{agnihotram2025retrieval}.
 
 These trade-offs matter for CTI text, where the same threat actor appears
 under aliases such as APT28 and Fancy Bear and distinct ATT\&CK techniques
-share overlapping keywords; hybrid retrieval with reranking therefore
+share overlapping keywords. Hybrid retrieval with reranking therefore
 suits CTI corpora \parencite{alhuzali2025llm,lekssays2025techniquerag}.
 Citing the retrieved sources in the generated answer makes it verifiable:
 analysts can inspect the evidence behind each claim instead of trusting
@@ -120,7 +120,7 @@ the model \parencite{rajapaksha2024rag,liu2023trustworthy}.
 \label{sec:literature-findings}
 
 Table~\ref{tab:literature-findings} summarizes the key findings of the
-literature review in four topic areas; the research gaps in
+literature review in four topic areas. The research gaps in
 Section~\ref{sec:research-gap} follow from them.
 
 \begingroup
@@ -192,18 +192,18 @@ The findings in Table~\ref{tab:literature-findings} leave three research
 gaps open:
 
 \begin{enumerate}
-    \item \textbf{G1 --- Workflow-level empirical evidence:} Existing
+    \item \textbf{G1 -- Workflow-level empirical evidence:} Existing
           CTI-RAG prototypes each address a single task, such as attack
           investigation or technique annotation. Whether these results
           carry over to the range of tasks an analyst works through, and
           which architectural choices matter for that transfer, remains
           empirically open.
-    \item \textbf{G2 --- Evaluation realism:} Reported evaluations center
+    \item \textbf{G2 -- Evaluation realism:} Reported evaluations center
           on controlled benchmarks and isolated technical metrics, and
           ground-truth datasets for CTI tasks are scarce. Evidence that
           connects retrieval and generation quality to representative
           analyst tasks is rare.
-    \item \textbf{G3 --- Source reliability:} RAG pipelines can ingest and
+    \item \textbf{G3 -- Source reliability:} RAG pipelines can ingest and
           propagate misinformation, and LLMs tend to over-trust retrieved
           context. First reliability-aware retrieval approaches weight
           sources by estimated trustworthiness

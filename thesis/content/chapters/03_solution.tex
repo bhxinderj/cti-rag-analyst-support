@@ -32,7 +32,7 @@ claim against its source instead of trusting the answer as a whole
 
 In the hybrid configuration, $R$ combines a lexical relevance score
 (BM25) with a semantic similarity score (dense embeddings) and reranks the
-fused candidates; Section~\ref{sec:retrieval} describes this instantiation.
+fused candidates. Section~\ref{sec:retrieval} describes this instantiation.
 Setting $\mathcal{C}_k = \emptyset$ yields the non-retrieval baseline
 \begin{equation}
     a_0 = g(q, \emptyset),
@@ -40,7 +40,7 @@ Setting $\mathcal{C}_k = \emptyset$ yields the non-retrieval baseline
 \end{equation}
 in which the model answers from parametric knowledge alone. This baseline
 corresponds to configuration V0 in the evaluation
-(Section~\ref{sec:baselines}); the comparison between $a$ and $a_0$
+(Section~\ref{sec:baselines}). The comparison between $a$ and $a_0$
 quantifies the effect of retrieval augmentation and thereby
 operationalizes SRQ1.
 
@@ -52,7 +52,7 @@ the workflow bottlenecks B1--B3 (Section~\ref{sec:cti}), the research gaps
 G1--G3 (Section~\ref{sec:research-gap}), and the scope set in
 Section~\ref{sec:scope}, which restricts the prototype to open-source
 components and local deployment. Table~\ref{tab:design-criteria} lists the
-criteria with their origin and the research question they serve;
+criteria with their origin and the research question they serve.
 Section~\ref{sec:assessment} assesses the prototype against them.
 
 \begin{table}[H]
@@ -82,11 +82,11 @@ Section~\ref{sec:assessment} assesses the prototype against them.
 
 C1 and C2 respond to the verification and overload bottlenecks. Outputs
 without provenance cannot be acted on (B3), so every generated claim must
-be attributable to a cited source (C1); this implements the grounding
+be attributable to a cited source (C1). This implements the grounding
 constraint of the task formulation
 (Equation~\ref{eq:generation}). CTI text combines exact identifiers such
 as CVE numbers with strongly varying terminology (B1), which single-strategy
-retrieval serves poorly (Section~\ref{sec:cti}); retrieval therefore
+retrieval serves poorly (Section~\ref{sec:cti}). Retrieval therefore
 combines lexical and semantic search and reranks the merged candidates
 (C2).
 
@@ -94,7 +94,7 @@ C3 responds to G3: because RAG pipelines can propagate manipulated or
 low-quality content, ingestion is limited to a curated set of
 authoritative CTI sources, and every indexed passage keeps metadata that
 identifies its origin. The prototype does not score source credibility at
-query time; this boundary is revisited in Section~\ref{sec:limitations}.
+query time. This boundary is revisited in Section~\ref{sec:limitations}.
 
 C4 and C5 constrain the evaluation and the presentation layer. Offline
 metrics alone say little about operational usefulness (G2), so the
@@ -152,7 +152,7 @@ serves analysts, so measured behavior equals operational behavior
     \centering
     \includegraphics[width=\linewidth]{cti_rag_architecture_overview}
     \caption{System architecture of the prototype (C4 container view).
-             Numbered markers trace the online query path; circled letters
+             Numbered markers trace the online query path. Circled letters
              locate the notation of Section~\ref{sec:task-formulation}.}
     \label{fig:architecture}
 \end{figure}
@@ -174,10 +174,10 @@ unified document model.
 Preprocessing follows a CTI-aware chunking strategy: one CTI artifact,
 such as one CVE entry or one KEV record, becomes one passage, so that
 identifiers, scores, and remediation facts stay together. Passages are
-capped at 512 tokens; only oversized documents are split with a 50-token
+capped at 512 tokens. Only oversized documents are split with a 50-token
 overlap. Table~\ref{tab:corpus-stats} shows the resulting corpus:
 $\mathcal{D}$ contains 84{,}982 documents, and because most CTI artifacts
-fit into a single passage, $\mathcal{P}$ contains 84{,}991 passages ---
+fit into a single passage, $\mathcal{P}$ contains 84{,}991 passages:
 only nine advisories required splitting. Every passage carries structured
 metadata, including source, title, severity, CVSS score and vector, CVE
 and Common Weakness Enumeration (CWE) identifiers, affected products,
@@ -224,7 +224,7 @@ pair in the fused pool and selects the final context: with the reranker's
 $k = 5$, this yields the context $\mathcal{C}_k$ of the task formulation.
 After reranking, a small exact-identifier bonus keeps passages that
 literally contain a queried CTI identifier visible without dominating the
-reranker's relevance judgment. This pipeline implements C2;
+reranker's relevance judgment. This pipeline implements C2.
 Table~\ref{tab:retrieval-config} lists the configuration.
 
 \begin{table}[H]
@@ -256,7 +256,7 @@ Table~\ref{tab:retrieval-config} lists the configuration.
 The five passages of $\mathcal{C}_k$ are assembled into the prompt as
 numbered blocks, each exposing a citation label, the source type, the
 title, and the content. Citation labels are the plain document
-identifiers, such as \texttt{nvd\_CVE-2024-3094}; longer composite labels
+identifiers, such as \texttt{nvd\_CVE-2024-3094}. Longer composite labels
 proved impractical because the 8B model could not reproduce them
 verbatim, which caused valid citations to be lost in normalization.
 
@@ -265,7 +265,7 @@ single prompt whose system instruction enforces grounding: the model may
 use only the retrieved context, must end every claim with an inline
 citation label, must not invent labels, and must answer in a fixed
 section structure (summary, relevance, mitigations, evidence, gaps).
-Listing~\ref{lst:system-prompt} shows the core of this instruction; the
+Listing~\ref{lst:system-prompt} shows the core of this instruction. The
 complete templates are reproduced in Appendix~\ref{app:prompts}. The
 \emph{templated} mode, the main design contribution of the prototype,
 splits the answer into layers. Layer~1 is rendered deterministically from
@@ -285,7 +285,7 @@ citation normalization step resolves every cited label against the
 passages that were actually retrieved, repairing near-miss labels and
 discarding lines whose citations cannot be resolved. The non-retrieval
 baseline (V0) uses the same section structure and a knowledge-cutoff
-instruction matching the corpus snapshot, but no citations --- keeping
+instruction matching the corpus snapshot, but no citations, which keeps
 the comparison with the grounded configurations fair.
 
 \begin{lstlisting}[caption={System prompt with citation instruction
@@ -318,14 +318,14 @@ Rules:
 
 The prototype is implemented in Python~3.12 as a single repository
 (Appendix~\ref{app:repository}). LangChain~0.3 provides the orchestration
-layer with integrations for Ollama, Hugging Face models, and ChromaDB;
+layer with integrations for Ollama, Hugging Face models, and ChromaDB.
 \texttt{rank-bm25} implements the sparse index,
 \texttt{sentence-transformers} serves the embedding and reranking models,
 and RAGAS~0.2 drives the automated evaluation. Analyst access runs
 through a FastAPI backend with a Streamlit workbench
-(Figure~\ref{fig:ui-overview}); the agent interface
+(Figure~\ref{fig:ui-overview}). The agent interface
 uses the MCP Python SDK. Every component of the evaluated pipeline is
-open-source and runs locally (C6); a hosted model appears only in the
+open-source and runs locally (C6). A hosted model appears only in the
 optional extended mode (Section~\ref{sec:mcp-interface}) and in the
 ablation configuration V5, both outside the evaluated path.
 Table~\ref{tab:components} maps the modules to their functions.
@@ -360,7 +360,7 @@ Table~\ref{tab:components} maps the modules to their functions.
 
 The prototype was developed and operated on consumer hardware: a MacBook
 Air with an Apple M4 chip and 24\,GB of unified memory, running
-macOS~26. All models execute locally --- the generation model through the
+macOS~26. All models execute locally: the generation model runs through the
 Ollama runtime, the embedding and reranking models through
 \texttt{sentence-transformers} on Apple's Metal backend. No dedicated GPU
 server is involved: the complete pipeline, including 8B-model generation,
@@ -370,7 +370,7 @@ listed in Section~\ref{sec:experimental-setup}.
 
 Table~\ref{tab:tech-selection} documents the component selection. The
 selection is justified against the design criteria rather than a formal
-scoring model; for the generation model, the local-versus-hosted decision
+scoring model. For the generation model, the local-versus-hosted decision
 is additionally checked empirically in the ablation
 (Section~\ref{sec:results-ablation}). The embedding model was chosen for
 its retrieval quality relative to its footprint on the MTEB benchmark
@@ -427,8 +427,8 @@ Beyond the analyst-facing workbench, the prototype exposes its pipeline
 to agentic clients through an MCP stdio server.
 The server publishes a single deterministic tool,
 \texttt{cti\_query\_tool}, which runs the query router, hybrid retrieval,
-fact-bundle extraction, and Layer-1 rendering --- but no LLM generation
---- and responds in roughly 1.2 seconds. This cut is deliberate: full
+fact-bundle extraction, and Layer-1 rendering, but no LLM generation,
+and responds in roughly 1.2 seconds. This cut is deliberate: full
 generation on the local model takes a median of 85.2 seconds and up to
 three minutes per answer, which exceeds typical MCP client timeouts,
 whereas the deterministic fact layer is fast, reproducible, and grounded
@@ -437,7 +437,7 @@ exchange: the client discovers the published tool, submits a triage
 query, and receives the layered fact block with its sources. An
 extended assist mode
 that adds hosted generation on top of this interface exists as a
-documented feature but is not part of the evaluation; it is discussed as
+documented feature but is not part of the evaluation. It is discussed as
 future work (Section~\ref{sec:future-work}).
 
 % Transkript-Quelle: docs/architecture/mcp_transcript.txt (make mcp-demo),
@@ -466,7 +466,7 @@ comparison, and the protocol.
 The query set contains 28 queries across the four CTI task types:
 vulnerability analysis (6), IOC enrichment (7), TTP correlation (7), and
 cross-source comparison (8). Table~\ref{tab:query-set} gives one example
-per type; Appendix~\ref{app:query-set} lists the full set. Each query
+per type. Appendix~\ref{app:query-set} lists the full set. Each query
 defines its expected router template, a ground truth as a list of
 individual facts, the fields a complete answer must cover, and a
 difficulty level. The router assignment is asserted by unit tests, so
@@ -509,7 +509,7 @@ cutoff of 2025-12-31.
 Three metric groups cover complementary quality aspects
 (Table~\ref{tab:metrics}). The RAGAS framework \parencite{es2023ragas}
 scores faithfulness, answer relevancy, answer correctness, context
-precision, and context recall; an LLM judge performs the scoring, and the
+precision, and context recall. An LLM judge performs the scoring, and the
 ground-truth facts of the query set serve as references where the metric
 requires them. The judge model (gpt-4o-mini) deliberately differs from
 the hosted generation model of the ablation (V5) to avoid self-preference
@@ -527,7 +527,7 @@ scores. The analyst rubric assesses each answer on four dimensions with
 a 0--3 scale: prioritization, actionability, completeness, and
 traceability. The rubric is scored by the same judge model, which
 re-rates the stored answers of every run against fixed per-dimension
-definitions (Appendix~\ref{app:query-set}); rubric results are
+definitions (Appendix~\ref{app:query-set}). Rubric results are
 therefore three-run means like the RAGAS scores.
 
 \begin{table}[H]
@@ -560,7 +560,7 @@ the generation mode (legacy prompt or templated pipeline,
 Section~\ref{sec:generation}). V0 instantiates the non-retrieval baseline
 $a_0$ of the task formulation. V1--V3 isolate the retrieval strategies
 under the legacy prompt. V4 adds the templated pipeline on top of the
-hybrid retriever and is the primary configuration of this thesis; the
+hybrid retriever and is the primary configuration of this thesis. The
 comparison V3 versus V4 therefore isolates the effect of the templated
 generation. V5 repeats V4 with a hosted generation model as an ablation.
 Cross-encoder reranking is uniformly active in V1--V5 and deliberately
@@ -597,8 +597,8 @@ Appendix~\ref{app:prompts}, and the retrieval parameters of
 Table~\ref{tab:retrieval-config} are tagged and unchanged across the
 series. Every configuration, including the hosted ablation, is executed three
 times, because single runs scatter by about $\pm 0.05$ through
-generation variance; all reported numbers are three-run means with
-standard deviations. Generation uses a temperature of 0.1; the
+generation variance. All reported numbers are three-run means with
+standard deviations. Generation uses a temperature of 0.1. The
 judge model and its configuration stay fixed across all runs.
 
 The scenario-based assessment in
