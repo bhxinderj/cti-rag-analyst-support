@@ -5,52 +5,52 @@
 \contentsline {section}{\numberline {1.3}Research questions}{2}{section.1.3}%
 \contentsline {section}{\numberline {1.4}Objectives, scope, and delimitation}{3}{section.1.4}%
 \contentsline {section}{\numberline {1.5}Methodological approach}{3}{section.1.5}%
-\contentsline {chapter}{\numberline {2}Background and related work}{5}{chapter.2}%
-\contentsline {section}{\numberline {2.1}CTI and RAG foundations}{5}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Key findings from the literature}{7}{section.2.2}%
-\contentsline {section}{\numberline {2.3}Research gaps}{8}{section.2.3}%
-\contentsline {chapter}{\numberline {3}Solution: design and implementation}{8}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Task formulation}{8}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Requirements and design criteria}{9}{section.3.2}%
-\contentsline {section}{\numberline {3.3}System architecture}{10}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Data ingestion and preprocessing}{12}{section.3.4}%
-\contentsline {section}{\numberline {3.5}Hybrid retrieval and reranking}{12}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Context assembly, answer generation, and citation}{13}{section.3.6}%
-\contentsline {section}{\numberline {3.7}Implementation}{14}{section.3.7}%
-\contentsline {subsection}{\numberline {3.7.1}Agent interface via MCP}{16}{subsection.3.7.1}%
-\contentsline {section}{\numberline {3.8}Evaluation design}{16}{section.3.8}%
-\contentsline {subsection}{\numberline {3.8.1}Query set construction}{19}{subsection.3.8.1}%
-\contentsline {subsection}{\numberline {3.8.2}Evaluation metrics}{19}{subsection.3.8.2}%
-\contentsline {subsection}{\numberline {3.8.3}Baseline and variant configurations}{20}{subsection.3.8.3}%
-\contentsline {subsection}{\numberline {3.8.4}Experimental protocol}{21}{subsection.3.8.4}%
-\contentsline {chapter}{\numberline {4}Results and critical appraisal}{21}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Experimental setup}{21}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Generation quality}{22}{section.4.2}%
-\contentsline {section}{\numberline {4.3}Baseline comparison and ablation}{23}{section.4.3}%
-\contentsline {paragraph}{\nonumberline Retrieval versus parametric knowledge.}{24}{paragraph*.28}%
-\contentsline {paragraph}{\nonumberline Retrieval strategy.}{24}{paragraph*.30}%
-\contentsline {paragraph}{\nonumberline Generation mode.}{24}{paragraph*.32}%
-\contentsline {paragraph}{\nonumberline Local versus hosted generation.}{24}{paragraph*.34}%
-\contentsline {section}{\numberline {4.4}Scenario-based evaluation of representative outputs}{25}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}Vulnerability analysis}{26}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}IOC enrichment}{26}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}TTP correlation}{28}{subsection.4.4.3}%
-\contentsline {subsection}{\numberline {4.4.4}Cross-source comparison}{29}{subsection.4.4.4}%
-\contentsline {section}{\numberline {4.5}Assessment against the design criteria}{30}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Reference model for CTI-RAG integration}{31}{section.4.6}%
-\contentsline {section}{\numberline {4.7}Answering the research questions}{32}{section.4.7}%
-\contentsline {chapter}{\numberline {5}Conclusion, limitations, and outlook}{34}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Summary and contributions}{34}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Limitations}{35}{section.5.2}%
-\contentsline {section}{\numberline {5.3}Future work}{35}{section.5.3}%
-\contentsline {chapter}{\nonumberline Bibliography}{37}{chapter*.43}%
-\contentsline {chapter}{\nonumberline List of figures}{39}{chapter*.44}%
-\contentsline {chapter}{\nonumberline List of tables}{40}{chapter*.45}%
-\contentsline {chapter}{Documentation table of AI-based tools}{41}{section*.46}%
-\contentsline {chapter}{List of abbreviations}{42}{chapter*.47}%
-\contentsline {chapter}{\numberline {A}Prototype repository}{44}{appendix.A}%
-\contentsline {chapter}{\numberline {B}Prompt templates}{45}{appendix.B}%
-\contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{49}{appendix.C}%
-\contentsline {chapter}{\numberline {D}Additional results}{53}{appendix.D}%
-\contentsline {chapter}{\numberline {E}Representative system outputs}{55}{appendix.E}%
+\contentsline {chapter}{\numberline {2}Background and related work}{4}{chapter.2}%
+\contentsline {section}{\numberline {2.1}CTI and RAG foundations}{4}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Key findings from the literature}{6}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Research gaps}{7}{section.2.3}%
+\contentsline {chapter}{\numberline {3}Solution: design and implementation}{7}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Task formulation}{7}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Requirements and design criteria}{8}{section.3.2}%
+\contentsline {section}{\numberline {3.3}System architecture}{9}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Data ingestion and preprocessing}{11}{section.3.4}%
+\contentsline {section}{\numberline {3.5}Hybrid retrieval and reranking}{11}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Context assembly, answer generation, and citation}{12}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Implementation}{13}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}Agent interface via MCP}{15}{subsection.3.7.1}%
+\contentsline {section}{\numberline {3.8}Evaluation design}{15}{section.3.8}%
+\contentsline {subsection}{\numberline {3.8.1}Query set construction}{18}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.2}Evaluation metrics}{18}{subsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.8.3}Baseline and variant configurations}{19}{subsection.3.8.3}%
+\contentsline {subsection}{\numberline {3.8.4}Experimental protocol}{20}{subsection.3.8.4}%
+\contentsline {chapter}{\numberline {4}Results and critical appraisal}{20}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Experimental setup}{20}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Generation quality}{21}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Baseline comparison and ablation}{22}{section.4.3}%
+\contentsline {paragraph}{\nonumberline Retrieval versus parametric knowledge.}{23}{paragraph*.28}%
+\contentsline {paragraph}{\nonumberline Retrieval strategy.}{23}{paragraph*.30}%
+\contentsline {paragraph}{\nonumberline Generation mode.}{23}{paragraph*.32}%
+\contentsline {paragraph}{\nonumberline Local versus hosted generation.}{23}{paragraph*.34}%
+\contentsline {section}{\numberline {4.4}Scenario-based evaluation of representative outputs}{24}{section.4.4}%
+\contentsline {subsection}{\numberline {4.4.1}Vulnerability analysis}{25}{subsection.4.4.1}%
+\contentsline {subsection}{\numberline {4.4.2}IOC enrichment}{25}{subsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.4.3}TTP correlation}{27}{subsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.4.4}Cross-source comparison}{28}{subsection.4.4.4}%
+\contentsline {section}{\numberline {4.5}Assessment against the design criteria}{29}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Reference model for CTI-RAG integration}{30}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Answering the research questions}{31}{section.4.7}%
+\contentsline {chapter}{\numberline {5}Conclusion, limitations, and outlook}{33}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Summary and contributions}{33}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Limitations}{33}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Future work}{34}{section.5.3}%
+\contentsline {chapter}{\nonumberline Bibliography}{36}{chapter*.43}%
+\contentsline {chapter}{\nonumberline List of figures}{38}{chapter*.44}%
+\contentsline {chapter}{\nonumberline List of tables}{39}{chapter*.45}%
+\contentsline {chapter}{Documentation table of AI-based tools}{40}{section*.46}%
+\contentsline {chapter}{List of abbreviations}{41}{chapter*.47}%
+\contentsline {chapter}{\numberline {A}Prototype repository}{43}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Prompt templates}{44}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{48}{appendix.C}%
+\contentsline {chapter}{\numberline {D}Additional results}{52}{appendix.D}%
+\contentsline {chapter}{\numberline {E}Representative system outputs}{54}{appendix.E}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 
