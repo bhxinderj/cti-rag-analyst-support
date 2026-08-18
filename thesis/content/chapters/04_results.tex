@@ -165,8 +165,7 @@ deltas, and the paragraphs below give the reading.
 retrieval buys verifiability rather than raw correctness. The baseline
 answers prominent, well-documented CVEs from parametric knowledge at a
 comparable correctness level, since the query set names prominent CVEs
-and therefore favors the baseline systematically
-(Section~\ref{sec:limitations}). The rubric separates what RAGAS does
+and therefore favors the baseline systematically. The rubric separates what RAGAS does
 not: a traceability of 1.23 against 2.56 for V4 means that an analyst
 cannot verify the baseline's claims, and unverifiable output cannot be
 acted on in CTI work (B3, C1).
@@ -402,8 +401,7 @@ the narrative layer: its gaps section claims that the exploitation
 status of CVE-2023-34362 is missing, although the Layer-1 table records
 the KEV listing of exactly that CVE. The layered design contains such
 inconsistencies (the deterministic facts remain correct) but does
-not eliminate them. Section~\ref{sec:limitations} returns to this
-point.
+not eliminate them.
 
 \clearpage % 4.5 nicht als Ueberschrift am Seitenende beginnen lassen
 \section{Assessment against the design criteria}
@@ -426,7 +424,7 @@ judgment referenced instead of repeated.
         C2 Hybrid retrieval & fulfilled &
             Sec.~\ref{sec:results-ablation} & B1 \\
         C3 Source integrity & partially &
-            Sec.~\ref{sec:ingestion}; Sec.~\ref{sec:limitations} & G3 \\
+            Sec.~\ref{sec:ingestion}; Sec.~\ref{sec:requirements} & G3 \\
         C4 Scenario-based evaluation & fulfilled &
             Sec.~\ref{sec:representative-outputs} & G2 \\
         C5 Analyst-oriented presentation & fulfilled &
@@ -460,8 +458,7 @@ For C5, the rubric confirms the presentation gains overall (2.29 versus
 1.67), yet actionability is the weakest templated dimension (1.77): the
 mitigation sections only relay what the corpus offers, and for many CVE
 entries that is a single KEV remediation line or an explicit statement
-of absence. Both boundaries carry over to the limitations in
-Section~\ref{sec:limitations}.
+of absence.
 
 One scope note guards the C6 judgment: it refers to the evaluated
 configurations V0--V4, which contain no hosted dependency. The hosted

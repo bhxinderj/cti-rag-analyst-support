@@ -52,13 +52,18 @@
 % Box fuer Forschungsfragen (Kap. 1) und deren Beantwortung (Kap. 4).
 % Schlichter Rahmen: duenne graue Linie, weisser Koerper, hellgraue
 % Titelzeile, eckige Kanten.
-% Box fuer Antwort-Auszuege in Kap. 4 (gleiche Optik wie rqbox).
+% Box fuer Antwort-Auszuege in Kap. 4: leicht gruen getoent ---
+% Gruen = Output des Prototyps (V4), Blau = RQ-Boxen der Arbeit,
+% Grau bleibt fuer technische Listings.
+\definecolor{respframe}{HTML}{82B366}
+\definecolor{resptitle}{HTML}{D5E8D4}
+\definecolor{respback}{HTML}{F6FBF6}
 \newtcolorbox{responsebox}[1]{%
     breakable,
     sharp corners,
-    colback=gray!2,
-    colframe=black!60,
-    colbacktitle=black!8,
+    colback=respback,
+    colframe=respframe,
+    colbacktitle=resptitle,
     coltitle=black,
     fonttitle=\bfseries\small,
     fontupper=\small,
@@ -66,12 +71,17 @@
     boxrule=0.5pt,
     left=2mm, right=2mm, top=1.5mm, bottom=1.5mm}
 
+% Leicht blau getoent (Farbfamilie der Pipeline-Diagramme); die
+% responsebox bleibt bewusst grau (Artefakt-Output vs. Argumentation).
+\definecolor{rqframe}{HTML}{6C8EBF}
+\definecolor{rqtitle}{HTML}{DBEAFE}
+\definecolor{rqback}{HTML}{F7FAFF}
 \newtcolorbox{rqbox}[1]{%
     breakable,
     sharp corners,
-    colback=white,
-    colframe=black!60,
-    colbacktitle=black!8,
+    colback=rqback,
+    colframe=rqframe,
+    colbacktitle=rqtitle,
     coltitle=black,
     fonttitle=\bfseries\small,
     fontupper=\small,

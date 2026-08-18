@@ -15,7 +15,7 @@
 \contentsline {table}{\numberline {\small 14\normalsize }{\ignorespaces Analyst-oriented rubric scores (0--3 per dimension, three-run means); the single-strategy configurations V1 and V2 were not rubric-scored\relax }}{24}{table.caption.35}%
 \contentsline {table}{\numberline {\small 15\normalsize }{\ignorespaces Assessment of the prototype against the design criteria\relax }}{29}{table.caption.38}%
 \contentsline {table}{\numberline {\small 16\normalsize }{\ignorespaces Design principles of the reference model with their empirical basis\relax }}{31}{table.caption.40}%
-\contentsline {table}{\numberline {\small 17\normalsize }{\ignorespaces Complete evaluation query set (28 queries)\relax }}{50}{table.C.17}%
-\contentsline {table}{\numberline {\small 18\normalsize }{\ignorespaces Rubric dimensions with their lowest and highest score anchors (0--3 integer scale)\relax }}{51}{table.caption.50}%
-\contentsline {table}{\numberline {\small 19\normalsize }{\ignorespaces Per-query RAGAS scores of the primary configuration V4 (three-run means; --- where the judge returned no score)\relax }}{53}{table.D.19}%
+\contentsline {table}{\numberline {\small 17\normalsize }{\ignorespaces Complete evaluation query set (28 queries)\relax }}{48}{table.C.17}%
+\contentsline {table}{\numberline {\small 18\normalsize }{\ignorespaces Rubric dimensions with their lowest and highest score anchors (0--3 integer scale)\relax }}{49}{table.caption.50}%
+\contentsline {table}{\numberline {\small 19\normalsize }{\ignorespaces Per-query RAGAS scores of the primary configuration V4 (three-run means; --- where the judge returned no score)\relax }}{51}{table.D.19}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 
