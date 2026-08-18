@@ -62,11 +62,9 @@ Figure~\ref{fig:generation-results} shows the same results per metric.
     \centering
     \resizebox{\textwidth}{!}{\input{tables/ragas_final_v1}}
     \caption{RAGAS results per pipeline (28 queries, judge gpt-4o-mini).
-             Rows correspond, top to bottom, to configurations V4, V3,
-             V1, V2, V0, and V5 of Table~\ref{tab:configurations}. The
-             BM25-only faithfulness (0.797) is an abstention artifact
-             (4--5 abstentions per run with conservative, extractive
-             answers), not a grounding advantage.}
+             The BM25-only faithfulness (0.797) is an abstention
+             artifact (4--5 abstentions per run with conservative,
+             extractive answers), not a grounding advantage.}
     \label{tab:generation-results}
 \end{table}
 
@@ -216,10 +214,8 @@ Appendix~\ref{app:additional-results}.
     \small
     \resizebox{\textwidth}{!}{\input{tables/rubric_final_v1}}
     \caption{Analyst-oriented rubric scores (0--3 per dimension,
-             three-run means). Rows correspond, top to bottom, to
-             configurations V4, V3, V0, and V5 of
-             Table~\ref{tab:configurations}; the single-strategy
-             configurations V1 and V2 were not rubric-scored.}
+             three-run means); the single-strategy configurations V1
+             and V2 were not rubric-scored}
     \label{tab:rubric-results}
 \end{table}
 
@@ -444,10 +440,10 @@ judgment referenced instead of repeated.
 
 The fulfilled criteria close the loop to the workflow bottlenecks of
 Section~\ref{sec:cti}. The verification bottleneck (B3) is where the
-prototype changes analyst work most clearly: enforced citations raise
-traceability from 1.23 (baseline) to 2.56, and the interface separates
-cited from uncited context, so verification becomes an inspection step
-instead of a research task. The overload bottleneck (B1) is addressed
+prototype changes analyst work most clearly: enforced citations
+transform traceability (Table~\ref{tab:rubric-results}), and the
+interface separates cited from uncited context, so verification
+becomes an inspection step instead of a research task. The overload bottleneck (B1) is addressed
 from two sides: hybrid retrieval keeps identifier queries reliable where
 single strategies fail, and the templated output presents each answer in
 a fixed triage structure. The recency bottleneck (B2) is addressed by

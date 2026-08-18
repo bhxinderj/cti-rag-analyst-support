@@ -3,7 +3,7 @@
 \contentsline {section}{\numberline {1.1}Motivation and problem statement}{1}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Solution approach}{1}{section.1.2}%
 \contentsline {section}{\numberline {1.3}Research questions}{2}{section.1.3}%
-\contentsline {section}{\numberline {1.4}Objectives, scope and delimitation}{3}{section.1.4}%
+\contentsline {section}{\numberline {1.4}Objectives, scope, and delimitation}{3}{section.1.4}%
 \contentsline {section}{\numberline {1.5}Methodological approach}{3}{section.1.5}%
 \contentsline {chapter}{\numberline {2}Background and related work}{4}{chapter.2}%
 \contentsline {section}{\numberline {2.1}CTI and RAG foundations}{4}{section.2.1}%
@@ -15,7 +15,7 @@
 \contentsline {section}{\numberline {3.3}System architecture}{10}{section.3.3}%
 \contentsline {section}{\numberline {3.4}Data ingestion and preprocessing}{12}{section.3.4}%
 \contentsline {section}{\numberline {3.5}Hybrid retrieval and reranking}{13}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Context assembly, answer generation and citation}{14}{section.3.6}%
+\contentsline {section}{\numberline {3.6}Context assembly, answer generation, and citation}{14}{section.3.6}%
 \contentsline {section}{\numberline {3.7}Implementation}{15}{section.3.7}%
 \contentsline {subsection}{\numberline {3.7.1}Agent interface via MCP}{17}{subsection.3.7.1}%
 \contentsline {section}{\numberline {3.8}Evaluation design}{19}{section.3.8}%
@@ -39,7 +39,7 @@
 \contentsline {section}{\numberline {4.5}Assessment against the design criteria}{29}{section.4.5}%
 \contentsline {section}{\numberline {4.6}Reference model for CTI-RAG integration}{30}{section.4.6}%
 \contentsline {section}{\numberline {4.7}Answering the research questions}{32}{section.4.7}%
-\contentsline {chapter}{\numberline {5}Conclusion, limitations and outlook}{34}{chapter.5}%
+\contentsline {chapter}{\numberline {5}Conclusion, limitations, and outlook}{34}{chapter.5}%
 \contentsline {section}{\numberline {5.1}Summary and contributions}{34}{section.5.1}%
 \contentsline {section}{\numberline {5.2}Limitations}{35}{section.5.2}%
 \contentsline {section}{\numberline {5.3}Future work}{36}{section.5.3}%
