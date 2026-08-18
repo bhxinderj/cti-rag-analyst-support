@@ -1891,11 +1891,11 @@ INPUT ./content/chapters/05_conclusion.tex
 INPUT ./content/chapters/05_conclusion.tex
 INPUT content/chapters/05_conclusion.tex
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8c.tfm
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvr8c.vf
 INPUT ./images//roadmap_outlook.pdf
 INPUT images//roadmap_outlook.pdf
 INPUT ./images//roadmap_outlook.pdf
 INPUT ./images//roadmap_outlook.pdf
-INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvr8c.vf
 INPUT ./content/meta/ai_tools.tex
 INPUT ./content/meta/ai_tools.tex
 INPUT ./content/meta/ai_tools.tex

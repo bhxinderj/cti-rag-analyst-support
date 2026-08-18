@@ -553,6 +553,9 @@ Section~\ref{sec:future-work} takes up.
 
 \section{Answering the research questions}
 \label{sec:rq-answers}
+% Seite um 3 Zeilen verlaengern, damit die MRQ-Box geschlossen bleibt;
+% die drei SRQ-Boxen stehen danach gemeinsam auf einer Seite.
+\enlargethispage{3\baselineskip}
 
 The boxes below answer the research questions of
 Section~\ref{sec:research-questions}; each answer names the evidence it
@@ -583,6 +586,9 @@ rests on.
     \end{itemize}
 \end{rqbox}
 
+\newpage
+% Drei Zeilen mehr, damit SRQ1-3 gemeinsam auf dieser Seite schliessen.
+\enlargethispage{3\baselineskip}
 \begin{rqbox}{SRQ1 --- Information retrieval and answer quality}
     \emph{To what extent does retrieval augmentation improve the
     completeness, factual accuracy, and recency of CTI information
@@ -621,17 +627,14 @@ rests on.
     documents.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
-        \item Vulnerability analysis: triage signal with rationale,
-              cited evidence --- Section~\ref{sec:scenario-vuln}
-        \item IOC enrichment: seven of eight expected fields, absence
-              stated instead of fabricated ---
-              Section~\ref{sec:scenario-ioc}
-        \item TTP correlation: five advisories consolidated; templated
-              pipeline consistent where legacy is unstable ---
-              Section~\ref{sec:scenario-ttp}
-        \item Cross-source comparison: deterministic comparison table,
-              source disagreements made explicit ---
-              Section~\ref{sec:scenario-cross}
+        \item Vulnerability analysis and cross-source comparison:
+              triage signal with rationale; deterministic comparison
+              table with explicit source disagreements ---
+              Sections~\ref{sec:scenario-vuln} and~\ref{sec:scenario-cross}
+        \item IOC enrichment and TTP correlation: absence stated
+              instead of fabricated; templated pipeline consistent
+              where the legacy prompt is unstable ---
+              Sections~\ref{sec:scenario-ioc} and~\ref{sec:scenario-ttp}
         \item Rubric total 2.29 vs.\ 1.67 (legacy) and 1.66 (baseline);
               actionability weakest at 1.77 ---
               Table~\ref{tab:rubric-results}
