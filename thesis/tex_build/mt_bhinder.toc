@@ -47,10 +47,10 @@
 \contentsline {chapter}{\nonumberline List of figures}{37}{chapter*.44}%
 \contentsline {chapter}{\nonumberline List of tables}{38}{chapter*.45}%
 \contentsline {chapter}{Documentation table of AI-based tools}{39}{section*.46}%
-\contentsline {chapter}{List of abbreviations}{40}{chapter*.47}%
-\contentsline {chapter}{\numberline {A}Prototype repository}{41}{appendix.A}%
-\contentsline {chapter}{\numberline {B}Prompt templates}{42}{appendix.B}%
-\contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{46}{appendix.C}%
-\contentsline {chapter}{\numberline {D}Additional results}{50}{appendix.D}%
-\contentsline {chapter}{\numberline {E}Representative system outputs}{52}{appendix.E}%
+\contentsline {chapter}{List of abbreviations}{41}{chapter*.47}%
+\contentsline {chapter}{\numberline {A}Prototype repository}{42}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Prompt templates}{43}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{47}{appendix.C}%
+\contentsline {chapter}{\numberline {D}Additional results}{51}{appendix.D}%
+\contentsline {chapter}{\numberline {E}Representative system outputs}{53}{appendix.E}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 
