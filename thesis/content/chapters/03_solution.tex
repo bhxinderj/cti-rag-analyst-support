@@ -147,7 +147,8 @@ answer, the prototype abstains instead of generating one (step~7, C1). All
 models and stores run locally (C6).
 
 The offline path keeps the corpus curated (C3): source downloaders and
-parsers pull the four CTI sources (NVD, CISA KEV, CISA advisories, MISP),
+parsers pull the four CTI sources (NVD, the CISA Known Exploited
+Vulnerabilities (KEV) catalog, CISA advisories, MISP),
 store raw snapshots, and produce the document corpus $\mathcal{D}$, from
 which the CTIIndexer builds the two retrieval artifacts with per-passage
 source metadata. The evaluation harness drives the same RAGChain that
@@ -158,8 +159,9 @@ serves analysts, so measured behavior equals operational behavior
 \label{sec:ingestion}
 
 The corpus combines four curated CTI sources (C3): CVE entries from the
-NVD, restricted to high and critical severity (CVSS $\geq 7.0$) and the
-years 2020--2025; the CISA Known Exploited Vulnerabilities (KEV) catalog;
+NVD, restricted to a Common Vulnerability Scoring System (CVSS) base
+score of at least 7.0 (high and critical severity) and the
+years 2020--2025; the CISA KEV catalog;
 CISA security advisories; and MISP threat-sharing events. The corpus is a
 fixed snapshot for reproducibility: entries published up to 2025-12-31,
 fetched on 2026-03-28. Source downloaders store the raw material (JSON,
@@ -175,8 +177,8 @@ $\mathcal{D}$ contains 84{,}982 documents, and because most CTI artifacts
 fit into a single passage, $\mathcal{P}$ contains 84{,}991 passages ---
 only nine advisories required splitting. Every passage carries structured
 metadata, including source, title, severity, CVSS score and vector, CVE
-and CWE identifiers, affected products, and publication and modification
-dates. This metadata preserves provenance for citation (C1, C3) and
+and Common Weakness Enumeration (CWE) identifiers, affected products,
+and publication and modification dates. This metadata preserves provenance for citation (C1, C3) and
 supports exact-identifier matching during retrieval
 (Section~\ref{sec:retrieval}).
 
@@ -212,7 +214,7 @@ tokenization. Dense retrieval embeds the query with BGE-small-en-v1.5 and
 searches the ChromaDB store by cosine similarity. Each retriever returns
 its 20 highest-ranked candidates.
 
-The two rankings are merged by reciprocal rank fusion. Rank-based fusion
+The two rankings are merged by reciprocal rank fusion (RRF). Rank-based fusion
 avoids calibrating lexical and semantic scores against each other, which
 have incompatible scales. A cross-encoder then scores each query--passage
 pair in the fused pool and selects the final context: with the reranker's
@@ -370,8 +372,8 @@ is additionally checked empirically in the ablation
 its retrieval quality relative to its footprint on the MTEB benchmark
 \parencite{muennighoff2023mteb}.
 
-% TODO: Alternativen-Spalte bitte bestaetigen/korrigieren --- es sollen
-% die real erwogenen Kandidaten stehen, nicht nachkonstruierte.
+% Alternativen-Spalte von Joben bestaetigt (18.08.): real erwogene
+% Kandidaten.
 \begin{table}[H]
     \centering
     \small
@@ -418,7 +420,7 @@ its retrieval quality relative to its footprint on the MTEB benchmark
 \label{sec:mcp-interface}
 
 Beyond the analyst-facing workbench, the prototype exposes its pipeline
-to agentic clients through a Model Context Protocol (MCP) stdio server.
+to agentic clients through an MCP stdio server.
 The server publishes a single deterministic tool,
 \texttt{cti\_query\_tool}, which runs the query router, hybrid retrieval,
 fact-bundle extraction, and Layer-1 rendering --- but no LLM generation

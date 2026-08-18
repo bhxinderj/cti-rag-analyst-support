@@ -9,8 +9,10 @@
 
 Cyber Threat Intelligence (CTI) turns raw threat data into assessments that
 security teams can act on. The underlying data is heterogeneous: structured
-feeds such as CVE/NVD and MISP coexist with unstructured advisories, vendor
-reports, and security blogs \parencite{sun2023ctimining}. In threat hunting,
+feeds such as Common Vulnerabilities and Exposures (CVE) entries in the
+National Vulnerability Database (NVD) and events of the Malware
+Information Sharing Platform (MISP) coexist with unstructured
+advisories, vendor reports, and security blogs \parencite{sun2023ctimining}. In threat hunting,
 analysts correlate new indicators and attacker techniques across these
 sources under time pressure, while the volume and change rate of threat
 information keep growing \parencite{rajapaksha2024rag}. A substantial share
@@ -31,7 +33,8 @@ Retrieval-Augmented Generation (RAG) mitigates these limitations by
 retrieving evidence from an external, continuously updatable knowledge store
 at query time and conditioning generation on the retrieved context
 \parencite{lewis2020rag}. In the CTI domain, RAG has been applied to
-individual tasks such as TTP annotation and cyber-attack investigation
+individual tasks such as the annotation of Tactics, Techniques, and
+Procedures (TTPs) and cyber-attack investigation
 \parencite{fayyazi2024ttp,rajapaksha2024rag}. Empirical evidence on how RAG
 performs across analyst workflows, and which architectural choices drive
 that performance, remains limited \parencite{gao2024rag}. This thesis
@@ -42,7 +45,8 @@ addresses that gap with a working prototype and its empirical evaluation.
 
 This thesis designs, implements, and evaluates a RAG prototype for CTI
 analyst support. The prototype ingests representative CTI sources, including
-CVE/NVD entries, CISA advisories, MISP events, and vendor reports, into a
+CVE/NVD entries, advisories of the Cybersecurity and Infrastructure
+Security Agency (CISA), MISP events, and vendor reports, into a
 unified index. A hybrid retrieval layer combines lexical search (BM25) with
 dense vector search and reranks the merged candidates. Answer generation
 is layered: fields that must not be wrong, such as severity scores and
@@ -58,8 +62,8 @@ The evaluation scores answer quality with the RAGAS framework
 measure, and analyst-oriented quality with a four-dimension rubric.
 Retrieval variants are compared against each other and against a
 non-retrieval baseline on a fixed query set covering four representative
-analyst task types: vulnerability analysis, IOC enrichment, TTP
-correlation, and cross-source comparison. The empirical findings are
+analyst task types: vulnerability analysis, indicator-of-compromise
+(IOC) enrichment, TTP correlation, and cross-source comparison. The empirical findings are
 consolidated into a reference model for integrating RAG into CTI and
 threat-hunting workflows.
 
@@ -77,8 +81,8 @@ the thesis:
     Threat-Hunting workflows?
 \end{rqbox}
 
-Three sub-questions decompose the main question along the dimensions the
-thesis evaluates: measurable retrieval and answer quality (SRQ1), practical
+Three sub-research questions (SRQ1--SRQ3) decompose the main question
+along the dimensions the thesis evaluates: measurable retrieval and answer quality (SRQ1), practical
 utility for analyst tasks (SRQ2), and the transfer of the empirical
 findings into design principles (SRQ3).
 

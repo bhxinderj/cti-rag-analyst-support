@@ -1762,6 +1762,8 @@ INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8r.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvr8t.vf
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8r.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8t.tfm
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvr8t.vf
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8r.tfm
 INPUT ./images//methodology_overview.pdf
 INPUT images//methodology_overview.pdf
 INPUT ./images//methodology_overview.pdf
@@ -1773,8 +1775,6 @@ INPUT content/chapters/02_background.tex
 INPUT ./content/chapters/02_background.tex
 INPUT ./content/chapters/02_background.tex
 INPUT content/chapters/02_background.tex
-INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvr8t.vf
-INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvr8r.tfm
 INPUT ./images//cti_analyst_workflow.pdf
 INPUT images//cti_analyst_workflow.pdf
 INPUT ./images//cti_analyst_workflow.pdf

@@ -48,9 +48,9 @@
 \contentsline {chapter}{\nonumberline List of tables}{41}{chapter*.45}%
 \contentsline {chapter}{Documentation table of AI-based tools}{42}{section*.46}%
 \contentsline {chapter}{List of abbreviations}{43}{chapter*.47}%
-\contentsline {chapter}{\numberline {A}Prototype repository}{44}{appendix.A}%
-\contentsline {chapter}{\numberline {B}Prompt templates}{45}{appendix.B}%
-\contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{49}{appendix.C}%
-\contentsline {chapter}{\numberline {D}Additional results}{53}{appendix.D}%
-\contentsline {chapter}{\numberline {E}Representative system outputs}{55}{appendix.E}%
+\contentsline {chapter}{\numberline {A}Prototype repository}{45}{appendix.A}%
+\contentsline {chapter}{\numberline {B}Prompt templates}{46}{appendix.B}%
+\contentsline {chapter}{\numberline {C}Evaluation query set and assessment criteria}{50}{appendix.C}%
+\contentsline {chapter}{\numberline {D}Additional results}{54}{appendix.D}%
+\contentsline {chapter}{\numberline {E}Representative system outputs}{56}{appendix.E}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

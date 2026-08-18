@@ -13,13 +13,13 @@
 % B1--B3 speisen die Gaps (\ref{sec:research-gap}) und Kriterien
 % (\ref{sec:requirements}); Rueckverweis in \ref{sec:assessment}.
 
-Cyber Threat Intelligence (CTI) is evidence-based knowledge about existing
+Cyber Threat Intelligence is evidence-based knowledge about existing
 or emerging threats, including context, indicators, and actionable advice
 that informs security decisions \parencite{sun2023ctimining}. In practice,
 CTI is communicated through recurring artifact types. Indicators of
-Compromise (IOCs) are forensic artifacts, such as file hashes, IP
+Compromise are forensic artifacts, such as file hashes, IP
 addresses, or domains, that indicate a compromised system
-\parencite{palacin2021threat}. Tactics, Techniques, and Procedures (TTPs)
+\parencite{palacin2021threat}. Tactics, Techniques, and Procedures
 describe adversary behavior on three levels: the tactical goal, the method
 used to achieve it, and its concrete implementation
 \parencite{ismail2025wazuh}. The MITRE ATT\&CK framework is the industry
@@ -57,7 +57,7 @@ workflow:
     \label{fig:analyst-workflow}
 \end{figure}
 
-Retrieval-Augmented Generation (RAG) grounds LLM output in external
+Retrieval-Augmented Generation grounds LLM output in external
 knowledge. A RAG pipeline indexes documents by cleaning, chunking, and
 embedding them, retrieves the passages most relevant to a query, optionally
 reranks them, and assembles them into the prompt from which the model
