@@ -29,21 +29,22 @@ ARTIFACT_DIR = REPO_ROOT / "data" / "evaluation_results" / "setup_b"
 
 RAGAS_METRICS = [
     ("faithfulness", "Faithfulness"),
-    ("answer_relevancy", "Answer Relevancy"),
-    ("answer_correctness", "Answer Correctness"),
-    ("context_precision", "Context Precision"),
-    ("context_recall", "Context Recall"),
+    ("answer_relevancy", "Answer relevancy"),
+    ("answer_correctness", "Answer correctness"),
+    ("context_precision", "Context precision"),
+    ("context_recall", "Context recall"),
 ]
 
-# (row label, glob pattern, counts toward per-column bolding)
+# (row label, glob pattern, counts toward per-column bolding);
+# labels carry the configuration IDs of tab:configurations.
 RAGAS_ROWS = [
-    ("Templated hybrid (local 8B)", "ragas_hybrid_templated_final_v1_r*.json", True),
-    ("Legacy hybrid (local 8B)", "ragas_hybrid_final_v1_r*.json", True),
-    ("BM25 only", "ragas_bm25_final_v1_r*.json", True),
-    ("Vector only", "ragas_vector_final_v1_r*.json", True),
-    ("No-retrieval baseline", "ragas_baseline_final_v1_r*.json", False),
+    ("V4 templated hybrid (local 8B)", "ragas_hybrid_templated_final_v1_r*.json", True),
+    ("V3 legacy hybrid (local 8B)", "ragas_hybrid_final_v1_r*.json", True),
+    ("V1 BM25 only", "ragas_bm25_final_v1_r*.json", True),
+    ("V2 vector only", "ragas_vector_final_v1_r*.json", True),
+    ("V0 no-retrieval baseline", "ragas_baseline_final_v1_r*.json", False),
     (
-        "Templated hybrid (hosted, Haiku 4.5)",
+        "V5 templated hybrid (hosted, Haiku 4.5)",
         "ragas_hybrid_templated_hostedgen_haiku45_final_v1*.json",
         False,
     ),
@@ -58,11 +59,11 @@ RUBRIC_DIMS = [
 ]
 
 RUBRIC_ROWS = [
-    ("Templated hybrid", "rubric_hybrid_templated_final_v1_r*.json"),
-    ("Legacy hybrid", "rubric_hybrid_final_v1_r*.json"),
-    ("No-retrieval baseline", "rubric_baseline_final_v1_r*.json"),
+    ("V4 templated hybrid", "rubric_hybrid_templated_final_v1_r*.json"),
+    ("V3 legacy hybrid", "rubric_hybrid_final_v1_r*.json"),
+    ("V0 no-retrieval baseline", "rubric_baseline_final_v1_r*.json"),
     (
-        "Templated hybrid (hosted, Haiku 4.5)",
+        "V5 templated hybrid (hosted, Haiku 4.5)",
         "rubric_hybrid_templated_hostedgen_haiku45_final_v1_*.json",
     ),
 ]

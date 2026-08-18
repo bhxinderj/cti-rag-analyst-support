@@ -1,3 +1,6 @@
+% Abkuerzungsverzeichnis ohne Hyperlinks (keine \ac-Nutzung im Text,
+% sonst zeigen die Listeneintraege auf nie definierte First-Use-Ziele)
+\PassOptionsToPackage{nohyperlinks}{acronym}
 \documentclass[Master,english,Harvard]{twbook}
 \input{preamble}
 
@@ -12,10 +15,10 @@
 \addbibresource{references.bib}
 
 \kurzfassung{\input{content/frontmatter/kurzfassung}}
-\schlagworte{RAG, Cyber Threat Intelligence, Retrieval-Augmented Generation, Evaluation}
+\schlagworte{Cyber Threat Intelligence (CTI), Retrieval-Augmented Generation (RAG), Large Language Models (LLMs), Hybride Retrieval-Verfahren, Unterstützung von IT-Sicherheitsanalysten}
 
 \outline{\input{content/frontmatter/abstract}}
-\keywords{RAG, Cyber Threat Intelligence, Retrieval-Augmented Generation, Evaluation}
+\keywords{Cyber Threat Intelligence (CTI), Retrieval-Augmented Generation (RAG), Large Language Models (LLMs), Hybrid Retrieval, Security Analyst Support}
 \acknowledgements{\input{content/frontmatter/acknowledgements}}
 
 \begin{document}
@@ -53,5 +56,11 @@
 \input{content/appendix/appendix_a}
 \clearpage
 \input{content/appendix/appendix_b}
+\clearpage
+\input{content/appendix/appendix_c}
+\clearpage
+\input{content/appendix/appendix_d}
+\clearpage
+\input{content/appendix/appendix_e}
 
 \end{document}

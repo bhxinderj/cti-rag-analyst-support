@@ -3,245 +3,664 @@
 % Enthaelt Ergebnisse UND deren Einordnung (kein separates Discussion-Kapitel):
 % 4.6 Bewertung gegen Designkriterien, 4.8 Beantwortung der Forschungsfragen.
 % ======================================================================
-\chapter{Results and Critical Appraisal}
+\chapter{Results and critical appraisal}
 \label{ch:results}
 
 \section{Experimental setup}
 \label{sec:experimental-setup}
-% TODO: nur konkrete Durchfuehrung (Konfigurationen, Laufumgebung, Ablauf);
-% KEINE Wiederholung des Evaluationsdesigns aus \ref{sec:evaluation-design}.
-% Absatz "Methodological remarks" nach Salmas Vorbild fuer Fairness-Details
-% (z.B. Local-8B vs. hosted, Setup A/B).
-...
 
-% TODO Tabelle: Laufumgebung (klein); Konfigurationen NUR per Verweis
-% auf Table~\ref{tab:configurations}.
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{ll}
-%         \toprule
-%         \textbf{Component} & \textbf{Version / specification} \\
-%         \midrule
-%         Hardware & ... \\
-%         Generation model & ... \\
-%         Embedding model & ... \\
-%         Key software & Python ..., LangChain ..., ChromaDB ..., RAGAS ... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Runtime environment of the evaluation}
-%     \label{tab:environment}
-% \end{table}
+The final evaluation series ran on the frozen \texttt{evaluated-v1}
+state: all six configurations of Table~\ref{tab:configurations} were
+executed against the index of Section~\ref{sec:ingestion}, on the
+machine described in Section~\ref{sec:implementation}, over the full
+query set with three runs per configuration
+(Section~\ref{sec:protocol}). A batch runner executes the series
+end-to-end. The raw scores and run logs are versioned in the repository
+(Appendix~\ref{app:repository}). Table~\ref{tab:environment} lists the
+models and software versions involved. The complete environment is
+pinned in \texttt{requirements-evaluated-v1.lock} in the repository.
 
-\section{Retrieval performance}
-\label{sec:results-retrieval}
-% TODO: Ergebnisse pro Retrieval-Konfiguration, Bezug zu SRQ1.
-% Chart per Skript aus Eval-Daten generieren (einheitlicher Stil mit \ref{fig:generation-results}).
-...
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lp{0.55\textwidth}}
+        \toprule
+        \textbf{Component} & \textbf{Version / specification} \\
+        \midrule
+        Generation model (local) & \texttt{llama3.1:8b-instruct-q5\_K\_M},
+            Ollama 0.32.1 \\
+        Generation model (hosted, V5) & Claude Haiku 4.5 (via OpenRouter) \\
+        Embedding model & BAAI/bge-small-en-v1.5 \\
+        Reranker & cross-encoder/ms-marco-MiniLM-L-6-v2 \\
+        Evaluation judge & gpt-4o-mini (via OpenRouter) \\
+        Software & Python 3.12.13, LangChain 0.3.28, ChromaDB 0.6.3,
+            RAGAS 0.2.15, sentence-transformers 3.4.1, torch 2.11.0 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Models and software versions of the final evaluation runs,
+             consolidated as the reproducibility record of the series}
+    \label{tab:environment}
+\end{table}
 
-% TODO Tabelle: IR-Metriken x Konfigurationen (V1--V4 aus \ref{tab:configurations}).
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{lrrrr}
-%         \toprule
-%         \textbf{Configuration} & \textbf{P@k} & \textbf{R@k} & \textbf{MRR} & \textbf{nDCG} \\
-%         \midrule
-%         V1 Sparse-only & ... & ... & ... & ... \\
-%         V2 Dense-only & ... & ... & ... & ... \\
-%         V3 Hybrid & ... & ... & ... & ... \\
-%         V4 Hybrid + rerank & ... & ... & ... & ... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Retrieval performance across configurations}
-%     \label{tab:retrieval-results}
-% \end{table}
-
-% TODO Abbildung: gruppiertes Balkendiagramm zu \ref{tab:retrieval-results}.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{retrieval_results}
-%     \caption{Retrieval performance by configuration and metric}
-%     \label{fig:retrieval-results}
-% \end{figure}
+Two remarks bound the comparability of the results. First, results
+produced before the re-index of 2026-07-20 are not comparable to the
+final series: a snapshot-filter defect had silently dropped 3{,}081 NVD
+documents from the index, and the final series runs on the repaired
+state described in Section~\ref{sec:ingestion}. Second, the RAGAS input
+rule of Section~\ref{sec:ragas-metrics} applies to all scores: rated is
+the Layer-2 narrative, not the deterministic Layer-1 block.
 
 \section{Generation quality}
 \label{sec:results-generation}
-% TODO: RAGAS-Ergebnisse, Bezug zu SRQ1. Gleicher Chart-Stil wie 4.2.
-...
 
-% TODO Tabelle: RAGAS-Metriken x Konfigurationen (inkl. V0 Baseline!).
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{lrrrr}
-%         \toprule
-%         \textbf{Configuration} & \textbf{Faithf.} & \textbf{Ans. rel.} & \textbf{Ctx. prec.} & \textbf{Ctx. rec.} \\
-%         \midrule
-%         V0 Non-retrieval & ... & ... & --- & --- \\
-%         V3 Hybrid & ... & ... & ... & ... \\
-%         V4 Hybrid + rerank & ... & ... & ... & ... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Generation quality (RAGAS) across configurations}
-%     \label{tab:generation-results}
-% \end{table}
+Table~\ref{tab:generation-results} reports the RAGAS scores of all
+configurations. Every value is a three-run mean with standard
+deviation (Section~\ref{sec:protocol}).
+Figure~\ref{fig:generation-results} shows the same results per metric.
 
-% TODO Abbildung: Chart zu \ref{tab:generation-results}, Stil wie \ref{fig:retrieval-results}.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{generation_results}
-%     \caption{Generation quality by configuration and metric}
-%     \label{fig:generation-results}
-% \end{figure}
+\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{\input{tables/ragas_final_v1}}
+    \caption{RAGAS results per pipeline (28 queries, judge gpt-4o-mini).
+             The BM25-only faithfulness (0.797) is an abstention
+             artifact (4--5 abstentions per run with conservative,
+             extractive answers), not a grounding advantage.}
+    \label{tab:generation-results}
+\end{table}
+
+The templated pipeline (V4) reaches the best local values in answer
+relevancy (0.739), answer correctness (0.518), and context recall
+(0.610), and it is the only local retrieval configuration that never
+abstains. The legacy prompt abstains on 7 of 28 queries. Its faithfulness (0.662)
+stays close to the legacy configuration (0.689).
+
+Two values require care when reading the table. The highest faithfulness
+belongs to the BM25-only configuration (0.797). As noted in the caption,
+this reflects its abstention behavior, not better grounding: the
+configuration declines the queries it cannot support and answers the
+remaining ones close to the retrieved text. The relevancy of the hosted
+ablation (0.594) carries a measurement artifact\footnote{The relevancy
+filter that nulls non-committal answers is calibrated on the phrasing of
+the local 8B model. The hosted model formulates gap statements
+differently and is nulled on 5--8 of 28 queries per run. The filter
+stayed frozen for consistency across configurations.} and is discussed with the ablation in
+Section~\ref{sec:results-ablation}.
+
+The non-retrieval baseline (V0) reads well in isolation: its answer
+relevancy (0.685) and answer correctness (0.502) sit at the level of the
+grounded configurations. Faithfulness and the context metrics are
+undefined without retrieval. What the fluent surface hides becomes
+visible in the rubric results of
+Section~\ref{sec:representative-outputs}. The vector-only configuration
+(V2) is the weakest across all metrics.
+Section~\ref{sec:results-ablation} traces this to its failure on exact
+CTI identifiers.
+
+% Figur-Quelle: scripts/plot_generation_results.py aus
+% data/interim/final_v1_aggregate.json (gleiche Basis wie die Tabelle).
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{generation_results}
+    \caption{RAGAS scores by configuration (three-run means; error bars
+             show one standard deviation; labeled are the primary
+             configuration V4 and the best value per metric).
+             Faithfulness and the context metrics are undefined for the
+             non-retrieval baseline (V0); the BM25 faithfulness peak is
+             the abstention artifact noted in
+             Table~\ref{tab:generation-results}.}
+    \label{fig:generation-results}
+\end{figure}
 
 \section{Baseline comparison and ablation}
 \label{sec:results-ablation}
-% TODO: Vergleich gegen Baselines; Ablation (u.a. hosted Modell als
-% Ablation-Zeile, Reranking an/aus). Was traegt welche Komponente bei?
-...
 
-% TODO Tabelle: wichtigste Einzeltabelle der Arbeit --- Delta gegenueber
-% V0 Non-Retrieval-Baseline (beantwortet SRQ1 direkt).
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{lrrr}
-%         \toprule
-%         \textbf{Configuration} & \textbf{Metric ...} & \textbf{Metric ...} & \textbf{$\Delta$ vs. V0} \\
-%         \midrule
-%         V0 Non-retrieval & ... & ... & --- \\
-%         V4 Hybrid + rerank & ... & ... & +... \\
-%         V5 Hosted model & ... & ... & +... \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Ablation results relative to the non-retrieval baseline}
-%     \label{tab:ablation}
-% \end{table}
+The configuration matrix isolates three effects: retrieval versus
+parametric knowledge (V0 against the grounded configurations), the
+retrieval strategy (V1--V3), and the generation mode (V3 against V4).
+The hosted ablation (V5) adds the deployment dimension.
+Table~\ref{tab:ablation-deltas} reports each comparison as metric
+deltas, and the paragraphs below give the reading.
+
+\begin{table}[H]
+    \centering
+    \small
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{llrrrrrrrr}
+        \toprule
+        \textbf{Comparison} & \textbf{Effect isolated} &
+        $\Delta$\,\textbf{Faith.} & $\Delta$\,\textbf{Rel.} &
+        $\Delta$\,\textbf{Corr.} & $\Delta$\,\textbf{Prec.} &
+        $\Delta$\,\textbf{Rec.} & $\Delta$\,\textbf{Rubric} &
+        $\Delta$\,\textbf{Trace.} & $\Delta$\,\textbf{Abst.} \\
+        \midrule
+        V0 $\to$ V4 & retrieval with templated generation
+            & --- & $+0.054$ & $+0.016$ & --- & --- & $+0.63$
+            & $+1.33$ & $\pm 0$ \\
+        V1 $\to$ V3 & hybrid over sparse retrieval
+            & $-0.108$ & $-0.028$ & $+0.007$ & $+0.014$ & $+0.071$
+            & --- & --- & $+2$ \\
+        V2 $\to$ V3 & hybrid over dense retrieval
+            & $+0.025$ & $+0.151$ & $+0.097$ & $+0.156$ & $+0.125$
+            & --- & --- & $-8$ \\
+        V3 $\to$ V4 & templated generation
+            & $-0.027$ & $+0.169$ & $+0.018$ & $-0.016$ & $+0.112$
+            & $+0.62$ & $+0.74$ & $-7$ \\
+        V4 $\to$ V5 & hosted generation
+            & $+0.159$ & $-0.145$\,$^{\dagger}$ & $+0.043$ & $+0.015$
+            & $-0.013$ & $+0.10$ & $+0.37$ & $\pm 0$ \\
+        \bottomrule
+    \end{tabular}}
+    \caption{Ablation effects as deltas between configuration pairs,
+             computed from the three-run means of
+             Tables~\ref{tab:generation-results}
+             and~\ref{tab:rubric-results} (---: metric undefined or
+             configuration not rubric-scored; $^{\dagger}$~measurement
+             artifact of the relevancy filter,
+             Section~\ref{sec:results-generation};
+             $\Delta$\,Abst.\ in queries per run)}
+    \label{tab:ablation-deltas}
+\end{table}
+
+\paragraph{Retrieval versus parametric knowledge.} On this query set,
+retrieval buys verifiability rather than raw correctness. The baseline
+answers prominent, well-documented CVEs from parametric knowledge at a
+comparable correctness level, since the query set names prominent CVEs
+and therefore favors the baseline systematically
+(Section~\ref{sec:limitations}). The rubric separates what RAGAS does
+not: a traceability of 1.23 against 2.56 for V4 means that an analyst
+cannot verify the baseline's claims, and unverifiable output cannot be
+acted on in CTI work (B3, C1).
+
+\paragraph{Retrieval strategy.} Each single-strategy retriever fails in
+a characteristic way: the vector-only configuration collapses on exact
+CTI identifiers and abstains on 14--15 of 28 queries per run, while the
+BM25-only configuration holds identifier queries but loses semantic
+coverage. The hybrid configuration removes the identifier failure and
+recovers context recall on both fronts, supporting the hybrid
+criterion (C2).
+
+\paragraph{Generation mode.} V3 and V4 share the same retriever, so
+their deltas isolate the templated pipeline: answer relevancy and
+context recall rise, abstentions drop from seven to zero, and the
+rubric total climbs from 1.67 to 2.29. The recall gain likely reflects
+the abstention difference, since abstained queries leave ground-truth
+facts uncovered. This comparison carries the main design contribution
+of the thesis: the gains come from structuring the answer, not from
+changing the model or the retrieval.
+
+\paragraph{Local versus hosted generation.} The hosted model improves
+faithfulness, answer correctness, and traceability (2.93) and reduces
+median generation latency from 85.2 to 6.4 seconds per query, a factor
+of thirteen. Its lower answer relevancy is the filter artifact
+described in Section~\ref{sec:results-generation}. The price is the
+deployment model: hosted generation moves analyst queries off premises
+and gives up the local-deployment property that C6 demands. The
+evaluated prototype therefore keeps the local model as its primary
+configuration and treats hosted generation as an option whose benefit
+is now quantified.
 
 \section{Scenario-based evaluation of representative outputs}
 \label{sec:representative-outputs}
-% Qualitative Ergebnisse pro CTI-Task-Szenario (Proposal: Process Analysis).
-% Pro Subsection: 1 exemplarische Antwort mit Zitaten (gekuerzt) + Bewertung
-% entlang task coverage, clarity, transparency; Rest in Anhang E.
-% Beleg-Basis fuer SRQ2 --- die Antwortbox in \ref{sec:rq-answers} verweist
-% pro Task-Typ hierher.
 
-\subsection{Vulnerability assessment}
+This section moves beyond offline metrics (C4). Three instruments assess
+the outputs from an analyst perspective: the four-dimension rubric of
+Section~\ref{sec:ragas-metrics}, the field-coverage measurement, and a
+walk-through of one representative output per task type. Full transcripts
+are reproduced in Appendix~\ref{app:outputs}, per-query details in
+Appendix~\ref{app:additional-results}.
+
+\begin{table}[H]
+    \centering
+    \small
+    \resizebox{\textwidth}{!}{\input{tables/rubric_final_v1}}
+    \caption{Analyst-oriented rubric scores (0--3 per dimension,
+             three-run means); the single-strategy configurations V1
+             and V2 were not rubric-scored}
+    \label{tab:rubric-results}
+\end{table}
+
+% Figur-Quelle: scripts/plot_rubric_results.py aus
+% data/interim/final_v1_aggregate.json (gleiche Basis wie die Tabelle).
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{rubric_results}
+    \caption{Analyst rubric scores by configuration (0--3 per dimension,
+             three-run means; error bars show one standard deviation;
+             labeled are the primary configuration V4, the baseline, and
+             the best value per dimension; V1 and V2 were not
+             rubric-scored)}
+    \label{fig:rubric-results}
+\end{figure}
+
+The templated pipeline reaches a rubric total of 2.29, compared to 1.67
+for the legacy prompt and 1.66 for the non-retrieval baseline. The
+dimension profile of the baseline is the central finding of this table
+(Figure~\ref{fig:rubric-results}):
+its actionability (1.87) exceeds the legacy configuration (1.10) and
+almost matches the templated pipeline (1.77), while its traceability
+collapses to 1.23. The baseline produces recommendations that sound
+actionable but cannot be traced to evidence, precisely the failure
+mode that bottleneck B3 describes and criterion C1 is designed to
+prevent. The hosted ablation leads every dimension (total 2.39,
+traceability 2.93). Section~\ref{sec:results-ablation} weighs this
+against its deployment cost.
+
+Field coverage complements the rubric on the completeness side: across
+the final runs, the templated pipeline covers 87--89\,\% of the
+task-specific fields expected by the query set. A per-layer breakdown
+on the frozen state confirms the design intent of
+Section~\ref{sec:generation}: the deterministic Layer-1 checks passed
+102 of 103, and the remaining failures concentrated in the Layer-2
+narrative.
+
+The following subsections examine one representative output per task
+type, each assessed along the rubric dimensions.
+
+\subsection{Vulnerability analysis}
 \label{sec:scenario-vuln}
-% TODO: CVE-/Schwachstellen-Summarization-Szenario. Dieses Szenario als
-% echten UI-Screenshot zeigen (Antwort mit sichtbaren Zitaten ---
-% Analog zu Salmas Audit-Trail-Screenshot); 4.5.2/4.5.3 als Text-Boxen.
-...
 
-% TODO Abbildung: UI-Screenshot Antwort mit Zitaten.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{scenario_vuln_answer}
-%     \caption{System response with source citations for a vulnerability
-%              assessment query (excerpt)}
-%     \label{fig:scenario-vuln}
-% \end{figure}
+Query \texttt{vuln\_001} asks what CVE-2024-3094, the xz-utils
+supply-chain backdoor, is and what its impact is.
+Figure~\ref{fig:scenario-vuln} shows the workbench response to a live
+query against the evaluated configuration. The status pills confirm the
+templated pipeline and the local model.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.82\textwidth]{scenario_vuln_answer}
+    \caption{Workbench response to query \texttt{vuln\_001} (live query,
+             configuration V4). The deterministic head reports the triage
+             signal with its rationale. Every narrative claim carries a
+             citation. The source panel separates cited from retrieved
+             but uncited context.}
+    \label{fig:scenario-vuln}
+\end{figure}
+
+Three properties of this response carry the assessment. First, the
+deterministic head grades the finding as HIGH and states its rationale
+(CVSS 10.0, but no KEV listing and no ransomware evidence in the
+corpus snapshot), so the prioritization is explained rather than merely
+asserted. Second, every narrative claim ends in a citation, and the
+source panel distinguishes the two cited passages from the three
+retrieved but uncited ones. The analyst sees both what the answer
+uses and what it ignored (transparency, C1, C5). Third, the gaps
+section reports the absence of indicators and CWE-specific mitigations
+in the retrieved context instead of filling these slots from parametric
+knowledge. The baseline contrast sharpens the point: answering the
+same query, V0 misattributes CVE-2024-3094 to the Apache HTTP Server
+(Appendix~\ref{app:outputs}), an error that a single source citation
+would have exposed.
 
 \subsection{IOC enrichment}
 \label{sec:scenario-ioc}
-% TODO: Indicator-of-Compromise-Anreicherungs-Szenario.
-% Antwortauszug als gesetzte Box (druckt sauberer als Screenshot), z.B.:
-% \begin{tcolorbox}[title={Example response: IOC enrichment (excerpt)},
-%                   fonttitle=\bfseries, colback=gray!4, colframe=gray!60!black,
-%                   boxrule=0.5pt, arc=1mm]
-% ...
-% \end{tcolorbox}
-...
 
-\subsection{Threat actor context building}
-\label{sec:scenario-actor}
-% TODO: Threat-Actor-/TTP-Kontext-Szenario. Ebenfalls Text-Box wie 4.5.2.
-...
+Query \texttt{ioc\_003} asks what is known about the MOVEit Transfer
+vulnerability CVE-2023-34362 and its exploitation. The router assigns
+the vulnerability-triage template. The excerpt shows the deterministic
+head and two narrative claims. Appendix~\ref{app:outputs} reproduces the
+full answer.
 
+\begin{responsebox}{ioc\_003 -- ``What is known about the MOVEit
+Transfer vulnerability CVE-2023-34362 and its exploitation?'' (V4,
+excerpt)}
+\textbf{Triage Signal:} CRITICAL --- Immediate attention\\
+\textbf{Rationale:} CVSS 9.8 + active KEV listing + known ransomware use\\
+\textbf{Vulnerability Facts:} CVSS 9.8; CWE-89; severity CRITICAL\\
+\textbf{KEV Status:} listed 2023-06-02; known ransomware use: yes;
+CISA required action: Apply updates per vendor instructions.\\[4pt]
+\textbf{Exploitation Context}
+\begin{itemize}
+    \item The vulnerability CVE-2023-34362 allows an unauthenticated
+          attacker to gain unauthorized access to MOVEit Transfer's
+          database. \texttt{[Source: nvd\_CVE-2023-34362]}
+    \item There is evidence of active exploitation in May and June 2023
+          via HTTP or HTTPS. \texttt{[Source: nvd\_CVE-2023-34362]}
+\end{itemize}
+\textbf{Gaps:} Indicators of Compromise (IoCs) for this specific
+vulnerability [\dots]
+\end{responsebox}
+
+The answer passes seven of eight field-coverage checks. The
+deterministic head answers the triage question at a glance
+(prioritization), and the only recommended action is the one the KEV
+record supports (actionability without invention). The gaps section
+names what the corpus does not provide (concrete indicator values for
+this CVE) instead of fabricating them. For an enrichment query, this
+explicit statement of absence is the intended behavior of the grounding
+design (transparency, C1).
+
+\subsection{TTP correlation}
+\label{sec:scenario-ttp}
+
+Query \texttt{ttp\_005} asks which MITRE ATT\&CK techniques relate to
+ransomware impact. The router assigns the threat-context template.
+
+\begin{responsebox}{ttp\_005 -- ``Which MITRE ATT\&CK techniques relate
+to ransomware impact, specifically data encryption for impact?'' (V4,
+excerpt)}
+\textbf{ATT\&CK Context:} Tactic: Impact (TA0040)\\[4pt]
+\textbf{Threat Actors and Malware}
+\begin{itemize}
+    \item Hive actors: attributed to the retrieved context
+          \texttt{[Source: cisa\_advisory\_AA22-321A\_mitre\_att\_ck\_techniques]}
+    \item Play ransomware group: attributed to the retrieved context
+          \texttt{[Source: cisa\_advisory\_AA23-352A\_impact]}
+    \item Rhysida ransomware actors: attributed to the retrieved context
+          \texttt{[Source: cisa\_advisory\_AA23-319A\_technical\_details]}
+\end{itemize}
+\textbf{Defensive Guidance}
+\begin{itemize}
+    \item Monitor for exploitation of CVE-2021-34473, CVE-2021-34523,
+          CVE-2021-31207, and CVE-2021-42321 to prevent Hive actors'
+          initial access
+          \texttt{[Source: cisa\_advisory\_AA22-321A\_mitre\_att\_ck\_techniques]}
+\end{itemize}
+\end{responsebox}
+
+The correlation value lies in the aggregation: the answer consolidates
+five CISA advisories into one view of actors, techniques, and defensive
+guidance for the Impact tactic, with each attribution citing the
+advisory section it comes from. This task family is also where the
+generation modes separate most clearly: on the TTP-correlation queries,
+the legacy prompt reaches a rubric total of only 0.99 against 2.11 for
+the templated pipeline, and the cross-source queries show a similar gap
+(1.32 versus 2.19, three-run means).
+
+\subsection{Cross-source comparison}
+\label{sec:scenario-cross}
+
+Query \texttt{cross\_003} asks for the NVD severity ratings and the KEV
+exploitation status of three 2023 CVEs. The router assigns the
+cross-source-comparison template.
+
+\begin{responsebox}{cross\_003 -- ``For CVE-2023-22515, CVE-2023-34362,
+and CVE-2023-3519, which severity ratings does NVD report and what
+exploitation status does the CISA KEV catalog record?'' (V4, excerpt)}
+\textbf{Summary:} Entities evaluated: 3; with data from NVD and CISA
+KEV: 3\\[4pt]
+\textbf{Comparison Table} (deterministic)\\[2pt]
+\begin{tabular}{lllll}
+    CVE & CVSS & KEV listed & Ransomware & Vendor \\
+    CVE-2023-22515 & 9.8 & yes & yes & Atlassian \\
+    CVE-2023-34362 & 9.8 & yes & yes & Progress \\
+    CVE-2023-3519 & 9.8 & yes & yes & Citrix \\
+\end{tabular}\\[4pt]
+\textbf{Source Agreement}
+\begin{itemize}
+    \item The sources agree that the severity of the vulnerabilities is
+          CRITICAL.
+    \item NVD records CVSS 9.8 for CVE-2023-22515
+          \texttt{[Source: nvd\_CVE-2023-22515]}; CISA KEV does not
+          provide a CVSS score.
+\end{itemize}
+\end{responsebox}
+
+The deterministic comparison table answers the question directly, and
+the agreement section makes source differences explicit instead of
+averaging them away. The same answer also shows the residual weakness of
+the narrative layer: its gaps section claims that the exploitation
+status of CVE-2023-34362 is missing, although the Layer-1 table records
+the KEV listing of exactly that CVE. The layered design contains such
+inconsistencies (the deterministic facts remain correct) but does
+not eliminate them. Section~\ref{sec:limitations} returns to this
+point.
+
+\clearpage % 4.5 nicht als Ueberschrift am Seitenende beginnen lassen
 \section{Assessment against the design criteria}
 \label{sec:assessment}
-% TODO: pro Kriterium C1...Cn: erfuellt / teilweise / nicht erfuellt,
-% mit Verweis auf die Evidenz in 4.2--4.5 (nur referenzieren, nicht
-% nacherzaehlen). Kompakte Tabelle + kurze kritische Wuerdigung.
-% In der Wuerdigung den Bogen zu den Workflow-Engpaessen B1--B3
-% (\ref{sec:cti}) schlagen: welcher Engpass wird durch welches erfuellte
-% Kriterium adressiert (Salmas "Verbesserungen ggue. Ist-Prozess"-Effekt).
-...
 
-% TODO Tabelle: Kriterien-Assessment.
-% \begin{table}[htbp]
-%     \centering\small
-%     \begin{tabular}{llp{0.34\textwidth}l}
-%         \toprule
-%         \textbf{Criterion} & \textbf{Status} & \textbf{Evidence} & \textbf{Bottleneck} \\
-%         \midrule
-%         C1 Evidence-linked outputs & fulfilled & Sec.~\ref{sec:representative-outputs} & B3 \\
-%         C2 Hybrid retrieval & fulfilled & Tab.~\ref{tab:retrieval-results} & B1 \\
-%         C3 Source integrity & partially & ... & --- \\
-%         C4 Scenario-based evaluation & fulfilled & Sec.~\ref{sec:representative-outputs} & B1 \\
-%         C5 Analyst-oriented presentation & ... & ... & B1 \\
-%         C6 Open-source stack & fulfilled & Sec.~\ref{sec:implementation} & --- \\
-%         \bottomrule
-%     \end{tabular}
-%     \caption{Assessment of the prototype against the design criteria}
-%     \label{tab:assessment}
-% \end{table}
+Table~\ref{tab:assessment} assesses the prototype against the six
+criteria of Section~\ref{sec:requirements}, with the evidence for each
+judgment referenced instead of repeated.
 
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{p{0.34\textwidth}lp{0.26\textwidth}l}
+        \toprule
+        \textbf{Criterion} & \textbf{Status} & \textbf{Evidence} & \textbf{Addresses} \\
+        \midrule
+        C1 Evidence-linked outputs & fulfilled &
+            Tab.~\ref{tab:rubric-results};
+            Fig.~\ref{fig:scenario-vuln} & B3 \\
+        C2 Hybrid retrieval & fulfilled &
+            Sec.~\ref{sec:results-ablation} & B1 \\
+        C3 Source integrity & partially &
+            Sec.~\ref{sec:ingestion}; Sec.~\ref{sec:limitations} & G3 \\
+        C4 Scenario-based evaluation & fulfilled &
+            Sec.~\ref{sec:representative-outputs} & G2 \\
+        C5 Analyst-oriented presentation & fulfilled &
+            Tab.~\ref{tab:rubric-results} & B1 \\
+        C6 Open-source, local deployment & fulfilled &
+            Sec.~\ref{sec:implementation} & Scope \\
+        \bottomrule
+    \end{tabular}
+    \caption{Assessment of the prototype against the design criteria}
+    \label{tab:assessment}
+\end{table}
+
+The fulfilled criteria close the loop to the workflow bottlenecks of
+Section~\ref{sec:cti}. The verification bottleneck (B3) is where the
+prototype changes analyst work most clearly: enforced citations
+transform traceability (Table~\ref{tab:rubric-results}), and the
+interface separates cited from uncited context, so verification
+becomes an inspection step instead of a research task. The overload bottleneck (B1) is addressed
+from two sides: hybrid retrieval keeps identifier queries reliable where
+single strategies fail, and the templated output presents each answer in
+a fixed triage structure. The recency bottleneck (B2) is addressed by
+design, since the offline path can re-index updated sources at any
+time, but not demonstrated empirically: the evaluation deliberately
+ran on a frozen snapshot for reproducibility.
+
+Two judgments require qualification. C3 is fulfilled only
+partially: ingestion is restricted to curated sources and every passage
+keeps its provenance, but the prototype does not assess source
+credibility at query time, as stated in Section~\ref{sec:requirements}.
+For C5, the rubric confirms the presentation gains overall (2.29 versus
+1.67), yet actionability is the weakest templated dimension (1.77): the
+mitigation sections only relay what the corpus offers, and for many CVE
+entries that is a single KEV remediation line or an explicit statement
+of absence. Both boundaries carry over to the limitations in
+Section~\ref{sec:limitations}.
+
+One scope note guards the C6 judgment: it refers to the evaluated
+configurations V0--V4, which contain no hosted dependency. The hosted
+model of the ablation (V5) is an evaluation instrument (the measured
+counterfactual of giving up local deployment), and the evaluation
+judge is measurement instrumentation, not part of the artifact. The
+optional extended mode calls a hosted model and is documented as a
+feature outside the evaluated configuration
+(Section~\ref{sec:mcp-interface}).
+
+\clearpage % 4.6 nicht als Ueberschrift am Seitenende beginnen lassen
 \section{Reference model for CTI-RAG integration}
 \label{sec:reference-model}
-% TODO: aus den Ergebnissen verallgemeinertes Referenzmodell
-% (Artefakt-Beitrag der Arbeit): Komponenten, Datenfluesse,
-% Analyst-Interaktionspunkte, Governance (Proposal: Reference Modeling).
-...
 
-% TODO Abbildung: DIE Abbildung der Arbeit --- hier lohnt der meiste
-% Gestaltungsaufwand. Als drawio in docs/architecture/ anlegen.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{reference_model}
-%     \caption{Reference model for integrating RAG-based LLM systems into
-%              CTI and threat-hunting workflows}
-%     \label{fig:reference-model}
-% \end{figure}
+The empirical findings generalize beyond the prototype into a reference
+model for integrating RAG into CTI and threat-hunting workflows
+(Figure~\ref{fig:reference-model}). The model organizes an integration
+into four layers inside a local deployment boundary: curated sources,
+a provenance-preserving knowledge layer, a layered reasoning stage, and
+an analyst interaction layer, flanked by an evaluation and governance
+function. Eight design principles, marked P1--P8 in the figure, locate
+the empirically grounded decisions. Table~\ref{tab:principles} states
+each principle with the evidence it rests on.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{reference_model}
+    \caption{Reference model for integrating RAG into CTI workflows.
+             Badges P1--P8 locate the design principles of
+             Table~\ref{tab:principles}.}
+    \label{fig:reference-model}
+\end{figure}
+
+The model reads as adoption guidance: an organization integrating RAG
+into CTI work starts at the source layer and moves upward, and every
+principle names the failure it prevents: P2 the identifier collapse
+of semantic-only retrieval, P3 and P4 the unverifiable fluency of
+ungrounded generation, P6 the silent loss of data control. The model is
+derived from one prototype, one corpus, and one query set. Transferring
+it to other corpora and organizations requires validation, which
+Section~\ref{sec:limitations} records and
+Section~\ref{sec:future-work} takes up.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{lp{0.5\textwidth}p{0.3\textwidth}}
+        \toprule
+        \textbf{ID} & \textbf{Design principle} & \textbf{Empirical basis} \\
+        \midrule
+        P1 & Restrict ingestion to curated, authoritative sources and
+             version the corpus as snapshots &
+             G3 (Sec.~\ref{sec:research-gap}); C3 assessment
+             (Sec.~\ref{sec:assessment}) \\
+        P2 & Combine lexical and semantic retrieval and preserve CTI
+             identifiers as single tokens &
+             single-strategy failures
+             (Sec.~\ref{sec:results-ablation}) \\
+        P3 & Render verifiable facts deterministically from metadata;
+             let the LLM only narrate &
+             V3 vs.\ V4 (Sec.~\ref{sec:results-ablation}) \\
+        P4 & Enforce citations at generation time, validate them
+             afterwards, and abstain without evidence &
+             traceability 2.56 vs.\ 1.23
+             (Tab.~\ref{tab:rubric-results}) \\
+        P5 & Expose evidence for inspection and separate cited from
+             retrieved but uncited context &
+             scenario walk-throughs
+             (Sec.~\ref{sec:representative-outputs}) \\
+        P6 & Deploy locally by default; treat hosted generation as an
+             explicit, quantified opt-in &
+             V4 vs.\ V5 trade-off
+             (Sec.~\ref{sec:results-ablation}) \\
+        P7 & Structure the interaction around recurring analyst task
+             types &
+             per-template consistency
+             (Sec.~\ref{sec:scenario-ttp}) \\
+        P8 & Build task-specific evaluation into the integration;
+             generic metrics miss operational utility &
+             RAGAS vs.\ rubric divergence of the baseline
+             (Sec.~\ref{sec:results-generation},
+             Tab.~\ref{tab:rubric-results}) \\
+        \bottomrule
+    \end{tabular}
+    \caption{Design principles of the reference model with their
+             empirical basis}
+    \label{tab:principles}
+\end{table}
 
 \section{Answering the research questions}
 \label{sec:rq-answers}
-% Spiegelt die Boxen aus \ref{sec:research-questions}: Antwort in 1--2
-% Saetzen + "Evidence:"-Bullets mit Verweisen auf Abschnitte/Tabellen.
+% Seite um 3 Zeilen verlaengern, damit die MRQ-Box geschlossen bleibt;
+% die drei SRQ-Boxen stehen danach gemeinsam auf einer Seite.
+\enlargethispage{3\baselineskip}
+
+The boxes below answer the research questions of
+Section~\ref{sec:research-questions}. Each answer names the evidence it
+rests on.
 
 \begin{rqbox}{MRQ}
-    % TODO: Frage aus \ref{sec:research-questions} wiederholen, dann:
-    \textbf{Answer:} ...\\[2pt]
+    \emph{How can a Retrieval-Augmented Generation (RAG) system
+    leveraging Large Language Models improve the quality, reliability,
+    and operational usefulness of Cyber Threat Intelligence (CTI)
+    analysis and Threat-Hunting workflows?}\\[4pt]
+    \textbf{Answer:} By grounding a locally deployed LLM in a curated,
+    provenance-preserving corpus through hybrid retrieval and a layered,
+    citation-enforcing generation pipeline. The improvement lies less in
+    raw answer correctness than in verifiability and task fit: grounded
+    answers can be checked claim by claim, abstain without evidence, and
+    arrive in a triage-ready structure. The reference model consolidates
+    these properties into transferable design principles.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
-        \item ... (Section~\ref{sec:results-retrieval})
-        \item ... (Section~\ref{sec:results-generation})
-        \item ... (Section~\ref{sec:assessment})
+        \item Correctness at baseline level, traceability transformed
+              from 1.23 to 2.56 (Sections~\ref{sec:results-generation}
+              and~\ref{sec:results-ablation},
+              Table~\ref{tab:rubric-results})
+        \item Five of six design criteria fulfilled, bottlenecks B1 and
+              B3 addressed (Section~\ref{sec:assessment})
+        \item Reference model with eight principles
+              (Section~\ref{sec:reference-model})
     \end{itemize}
 \end{rqbox}
 
-\begin{rqbox}{SRQ1 --- Information retrieval and answer quality}
-    % Beleg-Basis: RAGAS-/IR-Ergebnisse + Vergleich gegen Non-Retrieval-Baseline.
-    \textbf{Answer:} ...\\[2pt]
+\newpage
+% Drei Zeilen mehr, damit SRQ1-3 gemeinsam auf dieser Seite schliessen.
+\enlargethispage{3\baselineskip}
+\begin{rqbox}{SRQ1 -- Information retrieval and answer quality}
+    \emph{To what extent does retrieval augmentation improve the
+    completeness, factual accuracy, and recency of CTI information
+    generated by an LLM compared to a non-retrieval baseline?}\\[4pt]
+    \textbf{Answer:} Retrieval augmentation improves completeness and
+    relevance, while factual accuracy on this query set stays comparable
+    to the parametric baseline, which the prominent CVEs of the query
+    set favor. The decisive gain is that retrieved facts are verifiable
+    and current by construction: the indexed snapshot, not the
+    generation model's training cutoff, determines what the prototype
+    knows, and claims without evidence are abstained from rather than
+    generated.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
-        \item ... (Section~\ref{sec:results-retrieval}, Section~\ref{sec:results-ablation})
+        \item Answer relevancy 0.739 vs.\ 0.685, correctness 0.518 vs.\
+              0.502, context recall 0.610
+              (Table~\ref{tab:generation-results})
+        \item Field coverage 87--89\,\% of expected task fields
+              (Section~\ref{sec:representative-outputs})
+        \item Traceability 2.56 vs.\ 1.23 and zero abstentions with
+              explicit absence statements
+              (Table~\ref{tab:rubric-results},
+              Section~\ref{sec:results-generation})
     \end{itemize}
 \end{rqbox}
 
-\begin{rqbox}{SRQ2 --- Practical utility and workflow support}
-    % Beleg-Basis: szenariobasierte qualitative Analyse, pro Task-Typ.
-    \textbf{Answer:} ...\\[2pt]
+\begin{rqbox}{SRQ2 -- Practical utility and workflow support}
+    \emph{Which types of CTI analysis tasks can be effectively supported
+    by a RAG-based LLM system, and how well do the generated outputs
+    align with the informational needs of threat-hunting workflows?}\\[4pt]
+    \textbf{Answer:} All four task types of the query set are supported
+    end to end. Support is strongest where deterministic structure
+    carries the answer (vulnerability analysis and cross-source
+    comparison) and remains consistent on TTP correlation, where the
+    unstructured prompt becomes unstable. The main boundary is
+    actionability: mitigation guidance can only relay what the corpus
+    documents.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
-        \item Vulnerability assessment: ... (Section~\ref{sec:scenario-vuln})
-        \item IOC enrichment: ... (Section~\ref{sec:scenario-ioc})
-        \item Threat actor context: ... (Section~\ref{sec:scenario-actor})
+        \item Vulnerability analysis and cross-source comparison:
+              triage signal with rationale and a deterministic
+              comparison table with explicit source disagreements
+              (Sections~\ref{sec:scenario-vuln}
+              and~\ref{sec:scenario-cross})
+        \item IOC enrichment and TTP correlation: absence stated
+              instead of fabricated, templated pipeline consistent
+              where the legacy prompt is unstable
+              (Sections~\ref{sec:scenario-ioc}
+              and~\ref{sec:scenario-ttp})
+        \item Rubric total 2.29 vs.\ 1.67 (legacy) and 1.66 (baseline),
+              actionability weakest at 1.77
+              (Table~\ref{tab:rubric-results})
     \end{itemize}
 \end{rqbox}
 
-\begin{rqbox}{SRQ3 --- Conceptual design}
-    % Beleg-Basis: Referenzmodell/Designprinzipien aus Synthese der Ergebnisse.
-    \textbf{Answer:} ...\\[2pt]
+\begin{rqbox}{SRQ3 -- Conceptual design}
+    \emph{How can empirical insights from the RAG-LLM prototype be
+    translated into actionable design principles for integrating
+    generative AI into CTI and threat-hunting workflows?}\\[4pt]
+    \textbf{Answer:} The evaluation results condense into eight design
+    principles, ranging from curated, provenance-preserving ingestion
+    through identifier-aware hybrid retrieval and layered,
+    citation-enforcing generation to local-first deployment with hosted
+    generation as a quantified opt-in. The principles are arranged in a
+    four-layer reference model with an evaluation and governance
+    function. Each principle names the
+    empirically observed failure it prevents.\\[4pt]
     \textbf{Evidence:}
     \begin{itemize}
-        \item ... (Section~\ref{sec:reference-model}, Table~\ref{tab:design-criteria})
+        \item Principles P1--P8 with per-principle empirical basis
+              (Table~\ref{tab:principles})
+        \item Reference model locating the principles
+              (Figure~\ref{fig:reference-model})
     \end{itemize}
 \end{rqbox}

@@ -1,0 +1,38 @@
+% Spiegelpaar zu content/frontmatter/abstract.tex — inhaltlich identisch
+% halten (destilliert aus Kap. 5.1 und den RQ-Boxen in 4.7).
+Cyber Threat Intelligence (CTI) verlangt von Analysten, Bedrohungs\-informationen
+aus heterogenen Quellen unter Zeitdruck zu korrelieren. Large Language
+Models (LLMs) k\"onnen diese Arbeit unterst\"utzen, scheitern im direkten
+Einsatz jedoch an drei Grenzen: veraltetem Modellwissen, Halluzinationen
+und fehlender Provenienz der Aussagen.
+
+Diese Masterarbeit untersucht, wie Retrieval-Augmented Generation (RAG)
+die Qualit\"at, Verl\"asslichkeit und operative N\"utzlichkeit von
+CTI-Analyse und Threat-Hunting-Workflows verbessern kann. Dazu wird ein
+Open-Source-Prototyp konzipiert, implementiert und evaluiert, der vier
+kuratierte CTI-Quellen (NVD, CISA KEV, CISA-Advisories, MISP; 84.982
+Dokumente) in einen provenienz-erhaltenden Index \"uberf\"uhrt. Ein
+hybrides Retrieval kombiniert BM25 und dichte Vektorsuche mit
+Cross-Encoder-Reranking. Die Antwortgenerierung ist geschichtet:
+Verifizierbare Fakten werden deterministisch aus Passagen-Metadaten
+gerendert, ein lokal betriebenes 8B-Modell liefert ausschlie\ss lich das
+Narrativ, mit erzwungenen, validierten Zitaten und expliziter
+Enthaltung ohne Evidenz.
+
+Die Evaluation vergleicht sechs Konfigurationen -- von der
+retrieval-freien Baseline bis zur gehosteten Ablation -- auf einem
+eingefrorenen Index-Stand mit 28 Queries \"uber vier
+Analyst-Task-Typen und drei L\"aufen je Konfiguration. Bewertet wird
+mit RAGAS, Field Coverage und einem vierdimensionalen
+Analysten-Rubric samt szenariobasierter Analyse. Zentrales Ergebnis:
+Die Antwortkorrektheit bleibt auf Baseline-Niveau, die
+Nachvollziehbarkeit (Traceability) steigt jedoch von 1,23 auf 2,56 --
+Retrieval liefert auf diesem Query-Set in erster Linie
+Verifizierbarkeit, nicht h\"ohere Korrektheit.
+
+Der wissenschaftliche Beitrag umfasst Workflow-\"ubergreifende
+empirische Evidenz f\"ur RAG in der CTI, den Befund, dass generische
+RAG-Metriken und analystenorientierte Ma\ss e auseinanderfallen, sowie
+ein Referenzmodell mit acht empirisch begr\"undeten Designprinzipien.
+Der praktische Beitrag ist ein reproduzierbares, lokal betreibbares
+System samt quantifiziertem Local-versus-Hosted-Trade-off.

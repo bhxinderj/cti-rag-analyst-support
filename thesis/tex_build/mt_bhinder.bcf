@@ -2407,7 +2407,6 @@
     <bcf:citekey order="32" intorder="1">alhuzali2025llm</bcf:citekey>
     <bcf:citekey order="32" intorder="2">lekssays2025techniquerag</bcf:citekey>
     <bcf:citekey order="32" intorder="3">ismail2025wazuh</bcf:citekey>
-    <bcf:citekey order="32" intorder="4">tseng2024llm</bcf:citekey>
     <bcf:citekey order="33" intorder="1">agnihotram2025retrieval</bcf:citekey>
     <bcf:citekey order="33" intorder="2">yu2024evaluation</bcf:citekey>
     <bcf:citekey order="34" intorder="1">es2023ragas</bcf:citekey>
@@ -2416,6 +2415,11 @@
     <bcf:citekey order="35" intorder="2">yu2024evaluation</bcf:citekey>
     <bcf:citekey order="36" intorder="1">xu2025llm</bcf:citekey>
     <bcf:citekey order="36" intorder="2">alhuzali2025llm</bcf:citekey>
+    <bcf:citekey order="37" intorder="1">hwang2025rarag</bcf:citekey>
+    <bcf:citekey order="38" intorder="1">brown2018c4</bcf:citekey>
+    <bcf:citekey order="39" intorder="1">muennighoff2023mteb</bcf:citekey>
+    <bcf:citekey order="40" intorder="1">es2023ragas</bcf:citekey>
+    <bcf:citekey order="41" intorder="1">akkiraju2024facts</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nyt">

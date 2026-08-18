@@ -2,13 +2,13 @@
 % Requires \usepackage{booktabs}.
 \begin{tabular}{lrccccc}
 \toprule
-Pipeline & $n$ & Faithfulness & Answer Relevancy & Answer Correctness & Context Precision & Context Recall \\
+Pipeline & $n$ & Faithfulness & Answer relevancy & Answer correctness & Context precision & Context recall \\
 \midrule
-Templated hybrid (local 8B) & 3 & 0.662 $\pm$ 0.020 & \textbf{0.739 $\pm$ 0.024} & \textbf{0.518 $\pm$ 0.016} & 0.733 $\pm$ 0.003 & \textbf{0.610 $\pm$ 0.009} \\
-Legacy hybrid (local 8B) & 3 & 0.689 $\pm$ 0.023 & 0.570 $\pm$ 0.032 & 0.500 $\pm$ 0.012 & \textbf{0.749 $\pm$ 0.005} & 0.498 $\pm$ 0.009 \\
-BM25 only & 3 & \textbf{0.797 $\pm$ 0.001} & 0.598 $\pm$ 0.020 & 0.493 $\pm$ 0.011 & 0.735 $\pm$ 0.012 & 0.427 $\pm$ 0.012 \\
-Vector only & 3 & 0.664 $\pm$ 0.005 & 0.419 $\pm$ 0.021 & 0.403 $\pm$ 0.008 & 0.593 $\pm$ 0.001 & 0.373 $\pm$ 0.007 \\
-No-retrieval baseline & 3 & --- & 0.685 $\pm$ 0.019 & 0.502 $\pm$ 0.014 & --- & --- \\
-Templated hybrid (hosted, Haiku 4.5) & 3 & 0.821 $\pm$ 0.017 & 0.594 $\pm$ 0.048 & 0.561 $\pm$ 0.021 & 0.748 $\pm$ 0.021 & 0.597 $\pm$ 0.026 \\
+V4 templated hybrid (local 8B) & 3 & 0.662 $\pm$ 0.020 & \textbf{0.739 $\pm$ 0.024} & \textbf{0.518 $\pm$ 0.016} & 0.733 $\pm$ 0.003 & \textbf{0.610 $\pm$ 0.009} \\
+V3 legacy hybrid (local 8B) & 3 & 0.689 $\pm$ 0.023 & 0.570 $\pm$ 0.032 & 0.500 $\pm$ 0.012 & \textbf{0.749 $\pm$ 0.005} & 0.498 $\pm$ 0.009 \\
+V1 BM25 only & 3 & \textbf{0.797 $\pm$ 0.001} & 0.598 $\pm$ 0.020 & 0.493 $\pm$ 0.011 & 0.735 $\pm$ 0.012 & 0.427 $\pm$ 0.012 \\
+V2 vector only & 3 & 0.664 $\pm$ 0.005 & 0.419 $\pm$ 0.021 & 0.403 $\pm$ 0.008 & 0.593 $\pm$ 0.001 & 0.373 $\pm$ 0.007 \\
+V0 no-retrieval baseline & 3 & --- & 0.685 $\pm$ 0.019 & 0.502 $\pm$ 0.014 & --- & --- \\
+V5 templated hybrid (hosted, Haiku 4.5) & 3 & 0.821 $\pm$ 0.017 & 0.594 $\pm$ 0.048 & 0.561 $\pm$ 0.021 & 0.748 $\pm$ 0.021 & 0.597 $\pm$ 0.026 \\
 \bottomrule
 \end{tabular}

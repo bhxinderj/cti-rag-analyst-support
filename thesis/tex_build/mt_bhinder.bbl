@@ -19,7 +19,7 @@
 
 \refsection{0}
   \datalist[entry]{nyt/global//global/global}
-    \entry{agnihotram2025retrieval}{misc}{}
+    \entry{agnihotram2025retrieval}{article}{}
       \name{author}{2}{}{%
         {{un=0,uniquepart=base,hash=83dbe23d93e0b9f6f23257fc1ff17117}{%
            family={Agnihotram},
@@ -46,26 +46,47 @@
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
+      \field{journaltitle}{American Journal of Computer Science and Technology}
+      \field{number}{4}
       \field{title}{Evaluating Precision and Recall at Retrieval Time in Retrieval-Augmented Generation ({RAG}) Systems}
+      \field{volume}{8}
       \field{year}{2025}
     \endentry
     \entry{akkiraju2024facts}{misc}{}
       \true{moreauthor}
       \true{morelabelname}
-      \name{author}{1}{}{%
+      \name{author}{4}{}{%
         {{un=0,uniquepart=base,hash=70df80c994c3f53c861927b7c14d086e}{%
            family={Akkiraju},
            familyi={A\bibinitperiod},
            given={Rama},
            giveni={R\bibinitperiod},
            givenun=0}}%
+        {{un=1,uniquepart=given,hash=4ef308e730f30ef4c1ffa80a03cf9d91}{%
+           family={Xu},
+           familyi={X\bibinitperiod},
+           given={Anbang},
+           giveni={A\bibinitperiod},
+           givenun=1}}%
+        {{un=0,uniquepart=base,hash=8efa147faf5251b522da5b2f55fc9135}{%
+           family={Bora},
+           familyi={B\bibinitperiod},
+           given={Deepak},
+           giveni={D\bibinitperiod},
+           givenun=0}}%
+        {{un=1,uniquepart=given,hash=f766e33b284dcf980bb0642f2d2eafa0}{%
+           family={Yu},
+           familyi={Y\bibinitperiod},
+           given={Tan},
+           giveni={T\bibinitperiod},
+           givenun=1}}%
       }
       \strng{namehash}{c9db5134252bab042bd372902dbb6704}
-      \strng{fullhash}{c9db5134252bab042bd372902dbb6704}
+      \strng{fullhash}{9c680ceb25556b4e86074ceed4756079}
       \strng{bibnamehash}{c9db5134252bab042bd372902dbb6704}
       \strng{authorbibnamehash}{c9db5134252bab042bd372902dbb6704}
       \strng{authornamehash}{c9db5134252bab042bd372902dbb6704}
-      \strng{authorfullhash}{c9db5134252bab042bd372902dbb6704}
+      \strng{authorfullhash}{9c680ceb25556b4e86074ceed4756079}
       \field{sortinit}{A}
       \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
       \field{extradatescope}{labelyear}
@@ -76,7 +97,7 @@
       \field{title}{{FACTS} About Building Retrieval Augmented Generation-based Chatbots}
       \field{year}{2024}
     \endentry
-    \entry{alhuzali2025llm}{misc}{}
+    \entry{alhuzali2025llm}{article}{}
       \name{author}{1}{}{%
         {{un=0,uniquepart=base,hash=3486e1955915606f4b163b4574b6b1aa}{%
            family={Alhuzali},
@@ -97,8 +118,37 @@
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
+      \field{journaltitle}{PeerJ Computer Science}
       \field{title}{{LLM}-Powered Threat Intelligence: A Retrieval-Augmented Generation Approach for Cyber Attack Investigation}
+      \field{volume}{11}
       \field{year}{2025}
+      \field{pages}{e3371}
+      \range{pages}{-1}
+    \endentry
+    \entry{brown2018c4}{misc}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=0653a11aad687a389587e0000e0f4a13}{%
+           family={Brown},
+           familyi={B\bibinitperiod},
+           given={Simon},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{fullhash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{bibnamehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{authorbibnamehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{authornamehash}{0653a11aad687a389587e0000e0f4a13}
+      \strng{authorfullhash}{0653a11aad687a389587e0000e0f4a13}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{\url{https://c4model.com}}
+      \field{title}{The {C4} Model for Visualising Software Architecture}
+      \field{year}{2018}
     \endentry
     \entry{chen2023benchmarking}{misc}{}
       \name{author}{4}{}{%
@@ -142,6 +192,33 @@
       \field{note}{arXiv preprint arXiv:2309.01431}
       \field{title}{Benchmarking Large Language Models in Retrieval-Augmented Generation}
       \field{year}{2023}
+    \endentry
+    \entry{palacin2021threat}{book}{}
+      \name{author}{1}{}{%
+        {{un=0,uniquepart=base,hash=f2a481bb279ba80bc2cd509b5ede4d60}{%
+           family={Costa-Gazcón},
+           familyi={C\bibinithyphendelim G\bibinitperiod},
+           given={Valentina},
+           giveni={V\bibinitperiod},
+           givenun=0}}%
+      }
+      \list{publisher}{1}{%
+        {Packt Publishing}%
+      }
+      \strng{namehash}{f2a481bb279ba80bc2cd509b5ede4d60}
+      \strng{fullhash}{f2a481bb279ba80bc2cd509b5ede4d60}
+      \strng{bibnamehash}{f2a481bb279ba80bc2cd509b5ede4d60}
+      \strng{authorbibnamehash}{f2a481bb279ba80bc2cd509b5ede4d60}
+      \strng{authornamehash}{f2a481bb279ba80bc2cd509b5ede4d60}
+      \strng{authorfullhash}{f2a481bb279ba80bc2cd509b5ede4d60}
+      \field{sortinit}{C}
+      \field{sortinithash}{4d103a86280481745c9c897c925753c0}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Practical Threat Intelligence and Data-Driven Threat Hunting}
+      \field{year}{2021}
     \endentry
     \entry{divakaran2024llm}{misc}{}
       \name{author}{2}{}{%
@@ -333,33 +410,129 @@
       \field{title}{Retrieval-Augmented Generation for Large Language Models: A Survey}
       \field{year}{2024}
     \endentry
-    \entry{ismail2025wazuh}{misc}{}
-      \true{moreauthor}
-      \true{morelabelname}
-      \name{author}{1}{}{%
-        {{un=0,uniquepart=base,hash=aa041fc70cebbefb0bb4ff50d37acc5e}{%
-           family={Ismail},
-           familyi={I\bibinitperiod},
-           given={Muhammad},
-           giveni={M\bibinitperiod},
+    \entry{hwang2025rarag}{inproceedings}{}
+      \name{author}{6}{}{%
+        {{un=0,uniquepart=base,hash=86fe2ce5362af83680cb21c695ccab5b}{%
+           family={Hwang},
+           familyi={H\bibinitperiod},
+           given={Jeongyeon},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=be77994bb6c276af9256382aa0bb8fd4}{%
+           family={Park},
+           familyi={P\bibinitperiod},
+           given={Junyoung},
+           giveni={J\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=5407736d48137d633be35e24fea4c834}{%
+           family={Park},
+           familyi={P\bibinitperiod},
+           given={Hyejin},
+           giveni={H\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=2a47dfbdf220e67592d9ecb09e825f7c}{%
+           family={Kim},
+           familyi={K\bibinitperiod},
+           given={Dongwoo},
+           giveni={D\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=76e01480b9824e962416152c8ce7bd8e}{%
+           family={Park},
+           familyi={P\bibinitperiod},
+           given={Sangdon},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=141888bebf18d48e24571b853013e52d}{%
+           family={Ok},
+           familyi={O\bibinitperiod},
+           given={Jungseul},
+           giveni={J\bibinitperiod},
            givenun=0}}%
       }
-      \strng{namehash}{eb57c404954726ab83ec3e961099f5fc}
-      \strng{fullhash}{eb57c404954726ab83ec3e961099f5fc}
-      \strng{bibnamehash}{eb57c404954726ab83ec3e961099f5fc}
-      \strng{authorbibnamehash}{eb57c404954726ab83ec3e961099f5fc}
-      \strng{authornamehash}{eb57c404954726ab83ec3e961099f5fc}
-      \strng{authorfullhash}{eb57c404954726ab83ec3e961099f5fc}
+      \strng{namehash}{ccdec332a1f068e2bcb3df53610676d7}
+      \strng{fullhash}{952057f363d66aea2799f7b6fbf12fe7}
+      \strng{bibnamehash}{ccdec332a1f068e2bcb3df53610676d7}
+      \strng{authorbibnamehash}{ccdec332a1f068e2bcb3df53610676d7}
+      \strng{authornamehash}{ccdec332a1f068e2bcb3df53610676d7}
+      \strng{authorfullhash}{952057f363d66aea2799f7b6fbf12fe7}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing ({EMNLP})}
+      \field{title}{Retrieval-Augmented Generation with Estimation of Source Reliability}
+      \field{year}{2025}
+      \field{pages}{34279\bibrangedash 34303}
+      \range{pages}{25}
+    \endentry
+    \entry{ismail2025wazuh}{article}{}
+      \name{author}{8}{}{%
+        {{un=0,uniquepart=base,hash=c154ac97dd079ed75c2a265c87f5c27e}{%
+           family={{Ismail}},
+           familyi={I\bibinitperiod}}}%
+        {{un=0,uniquepart=base,hash=b62f218203e13c7affe0c49b97ee317f}{%
+           family={Kurnia},
+           familyi={K\bibinitperiod},
+           given={Rahmat},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=d46f12b9dd11b54a071f725e8cf5e629}{%
+           family={Widyatama},
+           familyi={W\bibinitperiod},
+           given={Farid},
+           giveni={F\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=a1db4ea657589a47603495567152db40}{%
+           family={Wibawa},
+           familyi={W\bibinitperiod},
+           given={Ilham\bibnamedelima Mirwansyah},
+           giveni={I\bibinitperiod\bibinitdelim M\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=2de76a96b66affbaae9c6c025e41e902}{%
+           family={Brata},
+           familyi={B\bibinitperiod},
+           given={Zilmas\bibnamedelima Arjuna},
+           giveni={Z\bibinitperiod\bibinitdelim A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=28bcc7b106ba148cbeb8287f2d033d5c}{%
+           family={{Ukasyah}},
+           familyi={U\bibinitperiod}}}%
+        {{un=0,uniquepart=base,hash=b50ff7f38ad36a4c252954f2e8f0ad7f}{%
+           family={Nelistiani},
+           familyi={N\bibinitperiod},
+           given={Ghitha\bibnamedelima Afina},
+           giveni={G\bibinitperiod\bibinitdelim A\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=3e51fdde7725c2a3ca356b95822a3b4a}{%
+           family={Kim},
+           familyi={K\bibinitperiod},
+           given={Howon},
+           giveni={H\bibinitperiod},
+           givenun=0}}%
+      }
+      \strng{namehash}{d27e8c35c7fde59f8cd05aecebfaec68}
+      \strng{fullhash}{93d8f77b82e0741417b41b28100d605e}
+      \strng{bibnamehash}{d27e8c35c7fde59f8cd05aecebfaec68}
+      \strng{authorbibnamehash}{d27e8c35c7fde59f8cd05aecebfaec68}
+      \strng{authornamehash}{d27e8c35c7fde59f8cd05aecebfaec68}
+      \strng{authorfullhash}{93d8f77b82e0741417b41b28100d605e}
       \field{sortinit}{I}
       \field{sortinithash}{8d291c51ee89b6cd86bf5379f0b151d8}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
+      \field{journaltitle}{Sensors}
+      \field{number}{3}
       \field{title}{Enhancing Security Operations Center: Wazuh Security Event Response with Retrieval-Augmented-Generation-Driven Copilot}
+      \field{volume}{25}
       \field{year}{2025}
+      \field{pages}{870}
+      \range{pages}{1}
     \endentry
-    \entry{lekssays2025techniquerag}{misc}{}
+    \entry{lekssays2025techniquerag}{inproceedings}{}
       \name{author}{4}{}{%
         {{un=0,uniquepart=base,hash=dbcbca452bf34cdd215a7294c2f9eb14}{%
            family={Lekssays},
@@ -398,7 +571,7 @@
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{note}{arXiv preprint arXiv:2505.11988}
+      \field{booktitle}{Findings of the Association for Computational Linguistics: {ACL} 2025}
       \field{title}{{TechniqueRAG}: Retrieval Augmented Generation for Adversarial Technique Annotation in Cyber Threat Intelligence Text}
       \field{year}{2025}
     \endentry
@@ -569,56 +742,83 @@
       \field{title}{Trustworthy {LLMs}: A Survey and Guideline for Evaluating Large Language Models' Alignment}
       \field{year}{2023}
     \endentry
-    \entry{palacin2021threat}{book}{}
-      \name{author}{1}{}{%
-        {{un=0,uniquepart=base,hash=065e17fb6b53cd2f283f900193978704}{%
-           family={Palacín},
-           familyi={P\bibinitperiod},
-           given={Valentina},
-           giveni={V\bibinitperiod},
+    \entry{muennighoff2023mteb}{misc}{}
+      \name{author}{4}{}{%
+        {{un=0,uniquepart=base,hash=a2deb8466aa6f0edfe3cc805f9d776d8}{%
+           family={Muennighoff},
+           familyi={M\bibinitperiod},
+           given={Niklas},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=7e23a2299cdee311801c2b68b3546f59}{%
+           family={Tazi},
+           familyi={T\bibinitperiod},
+           given={Nouamane},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=eccb5bd5a544d5a8424f7859f9627fbd}{%
+           family={Magne},
+           familyi={M\bibinitperiod},
+           given={Loïc},
+           giveni={L\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=da9947b27b0d1c4c912e2b391426d443}{%
+           family={Reimers},
+           familyi={R\bibinitperiod},
+           given={Nils},
+           giveni={N\bibinitperiod},
            givenun=0}}%
       }
-      \list{publisher}{1}{%
-        {Packt Publishing}%
-      }
-      \strng{namehash}{065e17fb6b53cd2f283f900193978704}
-      \strng{fullhash}{065e17fb6b53cd2f283f900193978704}
-      \strng{bibnamehash}{065e17fb6b53cd2f283f900193978704}
-      \strng{authorbibnamehash}{065e17fb6b53cd2f283f900193978704}
-      \strng{authornamehash}{065e17fb6b53cd2f283f900193978704}
-      \strng{authorfullhash}{065e17fb6b53cd2f283f900193978704}
-      \field{sortinit}{P}
-      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \strng{namehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{fullhash}{b3fdeb2c71ba43d99b696106bc69cf8a}
+      \strng{bibnamehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{authorbibnamehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{authornamehash}{f4c02284b9072b824b9b83e5661caf2a}
+      \strng{authorfullhash}{b3fdeb2c71ba43d99b696106bc69cf8a}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{title}{Practical Threat Intelligence and Data-Driven Threat Hunting}
-      \field{year}{2021}
+      \field{note}{arXiv preprint arXiv:2210.07316}
+      \field{title}{{MTEB}: Massive Text Embedding Benchmark}
+      \field{year}{2022}
     \endentry
     \entry{paul2025proactive}{misc}{}
-      \true{moreauthor}
-      \true{morelabelname}
-      \name{author}{1}{}{%
+      \name{author}{3}{}{%
         {{un=0,uniquepart=base,hash=5eace5880883f27e9680555a82c9eb46}{%
            family={Paul},
            familyi={P\bibinitperiod},
            given={Shuva},
            giveni={S\bibinitperiod},
            givenun=0}}%
+        {{un=0,uniquepart=base,hash=13b64ca86b41d6dd845433afc9e71d08}{%
+           family={Alemi},
+           familyi={A\bibinitperiod},
+           given={Farhad},
+           giveni={F\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=c6f90dbd62f0d894745eefa9684da5d3}{%
+           family={Macwan},
+           familyi={M\bibinitperiod},
+           given={Richard},
+           giveni={R\bibinitperiod},
+           givenun=0}}%
       }
-      \strng{namehash}{8c904f617fb0ea214e987ea8b5fdb310}
-      \strng{fullhash}{8c904f617fb0ea214e987ea8b5fdb310}
-      \strng{bibnamehash}{8c904f617fb0ea214e987ea8b5fdb310}
-      \strng{authorbibnamehash}{8c904f617fb0ea214e987ea8b5fdb310}
-      \strng{authornamehash}{8c904f617fb0ea214e987ea8b5fdb310}
-      \strng{authorfullhash}{8c904f617fb0ea214e987ea8b5fdb310}
+      \strng{namehash}{dd170a41fbc63d5921a1f1b61a75eab3}
+      \strng{fullhash}{dd170a41fbc63d5921a1f1b61a75eab3}
+      \strng{bibnamehash}{dd170a41fbc63d5921a1f1b61a75eab3}
+      \strng{authorbibnamehash}{dd170a41fbc63d5921a1f1b61a75eab3}
+      \strng{authornamehash}{dd170a41fbc63d5921a1f1b61a75eab3}
+      \strng{authorfullhash}{dd170a41fbc63d5921a1f1b61a75eab3}
       \field{sortinit}{P}
       \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
+      \field{note}{arXiv preprint arXiv:2504.00428}
       \field{title}{{LLM}-Assisted Proactive Threat Intelligence for Automated Reasoning}
       \field{year}{2025}
     \endentry
@@ -659,7 +859,7 @@
       \field{title}{A {RAG}-Based Question-Answering Solution for Cyber-Attack Investigation and Attribution}
       \field{year}{2024}
     \endentry
-    \entry{rastogi2023soc}{misc}{}
+    \entry{rastogi2023soc}{inproceedings}{}
       \name{author}{2}{}{%
         {{un=0,uniquepart=base,hash=bfa183d0aa146d8bf0ee0349ba853c14}{%
            family={Rastogi},
@@ -686,6 +886,7 @@
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
+      \field{booktitle}{Workshop on {SOC} Operations and Construction ({WOSOC}), co-located with {NDSS}}
       \field{title}{Cyber Threat Intelligence for {SOC} Analysts}
       \field{year}{2023}
     \endentry
@@ -798,66 +999,129 @@
       \range{pages}{27}
     \endentry
     \entry{tseng2024llm}{misc}{}
-      \true{moreauthor}
-      \true{morelabelname}
-      \name{author}{1}{}{%
+      \name{author}{4}{}{%
         {{un=0,uniquepart=base,hash=d4a3c21174544b03464b13be47b0ca10}{%
            family={Tseng},
            familyi={T\bibinitperiod},
            given={PeiYu},
            giveni={P\bibinitperiod},
            givenun=0}}%
+        {{un=0,uniquepart=base,hash=0f0c35913fa7f382e59f785e181d8794}{%
+           family={Yeh},
+           familyi={Y\bibinitperiod},
+           given={ZihDwo},
+           giveni={Z\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=b1a2e7c83617123fc711eae7f35c1918}{%
+           family={Dai},
+           familyi={D\bibinitperiod},
+           given={Xushu},
+           giveni={X\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=2c112d9d43345185672db278b5111bc4}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Peng},
+           giveni={P\bibinitperiod},
+           givenun=0}}%
       }
       \strng{namehash}{f00dff76e48b5b1afda56a40197f0631}
-      \strng{fullhash}{f00dff76e48b5b1afda56a40197f0631}
+      \strng{fullhash}{8b7d073bfb7cd814267cd8bd7f54fa27}
       \strng{bibnamehash}{f00dff76e48b5b1afda56a40197f0631}
       \strng{authorbibnamehash}{f00dff76e48b5b1afda56a40197f0631}
       \strng{authornamehash}{f00dff76e48b5b1afda56a40197f0631}
-      \strng{authorfullhash}{f00dff76e48b5b1afda56a40197f0631}
+      \strng{authorfullhash}{8b7d073bfb7cd814267cd8bd7f54fa27}
       \field{sortinit}{T}
       \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
+      \field{note}{arXiv preprint arXiv:2407.13093}
       \field{title}{Using {LLMs} to Automate Threat Intelligence Analysis Workflows in Security Operation Centers}
       \field{year}{2024}
     \endentry
     \entry{xu2025llm}{misc}{}
-      \true{moreauthor}
-      \true{morelabelname}
-      \name{author}{1}{}{%
-        {{un=0,uniquepart=base,hash=7568c69303f992b58ecdcb603242ee89}{%
+      \name{author}{9}{}{%
+        {{un=1,uniquepart=given,hash=7568c69303f992b58ecdcb603242ee89}{%
            family={Xu},
            familyi={X\bibinitperiod},
            given={Hanxiang},
            giveni={H\bibinitperiod},
+           givenun=1}}%
+        {{un=0,uniquepart=base,hash=57a2afd7b45de630d592cb4c4b2c67c9}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Shenao},
+           giveni={S\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=9973668f0953308d6a5bb974a138dc4c}{%
+           family={Li},
+           familyi={L\bibinitperiod},
+           given={Ningke},
+           giveni={N\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=074419ff4edf5e9aaad244a32f534697}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Kailong},
+           giveni={K\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=14e6e67151fcd0f9de7104ca4abbe2dc}{%
+           family={Zhao},
+           familyi={Z\bibinitperiod},
+           given={Yanjie},
+           giveni={Y\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=ee3f7d7b96add98106db907e189d6c13}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Kai},
+           giveni={K\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=9b43de9b4785a4dba33a815e35aece8d}{%
+           family={Yu},
+           familyi={Y\bibinitperiod},
+           given={Ting},
+           giveni={T\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=621013bf54d3546375ad71f17f020b5b}{%
+           family={Liu},
+           familyi={L\bibinitperiod},
+           given={Yang},
+           giveni={Y\bibinitperiod},
+           givenun=0}}%
+        {{un=0,uniquepart=base,hash=44ddd1947297940fae36faf60cfdc356}{%
+           family={Wang},
+           familyi={W\bibinitperiod},
+           given={Haoyu},
+           giveni={H\bibinitperiod},
            givenun=0}}%
       }
       \strng{namehash}{5919855981ba79d993bc5390a7876d78}
-      \strng{fullhash}{5919855981ba79d993bc5390a7876d78}
+      \strng{fullhash}{2269bea54ac9b2970b099e3ab047ba59}
       \strng{bibnamehash}{5919855981ba79d993bc5390a7876d78}
       \strng{authorbibnamehash}{5919855981ba79d993bc5390a7876d78}
       \strng{authornamehash}{5919855981ba79d993bc5390a7876d78}
-      \strng{authorfullhash}{5919855981ba79d993bc5390a7876d78}
+      \strng{authorfullhash}{2269bea54ac9b2970b099e3ab047ba59}
       \field{sortinit}{X}
       \field{sortinithash}{1965c258adceecf23ce3d67b05113442}
       \field{extradatescope}{labelyear}
       \field{labeldatesource}{}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
-      \field{note}{arXiv preprint arXiv:2405.04760}
+      \field{note}{arXiv preprint arXiv:2405.04760, accepted at ACM Transactions on Software Engineering and Methodology}
       \field{title}{Large Language Models for Cyber Security: A Systematic Literature Review}
       \field{year}{2025}
     \endentry
     \entry{yu2024evaluation}{misc}{}
       \name{author}{6}{}{%
-        {{un=0,uniquepart=base,hash=36c3a7c4b7df7f39ac811cd870a20dfa}{%
+        {{un=1,uniquepart=given,hash=36c3a7c4b7df7f39ac811cd870a20dfa}{%
            family={Yu},
            familyi={Y\bibinitperiod},
            given={Hao},
            giveni={H\bibinitperiod},
-           givenun=0}}%
+           givenun=1}}%
         {{un=0,uniquepart=base,hash=afd41c261461704300bc143bcc6cf87f}{%
            family={Gan},
            familyi={G\bibinitperiod},

@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="methodology_overview" id="meth-page-1">
+    <mxGraphModel dx="1200" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1250" pageHeight="220" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="p1" value="Literature&#10;review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="Process&#10;analysis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="240" y="40" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="Prototype&#10;development" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="440" y="40" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="Quantitative&#10;evaluation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="640" y="40" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" value="Qualitative&#10;evaluation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="840" y="40" width="160" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" value="Reference&#10;modeling" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="40" width="160" height="52" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t1" value="Chapter 2" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="100" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t2" value="Section 3.8" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="240" y="100" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t3" value="Chapter 3" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="440" y="100" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" value="Sections 4.2&#8211;4.3" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="640" y="100" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t5" value="Section 4.4" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="840" y="100" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t6" value="Section 4.6" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="100" width="160" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="p1" target="p2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="p2" target="p3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="p3" target="p4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="p4" target="p5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="1" source="p5" target="p6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

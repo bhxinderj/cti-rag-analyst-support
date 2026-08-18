@@ -1,5 +1,21 @@
 \babel@toc {english}{}\relax 
-\contentsline {table}{\numberline {\small 1\normalsize }{\ignorespaces Retrieval strategies and reranking in RAG pipelines\relax }}{5}{table.caption.8}%
+\contentsline {table}{\numberline {\small 1\normalsize }{\ignorespaces Retrieval strategies and reranking in RAG pipelines\relax }}{5}{table.caption.11}%
 \contentsline {table}{\numberline {\small 2\normalsize }{\ignorespaces Key findings of the literature review\relax }}{6}{table.2.2}%
-\contentsline {table}{\numberline {\small 3\normalsize }{\ignorespaces Design criteria with traceability to research gaps and research questions\relax }}{8}{table.caption.9}%
+\contentsline {table}{\numberline {\small 3\normalsize }{\ignorespaces Design criteria with traceability to bottlenecks, research gaps, and research questions\relax }}{8}{table.caption.12}%
+\contentsline {table}{\numberline {\small 4\normalsize }{\ignorespaces Corpus statistics of the evaluated index (snapshot: published $\leq $ 2025-12-31, fetched 2026-03-28)\relax }}{11}{table.caption.14}%
+\contentsline {table}{\numberline {\small 5\normalsize }{\ignorespaces Retrieval pipeline configuration (from the frozen \texttt {evaluated-v1} state)\relax }}{12}{table.caption.15}%
+\contentsline {table}{\numberline {\small 6\normalsize }{\ignorespaces Prototype components with path, function, and technical details\relax }}{14}{table.caption.16}%
+\contentsline {table}{\numberline {\small 7\normalsize }{\ignorespaces Technology selection with rationale against the design criteria\relax }}{15}{table.caption.17}%
+\contentsline {table}{\numberline {\small 8\normalsize }{\ignorespaces Evaluation query set by CTI task type (28 queries in total)\relax }}{18}{table.caption.20}%
+\contentsline {table}{\numberline {\small 9\normalsize }{\ignorespaces Evaluation metrics of the final series\relax }}{19}{table.caption.21}%
+\contentsline {table}{\numberline {\small 10\normalsize }{\ignorespaces Configuration matrix of the final evaluation series. Cross-encoder reranking is active in V1--V5 and not ablated separately.\relax }}{20}{table.caption.22}%
+\contentsline {table}{\numberline {\small 11\normalsize }{\ignorespaces Models and software versions of the final evaluation runs, consolidated as the reproducibility record of the series\relax }}{21}{table.caption.23}%
+\contentsline {table}{\numberline {\small 12\normalsize }{\ignorespaces RAGAS results per pipeline (28 queries, judge gpt-4o-mini). The BM25-only faithfulness (0.797) is an abstention artifact (4--5 abstentions per run with conservative, extractive answers), not a grounding advantage.\relax }}{21}{table.caption.24}%
+\contentsline {table}{\numberline {\small 13\normalsize }{\ignorespaces Ablation effects as deltas between configuration pairs, computed from the three-run means of Tables~\ref {tab:generation-results} and~\ref {tab:rubric-results} (---: metric undefined or configuration not rubric-scored; $^{\dagger }$~measurement artifact of the relevancy filter, Section~\ref {sec:results-generation}; $\Delta $\,Abst.\ in queries per run)\relax }}{23}{table.caption.26}%
+\contentsline {table}{\numberline {\small 14\normalsize }{\ignorespaces Analyst-oriented rubric scores (0--3 per dimension, three-run means); the single-strategy configurations V1 and V2 were not rubric-scored\relax }}{24}{table.caption.35}%
+\contentsline {table}{\numberline {\small 15\normalsize }{\ignorespaces Assessment of the prototype against the design criteria\relax }}{29}{table.caption.38}%
+\contentsline {table}{\numberline {\small 16\normalsize }{\ignorespaces Design principles of the reference model with their empirical basis\relax }}{31}{table.caption.40}%
+\contentsline {table}{\numberline {\small 17\normalsize }{\ignorespaces Complete evaluation query set (28 queries)\relax }}{50}{table.C.17}%
+\contentsline {table}{\numberline {\small 18\normalsize }{\ignorespaces Rubric dimensions with their lowest and highest score anchors (0--3 integer scale)\relax }}{51}{table.caption.50}%
+\contentsline {table}{\numberline {\small 19\normalsize }{\ignorespaces Per-query RAGAS scores of the primary configuration V4 (three-run means; --- where the judge returned no score)\relax }}{53}{table.D.19}%
 \providecommand \tocbasic@end@toc@file {}\tocbasic@end@toc@file 

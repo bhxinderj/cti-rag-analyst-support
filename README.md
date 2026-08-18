@@ -10,10 +10,15 @@ Author: Joben Preet Bhinder | Advisor: Wolfgang Rogner, BSc. MSc
 This prototype enables natural-language querying over CTI data using a hybrid retrieval pipeline (BM25 + vector search) combined with a locally running LLM (Llama 3.1 via Ollama). It retrieves relevant vulnerability and threat intelligence context, generates source-grounded answers with citations, and supports systematic evaluation via the RAGAS framework.
 
 ### Data Sources
-- **NVD/CVE** — National Vulnerability Database (CVSS >= 7.0, 2020–2025; filtered by the configured `snapshot_date`)
-- **CISA KEV** — Known Exploited Vulnerabilities catalog (entries added on or before the configured `snapshot_date`)
+- **NVD/CVE** — National Vulnerability Database (CVSS >= 7.0, 2020–2025)
+- **CISA KEV** — Known Exploited Vulnerabilities catalog
 - **CISA Advisories** — Cybersecurity Advisories with narrative TTP/mitigation context (included in Setup B)
-- **MISP** — CIRCL OSINT feed (threat events, IOCs, ATT&CK mappings; events published on or before the configured `snapshot_date`)
+- **MISP** — CIRCL OSINT feed (threat events, IOCs, ATT&CK mappings)
+
+Corpus snapshot semantics: documents **published on or before the configured
+`snapshot_date`** (default `2025-12-31`) are included; later edits to in-range
+documents are retained and the fetch date is documented in the thesis. The
+modification timestamp is deliberately not a drop criterion.
 
 ### Key Features
 - Hybrid retrieval: BM25 (lexical) + ChromaDB (vector) with Reciprocal Rank Fusion
@@ -23,6 +28,10 @@ This prototype enables natural-language querying over CTI data using a hybrid re
 - Phase-2 templated pipeline: Query Router → deterministic Fact Bundles → L1/L2/L3 templates (VulnTriage, ThreatContext, CrossSourceCompare) with Severity Signal (Triage-Ampel)
 - Ablation study support across BM25, vector, and hybrid candidate-generation modes under a shared reranking stage
 - Three-axis evaluation: RAGAS (faithfulness, answer_correctness, answer_relevancy, context_precision, context_recall), Field Coverage, and a Structured Rubric LLM-as-Judge
+- Evidence-based abstention: questions the corpus cannot support are declined explicitly instead of answered speculatively (no model call, sub-second)
+- **Extended Analysis mode** (optional, clearly flagged): hosted generation (Claude Haiku 4.5 via OpenRouter) with analyst-assist output (prioritized mitigations, Detection & Hunting starting points, Next Checks) and deeper retrieval — question and retrieved context leave the local machine only in this mode
+- Conversation follow-ups via condense-then-retrieve: elliptical questions ("and how do I mitigate it?") are rewritten into standalone queries with entity carry-over; generation never sees chat history
+- **MCP server**: the deterministic fact pipeline exposed as an `cti_query_tool` for MCP clients (no LLM involved, ~1–2 s per call)
 - FastAPI backend and Streamlit demo UI with a Legacy ↔ Templated pipeline toggle
 - Interactive terminal mode for ad-hoc queries
 
@@ -107,6 +116,8 @@ Useful targets:
 - `make test-retrieval` — run the narrow retrieval checks only
 - `make api` — start the FastAPI backend on port 8000
 - `make ui` — start the Streamlit demo UI on port 8501
+- `make mcp-server` — start the MCP stdio server (deterministic `cti_query_tool`)
+- `make mcp-demo` — run the MCP client demo (connect, list tools, one triage lookup)
 
 Note:
 - the `Makefile` assumes `python3.12`, `ollama`, and `make` are available
@@ -216,6 +227,36 @@ CTI_RAG_SETUP=b python main.py rubric --live --mode hybrid --templated
 
 The Streamlit UI (`make ui`) exposes a Legacy ↔ Templated toggle for interactive comparison. The FastAPI backend (`make api`) serves both pipelines via its query endpoint.
 
+### Extended Analysis mode (hosted, clearly flagged)
+
+The UI's "☁️ Extended Analysis" toggle switches generation to a hosted model
+(Claude Haiku 4.5 via OpenRouter) over the otherwise unchanged fact pipeline,
+with an analyst-assist instruction layer (prioritized mitigations, Detection &
+Hunting starting points, Next Checks) and deeper retrieval (top-8). In this
+mode — and only in this mode — the question and the retrieved context leave
+the local machine; the UI states this explicitly. Requires `OPENROUTER_API_KEY`
+in the API server environment. This mode is **not part of the evaluated
+configuration**; the local-vs-hosted trade-off is quantified by the hosted
+ablation row (V5) in the thesis. The API accepts `"extended": true` on
+`/api/query`; `CTI_RAG_LLM_PROVIDER=openrouter` applies the same generator to
+CLI runs without editing `settings.yaml`.
+
+Follow-up questions are supported in all modes via condense-then-retrieve:
+an elliptical follow-up is rewritten into a standalone query (local mode
+condenses locally), shown in the UI as "Interpreted as: …". Generation never
+receives conversation history.
+
+### MCP server
+
+The deterministic portion of the pipeline (router → hybrid retrieval →
+fact bundle → severity → triage card) is exposed as an MCP stdio server with
+one tool, `cti_query_tool` — no LLM involved, ~1–2 s per call:
+
+```bash
+make mcp-server   # start the stdio server (CTI_RAG_SETUP=b)
+make mcp-demo     # client demo: connect, list tools, one triage lookup
+```
+
 ### Run RAGAS evaluation
 
 ```bash
@@ -231,13 +272,33 @@ The Rubric evaluator is an LLM-as-Judge scoring layer orthogonal to RAGAS. It ca
 
 ```bash
 # Rescore an existing RAGAS run offline
-python main.py rubric --from-ragas-artifact data/evaluation_results/setup_b/ragas_hybrid_templated_phase2_final_28q_<ts>.json
+python main.py rubric --from-ragas-artifact data/evaluation_results/setup_b/ragas_hybrid_templated_final_v1_r1_<ts>.json
 
 # Or run live and score in one pass (Phase-2 templated)
-CTI_RAG_SETUP=b python main.py rubric --live --mode hybrid --templated --name phase2_final
+CTI_RAG_SETUP=b python main.py rubric --live --mode hybrid --templated --name my_experiment
 ```
 
-The judge model is configured in `configs/settings.yaml` under `evaluation.rubric` (default: `openrouter:openai/gpt-4o-mini`).
+The judge model is configured in `configs/settings.yaml` under
+`evaluation.ragas` (`eval_llm_provider` + `eval_llm_openrouter`; default
+`openrouter:openai/gpt-4o-mini`) and is shared by the RAGAS and Rubric
+evaluators. With the default provider, `evaluate` and `rubric` require
+`OPENROUTER_API_KEY` in the environment.
+
+### Reproducing the thesis evaluation (`_final_v1`)
+
+The final evaluation series reported in the thesis was produced on the state
+tagged **`evaluated-v1`**:
+
+```bash
+git checkout evaluated-v1
+caffeinate -is bash scripts/run_final_evals.sh   # ~15 h: 3x RAGAS per row, rubric, field coverage
+```
+
+Supporting tooling:
+- `scripts/eval_to_tex_table.py` — renders the artifact groups to LaTeX tables (`thesis/tables/`)
+- `scripts/aggregate_final_evals.py` — mean±std, NaN-aware effective n, zero counts, per-template rubric join
+- `requirements-evaluated-v1.lock` — exact package versions of the evaluation environment
+- All artifacts of the series are committed under `data/evaluation_results/setup_b/*final_v1*`
 
 ### Run smoke checks
 
@@ -299,31 +360,40 @@ cti-rag-analyst-support/
 │   │   ├── indexer.py               # ChromaDB + BM25 index builder
 │   │   └── hybrid_retriever.py      # Hybrid search + RRF + reranking
 │   ├── rag/
-│   │   ├── chain.py                 # LCEL RAG chain (legacy + templated)
+│   │   ├── chain.py                 # RAG chain (legacy + templated) + generation-provider adapter
 │   │   ├── prompts.py               # Legacy Phase-1 prompt templates
 │   │   ├── router.py                # Phase-2 Query Router
 │   │   ├── facts.py                 # Deterministic Fact Bundles + fuzzy alias resolver
 │   │   ├── templates.py             # L1/L2/L3 templates (VulnTriage, ThreatContext, CrossSourceCompare)
 │   │   ├── severity.py              # Severity Signal (Triage-Ampel)
-│   │   └── cpe.py                   # CPE parser for affected-product extraction
+│   │   ├── cpe.py                   # CPE parser for affected-product extraction
+│   │   ├── extended.py              # Extended-Analysis mode (hosted analyst-assist, flagged)
+│   │   └── conversation.py          # Condense-then-retrieve follow-up wrapper
 │   ├── evaluation/
 │   │   ├── ragas_eval.py            # RAGAS framework integration
 │   │   ├── rubric_eval.py           # Structured Rubric LLM-as-Judge evaluator
 │   │   ├── field_coverage.py        # Field-coverage evaluator
-│   │   └── _judge_llm.py            # Judge-model adapter (Ollama / OpenRouter)
+│   │   └── _judge_llm.py            # Judge-model adapter (Ollama / OpenAI / OpenRouter)
 │   ├── api/
 │   │   ├── server.py                # FastAPI backend
 │   │   └── schemas.py               # Request/response models
 │   ├── ui/
-│   │   └── app.py                   # Streamlit demo UI (Legacy/Templated toggle)
-│   └── mcp/                         # (planned) MCP agent extension
+│   │   └── app.py                   # Streamlit demo UI (pipeline + Extended toggles)
+│   └── mcp/
+│       ├── server.py                # MCP stdio server (deterministic cti_query_tool)
+│       └── client_demo.py           # Minimal MCP client (thesis transcript figure)
+├── scripts/
+│   ├── run_final_evals.sh           # _final_v1 batch runner (thesis evaluation series)
+│   ├── eval_to_tex_table.py         # Artifacts → LaTeX tables (thesis/tables/)
+│   └── aggregate_final_evals.py     # mean±std, effective n, per-template rubric join
 ├── tests/                           # Offline test suite (test_*.py) + smoke runners
 ├── data/
 │   ├── raw/                         # Downloaded CTI data (not in git)
 │   ├── processed/                   # Normalized documents
 │   ├── indexes/                     # ChromaDB + BM25 indexes (setup_a / setup_b)
-│   └── evaluation_results/          # RAGAS + Rubric artifacts per setup
-└── requirements.txt
+│   └── evaluation_results/          # RAGAS + Rubric artifacts (final series committed)
+├── requirements.txt                 # Dependency ranges
+└── requirements-evaluated-v1.lock   # Exact versions of the evaluation environment
 ```
 
 ## Configuration
@@ -347,7 +417,8 @@ Environment-based experiment setup:
 - `ollama serve` must be running at `http://localhost:11434` before `query`, `baseline`, `interactive`, or `evaluate`.
 - Retrieval and evaluation expect the embedding model and reranker to be present locally. Run `make warmup-models` once on a fresh machine.
 - Runtime retrieval/indexing now expects the embedding model to resolve from the local Hugging Face cache instead of silently attempting a network fetch.
-- `download` and `warmup-models` require network access. Re-running `index`, `query`, `baseline`, `evaluate`, and `make smoke` does not.
+- `download` and `warmup-models` require network access. Re-running `index`, `query`, `baseline`, and `make smoke` does not.
+- `evaluate` and `rubric` use a hosted judge by default (`openrouter:openai/gpt-4o-mini`) and therefore require `OPENROUTER_API_KEY` and network access; the same key enables the optional Extended Analysis mode. Query/baseline/interactive runs stay fully local.
 - The default embedding device in `configs/settings.yaml` is `mps`. On non-Apple-Silicon hosts, switch it to `cpu` or `cuda`.
 
 BM25 persistence:
@@ -368,13 +439,17 @@ Important:
 | Component | Technology |
 |---|---|
 | Language | Python 3.12 |
-| LLM | Llama 3.1 8B (Q5_K_M) via Ollama |
+| LLM (generation, primary) | Llama 3.1 8B (Q5_K_M) via Ollama — fully local |
+| LLM (judge, evaluation only) | gpt-4o-mini via OpenRouter |
+| LLM (Extended mode / hosted ablation) | Claude Haiku 4.5 via OpenRouter — optional, flagged |
 | Embeddings | BAAI/bge-small-en-v1.5 (sentence-transformers) |
 | Vector Store | ChromaDB (embedded, local) |
 | Lexical Search | rank_bm25 |
 | Reranking | cross-encoder/ms-marco-MiniLM-L-6-v2 |
-| Orchestration | LangChain (LCEL) |
-| Evaluation | RAGAS |
+| Orchestration | LangChain |
+| Evaluation | RAGAS + Structured Rubric (LLM-as-Judge) + Field Coverage |
+| API / UI | FastAPI + Streamlit |
+| Agent integration | MCP (Model Context Protocol) stdio server |
 | Compute Backend | PyTorch via CPU, CUDA, or Apple Metal (MPS), depending on host system |
 
 ## License

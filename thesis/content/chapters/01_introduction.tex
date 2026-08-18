@@ -9,8 +9,10 @@
 
 Cyber Threat Intelligence (CTI) turns raw threat data into assessments that
 security teams can act on. The underlying data is heterogeneous: structured
-feeds such as CVE/NVD and MISP coexist with unstructured advisories, vendor
-reports, and security blogs \parencite{sun2023ctimining}. In threat hunting,
+feeds such as Common Vulnerabilities and Exposures (CVE) entries in the
+National Vulnerability Database (NVD) and events of the Malware
+Information Sharing Platform (MISP) coexist with unstructured
+advisories, vendor reports, and security blogs \parencite{sun2023ctimining}. In threat hunting,
 analysts correlate new indicators and attacker techniques across these
 sources under time pressure, while the volume and change rate of threat
 information keep growing \parencite{rajapaksha2024rag}. A substantial share
@@ -20,7 +22,7 @@ rather than investigating.
 Large Language Models (LLMs) can summarize and extract information from such
 material and are increasingly applied in security operations
 \parencite{divakaran2024llm}. Three limitations restrict their direct use in
-CTI. First, their parametric knowledge is static; a deployed model misses
+CTI. First, their parametric knowledge is static: a deployed model misses
 vulnerabilities disclosed after training \parencite{gao2024rag}. Second,
 LLMs hallucinate: they produce fluent statements that no source supports
 \parencite{gao2024rag}. Third, their output carries no provenance, so
@@ -31,7 +33,8 @@ Retrieval-Augmented Generation (RAG) mitigates these limitations by
 retrieving evidence from an external, continuously updatable knowledge store
 at query time and conditioning generation on the retrieved context
 \parencite{lewis2020rag}. In the CTI domain, RAG has been applied to
-individual tasks such as TTP annotation and cyber-attack investigation
+individual tasks such as the annotation of Tactics, Techniques, and
+Procedures (TTPs) and cyber-attack investigation
 \parencite{fayyazi2024ttp,rajapaksha2024rag}. Empirical evidence on how RAG
 performs across analyst workflows, and which architectural choices drive
 that performance, remains limited \parencite{gao2024rag}. This thesis
@@ -42,27 +45,33 @@ addresses that gap with a working prototype and its empirical evaluation.
 
 This thesis designs, implements, and evaluates a RAG prototype for CTI
 analyst support. The prototype ingests representative CTI sources, including
-CVE/NVD entries, CISA advisories, MISP events, and vendor reports, into a
+CVE/NVD entries, advisories of the Cybersecurity and Infrastructure
+Security Agency (CISA), MISP events, and vendor reports, into a
 unified index. A hybrid retrieval layer combines lexical search (BM25) with
-dense vector search and reranks the merged candidates. A locally deployed
-open-source LLM generates the answer from the retrieved context. Each answer
-cites the sources it draws on, so analysts can verify individual claims
-instead of trusting the output as a whole.
+dense vector search and reranks the merged candidates. Answer generation
+is layered: fields that must not be wrong, such as severity scores and
+exploitation status, are rendered deterministically from the metadata of
+the retrieved passages and cannot be hallucinated, while a locally
+deployed open-source LLM contributes only the narrative, grounded in the
+retrieved context through inline citations. Each claim cites the source
+it draws on, so analysts can verify individual claims instead of
+trusting the output as a whole.
 
-The evaluation measures retrieval quality with information-retrieval metrics
-and answer quality with the RAGAS framework \parencite{es2023ragas}.
+The evaluation scores answer quality with the RAGAS framework
+\parencite{es2023ragas}, task-specific completeness with a field-coverage
+measure, and analyst-oriented quality with a four-dimension rubric.
 Retrieval variants are compared against each other and against a
-non-retrieval baseline on a fixed query set covering three representative
-analyst tasks: vulnerability assessment, IOC enrichment, and threat actor
-context building. The empirical findings are consolidated into a reference
-model for integrating RAG into CTI and threat-hunting workflows.
+non-retrieval baseline on a fixed query set covering four representative
+analyst task types: vulnerability analysis, indicator-of-compromise
+(IOC) enrichment, TTP correlation, and cross-source comparison. The empirical findings are
+consolidated into a reference model for integrating RAG into CTI and
+threat-hunting workflows.
 
 \section{Research questions}
 \label{sec:research-questions}
 
-From this problem context, one main research question and three
-sub-questions guide the thesis. Section~\ref{sec:rq-answers} answers them
-on the basis of the evaluation results.
+From this problem context, the following main research question guides
+the thesis:
 
 % Wortlaut aus dem finalen Proposal v3.1.0 (18.01.2026).
 \begin{rqbox}{Main research question (MRQ)}
@@ -72,24 +81,28 @@ on the basis of the evaluation results.
     Threat-Hunting workflows?
 \end{rqbox}
 
-\begin{rqbox}{SRQ1 --- Information retrieval and answer quality}
+Three sub-research questions (SRQ1--SRQ3) decompose the main question
+along the dimensions the thesis evaluates:
+
+\begin{rqbox}{SRQ1 -- Information retrieval and answer quality}
     To what extent does retrieval augmentation improve the completeness,
     factual accuracy, and recency of CTI information generated by an LLM
     compared to a non-retrieval baseline?
-    % Messung (Proposal): IR-Metriken + RAGAS, Vergleich gegen
-    % Non-Retrieval-Baseline -> Kap. \ref{sec:evaluation-design}, \ref{sec:results-retrieval}, \ref{sec:results-generation}.
+    % Messung: RAGAS (inkl. Context-Metriken als Retrieval-Proxys) +
+    % Field Coverage, Vergleich gegen Non-Retrieval-Baseline ->
+    % Kap. \ref{sec:evaluation-design}, \ref{sec:results-generation}, \ref{sec:results-ablation}.
 \end{rqbox}
 
-\begin{rqbox}{SRQ2 --- Practical utility and workflow support}
+\begin{rqbox}{SRQ2 -- Practical utility and workflow support}
     Which types of CTI analysis tasks can be effectively supported by a
     RAG-based LLM system, and how well do the generated outputs align with
     the informational needs of threat-hunting workflows?
-    % Messung (Proposal): szenariobasierte Analyse repraesentativer CTI-Tasks
-    % (vulnerability assessment, IOC enrichment, threat actor context)
-    % -> Kap. \ref{sec:representative-outputs}.
+    % Messung: szenariobasierte Analyse der vier Task-Typen
+    % (vulnerability analysis, IOC enrichment, TTP correlation,
+    % cross-source comparison) -> Kap. \ref{sec:representative-outputs}.
 \end{rqbox}
 
-\begin{rqbox}{SRQ3 --- Conceptual design}
+\begin{rqbox}{SRQ3 -- Conceptual design}
     How can empirical insights from the RAG-LLM prototype be translated
     into actionable design principles for integrating generative AI into
     CTI and threat-hunting workflows?
@@ -97,33 +110,37 @@ on the basis of the evaluation results.
     % zu Designprinzipien/Referenzmodell -> Kap. \ref{sec:reference-model}.
 \end{rqbox}
 
-\section{Objectives, scope and delimitation}
+Section~\ref{sec:rq-answers} answers all four questions on the basis of
+the evaluation results.
+
+\section{Objectives, scope, and delimitation}
 \label{sec:scope}
 
 The objective of this thesis is a functional, empirically evaluated RAG
 prototype for CTI analyst support, together with a reference model that
 generalizes the evaluation results. The target group comprises security
-analysts and threat hunters; security managers who oversee the adoption of
+analysts and threat hunters. Security managers who oversee the adoption of
 AI-assisted tooling in Security Operations Centers (SOCs) are a secondary
 audience.
 
 Four delimitations bound the scope. First, the thesis does not pursue
-large-scale data collection; a curated set of representative sources serves
+large-scale data collection: a curated set of representative sources serves
 as input, because the research focus lies on retrieval and reasoning quality
 rather than source coverage. Second, the prototype uses open-source
 components only. Third, the agent-based extension via the Model Context
 Protocol (MCP) is exploratory and not part of the core evaluation. Fourth,
-the evaluation combines quantitative metrics with scenario-based analysis;
-a user study with practicing analysts is out of scope.
+the evaluation combines quantitative metrics with scenario-based analysis.
+A user study with practicing analysts is out of scope.
 
 \section{Methodological approach}
 \label{sec:methodological-approach}
 
-The thesis proceeds in six phases:
+The thesis proceeds in six phases
+(Figure~\ref{fig:methodology-overview}):
 
 \begin{enumerate}
     \item \textbf{Literature review:} analysis of LLM use in security
-          operations, RAG architectures, and evaluation methods; the
+          operations, RAG architectures, and evaluation methods. The
           resulting findings and gaps are summarized in
           Chapter~\ref{ch:background}.
     \item \textbf{Process analysis:} definition of representative CTI tasks
@@ -132,8 +149,8 @@ The thesis proceeds in six phases:
     \item \textbf{Prototype development:} implementation of ingestion,
           hybrid retrieval, and grounded answer generation
           (Chapter~\ref{ch:solution}).
-    \item \textbf{Quantitative evaluation:} information-retrieval metrics
-          and RAGAS scores across retrieval variants and a non-retrieval
+    \item \textbf{Quantitative evaluation:} RAGAS, field-coverage, and
+          rubric scores across retrieval variants and a non-retrieval
           baseline, including an ablation study.
     \item \textbf{Qualitative evaluation:} scenario-based analysis of
           system outputs for the defined CTI tasks.
@@ -142,11 +159,9 @@ The thesis proceeds in six phases:
           (Section~\ref{sec:reference-model}).
 \end{enumerate}
 
-% TODO Abbildung: Methodik-Ueberblick als horizontale Prozesskette
-% (6 Phasen, Proposal-Vorgabe "overview research methodology as a figure").
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{methodology_overview}
-%     \caption{Methodological approach of this thesis}
-%     \label{fig:methodology-overview}
-% \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{methodology_overview}
+    \caption{Methodological approach of this thesis}
+    \label{fig:methodology-overview}
+\end{figure}

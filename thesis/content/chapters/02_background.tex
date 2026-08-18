@@ -5,21 +5,25 @@
 % selbsterklaerend sind. Keine Designkriterien, keine Evaluations-
 % methodik hier --- das lebt in Kap. 3 (\ref{sec:requirements}, \ref{sec:evaluation-design}).
 % ======================================================================
-\chapter{Background and Related Work}
+\clearpage % Kapitel 2 auf neuer Seite; Figure 2 geht sich dann mit aus
+\chapter{Background and related work}
 \label{ch:background}
+% Erste Kapitelseite um 4 Zeilen verlaengern, damit die Workflow-Grafik
+% (Figure 2) noch auf dieselbe Seite passt.
+\enlargethispage{4\baselineskip}
 
 \section{CTI and RAG foundations}
 \label{sec:cti}
 % B1--B3 speisen die Gaps (\ref{sec:research-gap}) und Kriterien
 % (\ref{sec:requirements}); Rueckverweis in \ref{sec:assessment}.
 
-Cyber Threat Intelligence (CTI) is evidence-based knowledge about existing
+Cyber Threat Intelligence is evidence-based knowledge about existing
 or emerging threats, including context, indicators, and actionable advice
 that informs security decisions \parencite{sun2023ctimining}. In practice,
 CTI is communicated through recurring artifact types. Indicators of
-Compromise (IOCs) are forensic artifacts, such as file hashes, IP
+Compromise are forensic artifacts, such as file hashes, IP
 addresses, or domains, that indicate a compromised system
-\parencite{palacin2021threat}. Tactics, Techniques, and Procedures (TTPs)
+\parencite{palacin2021threat}. Tactics, Techniques, and Procedures
 describe adversary behavior on three levels: the tactical goal, the method
 used to achieve it, and its concrete implementation
 \parencite{ismail2025wazuh}. The MITRE ATT\&CK framework is the industry
@@ -29,50 +33,51 @@ their environment for signs of compromise that automated detection has
 missed, typically starting from intelligence about the adversary
 \parencite{palacin2021threat,sun2023ctimining}.
 
-Analyst workflows follow a recurring cycle from planning and collection
-through processing and analysis to dissemination
+The as-is analyst workflow follows a recurring cycle from planning and
+collection through processing and analysis to dissemination
 \parencite{palacin2021threat}. Across this cycle, the literature reports
-three bottlenecks:
-% TODO: sobald die Workflow-Abbildung vorliegt, hier einen Verweissatz
-% auf Figure~\ref{fig:analyst-workflow} ergaenzen.
-
-% TODO Abbildung: generischer CTI-Analyst-Workflow (Feed-/Report-Eingang
-% -> Triage -> Anreicherung/Korrelation -> Bewertung/Report), mit
-% markierten Engpaessen B1--B3. Als drawio anlegen (docs/architecture/).
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=0.9\textwidth]{cti_analyst_workflow}
-%     \caption{Generic CTI analyst workflow with bottlenecks B1--B3}
-%     \label{fig:analyst-workflow}
-% \end{figure}
+three bottlenecks, which Figure~\ref{fig:analyst-workflow} locates in the
+workflow:
 
 \begin{enumerate}
-    \item \textbf{B1 --- Information overload:} the volume, heterogeneity,
+    \item \textbf{B1 -- Information overload:} the volume, heterogeneity,
           and informal structure of threat feeds and reports exceed what
           analysts can process consistently
           \parencite{alhuzali2025llm,rastogi2023soc}.
-    \item \textbf{B2 --- Recency:} threat knowledge changes faster than
+    \item \textbf{B2 -- Recency:} threat knowledge changes faster than
           static knowledge bases, including the parametric knowledge of
           trained language models, can follow
           \parencite{paul2025proactive,chen2023benchmarking}.
-    \item \textbf{B3 --- Verification effort:} extracting information from
+    \item \textbf{B3 -- Verification effort:} extracting information from
           unstructured reports and validating it remains manual expert
           work, and outputs without transparent provenance cannot be acted
           on \parencite{rajapaksha2024rag,tseng2024llm}.
 \end{enumerate}
 
-Retrieval-Augmented Generation (RAG) grounds LLM output in external
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{cti_analyst_workflow}
+    \caption{Generic CTI analyst workflow with bottlenecks B1--B3}
+    \label{fig:analyst-workflow}
+\end{figure}
+
+Retrieval-Augmented Generation grounds LLM output in external
 knowledge. A RAG pipeline indexes documents by cleaning, chunking, and
 embedding them, retrieves the passages most relevant to a query, optionally
 reranks them, and assembles them into the prompt from which the model
-generates its answer \parencite{gao2024rag}. This design targets the LLM
-limitations most relevant to CTI: hallucination, outdated knowledge, and
-reasoning that cannot be traced to sources
-\parencite{gao2024rag,chen2023benchmarking}.
-% TODO: sobald die Pipeline-Abbildung vorliegt, Verweissatz auf
-% Figure~\ref{fig:rag-pipeline} ergaenzen.
+generates its answer (Figure~\ref{fig:rag-pipeline}) \parencite{gao2024rag}.
+This design targets the LLM limitations most relevant to CTI:
+hallucination, outdated knowledge, and reasoning that cannot be traced to
+sources \parencite{gao2024rag,chen2023benchmarking}.
 
-Retrieval can be sparse, dense, or hybrid;
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{rag_pipeline_generic}
+    \caption{Generic RAG pipeline: offline indexing and query-time stages}
+    \label{fig:rag-pipeline}
+\end{figure}
+
+Retrieval can be sparse, dense, or hybrid.
 Table~\ref{tab:retrieval-strategies} contrasts the strategies and the role
 of reranking \parencite{agnihotram2025retrieval}.
 
@@ -84,7 +89,7 @@ of reranking \parencite{agnihotram2025retrieval}.
         \textbf{Strategy} & \textbf{Principle} & \textbf{Strength} & \textbf{Limitation} \\
         \midrule
         Sparse (BM25) & exact term matching with term-frequency weighting
-            & efficient; reliable for explicit identifiers
+            & efficient, reliable for explicit identifiers
             & misses semantically equivalent formulations \\
         Dense & embeddings in a shared vector space
             & captures paraphrases and related concepts
@@ -104,29 +109,19 @@ of reranking \parencite{agnihotram2025retrieval}.
 
 These trade-offs matter for CTI text, where the same threat actor appears
 under aliases such as APT28 and Fancy Bear and distinct ATT\&CK techniques
-share overlapping keywords; hybrid retrieval with reranking therefore
+share overlapping keywords. Hybrid retrieval with reranking therefore
 suits CTI corpora \parencite{alhuzali2025llm,lekssays2025techniquerag}.
 Citing the retrieved sources in the generated answer makes it verifiable:
 analysts can inspect the evidence behind each claim instead of trusting
 the model \parencite{rajapaksha2024rag,liu2023trustworthy}.
 
-% TODO Abbildung: generische RAG-Pipeline (Ingestion -> Chunking ->
-% Indexing -> Retrieval -> Reranking -> Context Assembly -> Generation).
-% Ersetzt Prosa-Definitionen; 3.2 zeigt spaeter die konkrete Instanz.
-% \begin{figure}[htbp]
-%     \centering
-%     \includegraphics[width=\textwidth]{rag_pipeline_generic}
-%     \caption{Generic RAG pipeline stages}
-%     \label{fig:rag-pipeline}
-% \end{figure}
-
+\clearpage % 2.2 samt Tabelle geschlossen auf eigener Seite (Lesefluss)
 \section{Key findings from the literature}
 \label{sec:literature-findings}
 
-The literature review covers four topic areas: CTI analyst workflows, LLMs
-in cybersecurity, RAG for CTI, and the evaluation of RAG systems.
-Table~\ref{tab:literature-findings} summarizes the key findings; the
-research gaps in Section~\ref{sec:research-gap} follow from them.
+Table~\ref{tab:literature-findings} summarizes the key findings of the
+literature review in four topic areas. The research gaps in
+Section~\ref{sec:research-gap} follow from them.
 
 \begingroup
 \small
@@ -147,16 +142,16 @@ research gaps in Section~\ref{sec:research-gap} follow from them.
         \label{tab:literature-findings}
         \endlastfoot
         CTI analyst workflows
-        & The volume and the non-uniform, informal structure of threat
-          feeds overwhelm analysts; fully automated processing is not
-          feasible & \cite{rastogi2023soc,alhuzali2025llm} \\
+        & The volume and informal structure of threat feeds overwhelm
+          analysts; full automation is not feasible
+          & \cite{rastogi2023soc,alhuzali2025llm} \\
         & Analyzing natural-language CTI reports is labor-intensive and
           repetitive and delays response
           & \cite{tseng2024llm,rajapaksha2024rag} \\
         \midrule
         LLMs in cybersecurity
-        & LLMs support vulnerability analysis, report summarization, and
-          IOC/TTP extraction; junior analysts gain the most
+        & LLMs support vulnerability analysis, summarization, and IOC/TTP
+          extraction; junior analysts gain the most
           & \cite{divakaran2024llm} \\
         & Recurring failure modes are hallucination, outdated knowledge,
           and technical misinterpretation & \cite{alhuzali2025llm} \\
@@ -171,9 +166,8 @@ research gaps in Section~\ref{sec:research-gap} follow from them.
           decoder-only LLMs show high recall but low precision
           & \cite{fayyazi2024ttp} \\
         & Existing CTI-RAG prototypes each target a single task, e.g.\
-          attack investigation, technique annotation, event response, or
-          IOC extraction
-          & \cite{alhuzali2025llm,lekssays2025techniquerag,ismail2025wazuh,tseng2024llm} \\
+          attack investigation, technique annotation, or event response
+          & \cite{alhuzali2025llm,lekssays2025techniquerag,ismail2025wazuh} \\
         \midrule
         RAG evaluation
         & Retrieval is assessed with Precision@k and Recall@k plus
@@ -185,8 +179,8 @@ research gaps in Section~\ref{sec:research-gap} follow from them.
         & LLM-as-a-judge scoring risks reinforcing model biases and can
           diverge from human judgment in specialized domains
           & \cite{akkiraju2024facts,yu2024evaluation} \\
-        & Industrial ground-truth datasets for CTI tasks are scarce; only
-          few public benchmarks (e.g.\ CTIBench) exist
+        & Ground-truth datasets for CTI tasks are scarce; few public
+          benchmarks (e.g.\ CTIBench) exist
           & \cite{xu2025llm,alhuzali2025llm} \\
 \end{longtable}
 \endgroup
@@ -194,25 +188,28 @@ research gaps in Section~\ref{sec:research-gap} follow from them.
 \section{Research gaps}
 \label{sec:research-gap}
 
-From the findings in Table~\ref{tab:literature-findings}, three research
-gaps are derived:
+The findings in Table~\ref{tab:literature-findings} leave three research
+gaps open:
 
 \begin{enumerate}
-    \item \textbf{G1 --- Workflow-level empirical evidence:} Existing
+    \item \textbf{G1 -- Workflow-level empirical evidence:} Existing
           CTI-RAG prototypes each address a single task, such as attack
-          investigation or technique annotation. How RAG performs across
-          the range of tasks an analyst works through, and which
-          architectural choices drive that performance, remains
+          investigation or technique annotation. Whether these results
+          carry over to the range of tasks an analyst works through, and
+          which architectural choices matter for that transfer, remains
           empirically open.
-    \item \textbf{G2 --- Evaluation realism:} Reported evaluations center
+    \item \textbf{G2 -- Evaluation realism:} Reported evaluations center
           on controlled benchmarks and isolated technical metrics, and
           ground-truth datasets for CTI tasks are scarce. Evidence that
           connects retrieval and generation quality to representative
           analyst tasks is rare.
-    \item \textbf{G3 --- Source reliability:} RAG pipelines can ingest and
+    \item \textbf{G3 -- Source reliability:} RAG pipelines can ingest and
           propagate misinformation, and LLMs tend to over-trust retrieved
-          context. How CTI-RAG systems should account for the integrity
-          and reliability of their sources is not settled.
+          context. First reliability-aware retrieval approaches weight
+          sources by estimated trustworthiness
+          \parencite{hwang2025rarag}, but how CTI-RAG systems should
+          account for the integrity and reliability of their sources is
+          not settled.
 \end{enumerate}
 
 These gaps, together with the workflow bottlenecks B1--B3 from
