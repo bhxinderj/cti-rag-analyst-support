@@ -322,7 +322,8 @@ layer with integrations for Ollama, Hugging Face models, and ChromaDB;
 \texttt{rank-bm25} implements the sparse index,
 \texttt{sentence-transformers} serves the embedding and reranking models,
 and RAGAS~0.2 drives the automated evaluation. Analyst access runs
-through a FastAPI backend with a Streamlit workbench; the agent interface
+through a FastAPI backend with a Streamlit workbench
+(Figure~\ref{fig:ui-overview}); the agent interface
 uses the MCP Python SDK. Every component of the evaluated pipeline is
 open-source and runs locally (C6); a hosted model appears only in the
 optional extended mode (Section~\ref{sec:mcp-interface}) and in the
