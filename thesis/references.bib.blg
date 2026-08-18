@@ -1,0 +1,6 @@
+[0] Config.pm:307> INFO - This is Biber 2.19 running in TOOL mode
+[0] Config.pm:310> INFO - Logfile is 'references.bib.blg'
+[24] biber-darwin:340> INFO - === Tue Aug 11, 2026, 20:13:24
+[36] Biber.pm:4606> INFO - Looking for bibtex file 'references.bib'
+[36] bibtex.pm:1713> INFO - LaTeX decoding ...
+[43] bibtex.pm:1519> INFO - Found BibTeX data source 'references.bib'

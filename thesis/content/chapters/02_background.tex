@@ -200,8 +200,11 @@ gaps open:
           analyst tasks is rare.
     \item \textbf{G3 --- Source reliability:} RAG pipelines can ingest and
           propagate misinformation, and LLMs tend to over-trust retrieved
-          context. How CTI-RAG systems should account for the integrity
-          and reliability of their sources is not settled.
+          context. First reliability-aware retrieval approaches weight
+          sources by estimated trustworthiness
+          \parencite{hwang2025rarag}, but how CTI-RAG systems should
+          account for the integrity and reliability of their sources is
+          not settled.
 \end{enumerate}
 
 These gaps, together with the workflow bottlenecks B1--B3 from

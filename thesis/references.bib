@@ -1,10 +1,12 @@
 % ======================================================================
-% ACHTUNG: Die Referenzlisten in Proposal und SotA enthalten teilweise
-% inkonsistente/fehlerhafte Metadaten (z.B. abweichende Autorenlisten
-% fuer RAGAS und die RAG-Surveys, "IEEE Journal of LaTeX Class Files"
-% als Platzhalter-Journal). Die Eintraege hier wurden gegen die realen
-% Publikationen korrigiert. Vor Abgabe: JEDEN Eintrag gegen das
-% Original-PDF pruefen (48 Quellen in NotebookLM).
+% Bib-Check 2026-08-11: JEDER Eintrag gegen die Originalquelle
+% verifiziert (arXiv-Abstracts, Verlagsseiten, ACL Anthology, PMC).
+% Korrigiert wurden dabei: Buchautorin Costa-Gazcón (vormals falsch
+% "Palacín"), Venue Alhuzali (PeerJ CS, nicht IEEE S&P Workshops),
+% Venue Rastogi/Alam (NDSS-WOSOC 2023), volle Autorenlisten fuer
+% Tseng, Paul, Ismail (Sensors 25(3):870) und Xu (TOSEM-Akzeptanz),
+% Venue Agnihotram/Sarkar (AJCST 8(4)), TechniqueRAG (ACL Findings
+% 2025). Bib-Keys blieben stabil.
 % ======================================================================
 
 @inproceedings{lewis2020rag,
@@ -86,71 +88,78 @@
     note   = {\url{https://c4model.com}}
 }
 
-@misc{alhuzali2025llm,
-    author = {Alhuzali, Abeer},
-    title  = {{LLM}-Powered Threat Intelligence: A Retrieval-Augmented
-              Generation Approach for Cyber Attack Investigation},
-    year   = {2025},
-    note   = {} % TODO: Venue gegen Original-PDF pruefen (SotA nennt IEEE S&P Workshops)
+@article{alhuzali2025llm,
+    author  = {Alhuzali, Abeer},
+    title   = {{LLM}-Powered Threat Intelligence: A Retrieval-Augmented
+               Generation Approach for Cyber Attack Investigation},
+    journal = {PeerJ Computer Science},
+    volume  = {11},
+    pages   = {e3371},
+    year    = {2025}
 }
 
 @book{palacin2021threat,
-    author    = {Palac{\'i}n, Valentina},
+    author    = {Costa-Gazc{\'o}n, Valentina},
     title     = {Practical Threat Intelligence and Data-Driven Threat Hunting},
     publisher = {Packt Publishing},
     year      = {2021}
-    % TODO: Autorname und Jahr gegen Buchcover pruefen (Proposal nennt 2024;
-    % das Packt-Buch dieses Titels erschien m.W. 2021, evtl. unter dem
-    % Autorennamen Valentina Costa-Gazcón)
 }
 
-@misc{ismail2025wazuh,
-    author = {Ismail, Muhammad and others},
-    title  = {Enhancing Security Operations Center: Wazuh Security Event
-              Response with Retrieval-Augmented-Generation-Driven Copilot},
-    year   = {2025},
-    note   = {} % TODO: Co-Autoren + Venue aus Original-PDF ergaenzen
+@article{ismail2025wazuh,
+    author  = {{Ismail} and Kurnia, Rahmat and Widyatama, Farid and
+               Wibawa, Ilham Mirwansyah and Brata, Zilmas Arjuna and
+               {Ukasyah} and Nelistiani, Ghitha Afina and Kim, Howon},
+    title   = {Enhancing Security Operations Center: Wazuh Security Event
+               Response with Retrieval-Augmented-Generation-Driven Copilot},
+    journal = {Sensors},
+    volume  = {25},
+    number  = {3},
+    pages   = {870},
+    year    = {2025}
 }
 
-@misc{lekssays2025techniquerag,
-    author = {Lekssays, Ahmed and Shukla, Utsav and Sencar, Husrev Taha and
-              Parvez, Md Rizwan},
-    title  = {{TechniqueRAG}: Retrieval Augmented Generation for Adversarial
-              Technique Annotation in Cyber Threat Intelligence Text},
-    year   = {2025},
-    note   = {arXiv preprint arXiv:2505.11988}
+@inproceedings{lekssays2025techniquerag,
+    author    = {Lekssays, Ahmed and Shukla, Utsav and Sencar, Husrev Taha and
+                 Parvez, Md Rizwan},
+    title     = {{TechniqueRAG}: Retrieval Augmented Generation for Adversarial
+                 Technique Annotation in Cyber Threat Intelligence Text},
+    booktitle = {Findings of the Association for Computational Linguistics:
+                 {ACL} 2025},
+    year      = {2025}
 }
 
-@misc{rastogi2023soc,
-    author = {Rastogi, Nidhi and Alam, Md Tanvirul},
-    title  = {Cyber Threat Intelligence for {SOC} Analysts},
-    year   = {2023},
-    note   = {} % TODO: Venue gegen Original-PDF pruefen
+@inproceedings{rastogi2023soc,
+    author    = {Rastogi, Nidhi and Alam, Md Tanvirul},
+    title     = {Cyber Threat Intelligence for {SOC} Analysts},
+    booktitle = {Workshop on {SOC} Operations and Construction ({WOSOC}),
+                 co-located with {NDSS}},
+    year      = {2023}
 }
 
 @misc{paul2025proactive,
-    author = {Paul, Shuva and others},
+    author = {Paul, Shuva and Alemi, Farhad and Macwan, Richard},
     title  = {{LLM}-Assisted Proactive Threat Intelligence for Automated
               Reasoning},
     year   = {2025},
-    note   = {} % TODO: Co-Autoren + Venue pruefen (Proposal nennt das
-              % Platzhalter-Journal "IEEE Journal of LaTeX Class Files")
+    note   = {arXiv preprint arXiv:2504.00428}
 }
 
 @misc{tseng2024llm,
-    author = {Tseng, PeiYu and others},
+    author = {Tseng, PeiYu and Yeh, ZihDwo and Dai, Xushu and Liu, Peng},
     title  = {Using {LLMs} to Automate Threat Intelligence Analysis Workflows
               in Security Operation Centers},
     year   = {2024},
-    note   = {} % TODO: Co-Autoren + Venue pruefen (SotA nennt IEEE Big Data)
+    note   = {arXiv preprint arXiv:2407.13093}
 }
 
-@misc{agnihotram2025retrieval,
-    author = {Agnihotram, Gopichand and Sarkar, Joydeep},
-    title  = {Evaluating Precision and Recall at Retrieval Time in
-              Retrieval-Augmented Generation ({RAG}) Systems},
-    year   = {2025},
-    note   = {} % TODO: Venue gegen Original-PDF pruefen
+@article{agnihotram2025retrieval,
+    author  = {Agnihotram, Gopichand and Sarkar, Joydeep},
+    title   = {Evaluating Precision and Recall at Retrieval Time in
+               Retrieval-Augmented Generation ({RAG}) Systems},
+    journal = {American Journal of Computer Science and Technology},
+    volume  = {8},
+    number  = {4},
+    year    = {2025}
 }
 
 @misc{chen2023benchmarking,
@@ -167,7 +176,6 @@
     title  = {Evaluation of Retrieval-Augmented Generation: A Survey},
     year   = {2024},
     note   = {arXiv preprint arXiv:2405.07437}
-    % TODO: NotebookLM meldet 2025 --- publizierte Version pruefen
 }
 
 @inproceedings{saadfalcon2024ares,
@@ -182,22 +190,23 @@
 }
 
 @misc{akkiraju2024facts,
-    author = {Akkiraju, Rama and others},
+    author = {Akkiraju, Rama and Xu, Anbang and Bora, Deepak and Yu, Tan and
+              others},
     title  = {{FACTS} About Building Retrieval Augmented Generation-based
               Chatbots},
     year   = {2024},
     note   = {arXiv preprint arXiv:2407.07858}
-    % TODO: Autorenliste pruefen (NotebookLM nennt "Akkiraju, Sanjana")
 }
 
 @misc{xu2025llm,
-    author = {Xu, Hanxiang and others},
+    author = {Xu, Hanxiang and Wang, Shenao and Li, Ningke and Wang, Kailong and
+              Zhao, Yanjie and Chen, Kai and Yu, Ting and Liu, Yang and
+              Wang, Haoyu},
     title  = {Large Language Models for Cyber Security: A Systematic
               Literature Review},
     year   = {2025},
-    note   = {arXiv preprint arXiv:2405.04760}
-    % TODO: Autorenliste + Versionsjahr pruefen (SotA nennt abweichend
-    % "Xu, S., Zhang, Y. and Li, Q., IEEE Access")
+    note   = {arXiv preprint arXiv:2405.04760, accepted at ACM Transactions
+              on Software Engineering and Methodology}
 }
 
 @misc{liu2023trustworthy,
@@ -208,4 +217,15 @@
               Large Language Models' Alignment},
     year   = {2023},
     note   = {arXiv preprint arXiv:2308.05374}
+}
+
+@inproceedings{hwang2025rarag,
+    author    = {Hwang, Jeongyeon and Park, Junyoung and Park, Hyejin and
+                 Kim, Dongwoo and Park, Sangdon and Ok, Jungseul},
+    title     = {Retrieval-Augmented Generation with Estimation of Source
+                 Reliability},
+    booktitle = {Proceedings of the 2025 Conference on Empirical Methods in
+                 Natural Language Processing ({EMNLP})},
+    pages     = {34279--34303},
+    year      = {2025}
 }
