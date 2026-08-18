@@ -18,17 +18,19 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "data" / "interim" / "final_v1_aggregate.json"
 DST = ROOT / "thesis" / "images" / "generation_results.pdf"
 
-# Configurations in matrix order (Table tab:configurations). The gray ramp
-# follows the ordinal pipeline build-up V0 -> V4; V4 is the primary
-# configuration (emphasis); V5 differs on the deployment axis and is
-# rendered hatched instead of darker.
+# Configurations in matrix order (Table tab:configurations). Colors
+# follow the semantics of the drawio diagrams: gray = outside the
+# pipeline (V0), blue ramp = pipeline variants (V1-V3), green = the
+# contribution (V4, emphasis), orange = hosted opt-in (V5, matching
+# the reference-model badge). Lightness stays monotonic V0->V4 so the
+# figure survives grayscale printing and color-vision deficiency.
 CONFIGS = [
     ("baseline", "V0 baseline", "#d9d9d9", None),
-    ("bm25_only", "V1 BM25", "#c2c2c2", None),
-    ("vector_only", "V2 vector", "#a9a9a9", None),
-    ("legacy_hybrid", "V3 hybrid", "#8c8c8c", None),
-    ("templated_hybrid", "V4 templated", "#1a1a1a", None),
-    ("templated_hostedgen_haiku45", "V5 hosted", "#ffffff", "///"),
+    ("bm25_only", "V1 BM25", "#b8d1ea", None),
+    ("vector_only", "V2 vector", "#8fb4dc", None),
+    ("legacy_hybrid", "V3 hybrid", "#6c8ebf", None),
+    ("templated_hybrid", "V4 templated", "#2e7d32", None),
+    ("templated_hostedgen_haiku45", "V5 hosted", "#e09b3d", "edge"),
 ]
 
 METRICS = [
@@ -72,7 +74,7 @@ def main() -> None:
                         fontsize=6.5, style="italic", color=MUTED)
                 continue
             std = ragas[key]["metrics"][metric]["std"]
-            ax.barh(y, value, height=0.62, color=color, hatch=hatch,
+            ax.barh(y, value, height=0.62, color=color,
                     edgecolor=EDGE if hatch else "none", linewidth=0.6,
                     zorder=3)
             ax.errorbar(value, y, xerr=std, fmt="none", ecolor="#333333",

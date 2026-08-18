@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber tex_build/mt_bhinder"] 1787058224 "tex_build/mt_bhinder.bcf" "tex_build/mt_bhinder.bbl" "tex_build/mt_bhinder" 1787058231 0
+["biber tex_build/mt_bhinder"] 1787058224 "tex_build/mt_bhinder.bcf" "tex_build/mt_bhinder.bbl" "tex_build/mt_bhinder" 1787059501 0
   "./references.bib" 1786470552 8889 749e5a8028b6400782175dacca65286a ""
-  "tex_build/mt_bhinder.bcf" 1787058231 111910 eae2dc4402852d076b1671bdaa714ad2 "pdflatex"
+  "tex_build/mt_bhinder.bcf" 1787059501 111910 eae2dc4402852d076b1671bdaa714ad2 "pdflatex"
   (generated)
   "tex_build/mt_bhinder.bbl"
   "tex_build/mt_bhinder.blg"
   (rewritten before read)
-["pdflatex"] 1787058229 "mt_bhinder.tex" "tex_build/mt_bhinder.pdf" "mt_bhinder" 1787058231 0
+["pdflatex"] 1787059499 "mt_bhinder.tex" "tex_build/mt_bhinder.pdf" "mt_bhinder" 1787059501 0
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr8c.tfm" 1136768653 1268 8bd405dc5751cfed76cb6fb2db78cb50 ""
@@ -319,13 +319,13 @@
   "content/meta/ai_tools.tex" 1786316954 1163 77a496be22e95ef671773b2c2bd72a8d ""
   "images//cti_analyst_workflow.pdf" 1784389817 42327 7c131806831237b1402635faed43b549 ""
   "images//cti_rag_architecture_overview.pdf" 1784727872 185170 61a3b4e3fe4d3a8ba90cdf47d39e1340 ""
-  "images//generation_results.pdf" 1786303940 17223 1701927d458776f47ad9a3c22d26e551 ""
+  "images//generation_results.pdf" 1787059475 16826 698788fe16a93283027152c58277bc4b ""
   "images//mcp_transcript.pdf" 1786303408 46129 1909ced4beba5d26f90375613f84f335 ""
   "images//methodology_overview.pdf" 1786292525 22734 8c04709f23eb8f30569c029bacd11c4e ""
   "images//rag_pipeline_generic.pdf" 1784389819 49336 db92b74727f8ec9f0daeb15c9d373943 ""
   "images//reference_model.pdf" 1786295278 95322 e2fd870dede898495f86212945b9826c ""
-  "images//roadmap_outlook.pdf" 1786314274 18276 1774c8413f89c2fd0414c234633acc82 ""
-  "images//rubric_results.pdf" 1786304795 15666 de4bbf945d17f5d1c3c86183ff089586 ""
+  "images//roadmap_outlook.pdf" 1787059476 18327 b3aeb90b72ee0010cdaa45cff2af697c ""
+  "images//rubric_results.pdf" 1787059476 15218 62da6e03d4bccef1a1b072ac1a421ab4 ""
   "images//scenario_vuln_answer.png" 1786293954 183958 b64d1eabd985041322f56758deb8e58c ""
   "images//ui_chat_view.png" 1786293954 250606 d97a59402f91b827ac6d4d503be3b316 ""
   "images/fhtw_cover.png" 1772825290 66905 f24e224368a2cec616245a6e552a1a7c ""
@@ -335,12 +335,12 @@
   "tables/query_set_full.tex" 1786315688 5616 85a84d30a948cb0083a2a14b6e1eb740 ""
   "tables/ragas_final_v1.tex" 1785936694 1066 3e7baea787bf5b9ce4f8571bac9fa02e ""
   "tables/rubric_final_v1.tex" 1785936694 771 b35aaff13a423107d1081f8a0dfe3bd3 ""
-  "tex_build/mt_bhinder.aux" 1787058231 55003 f7fd6bd1b1a251105bd65e0beb9f3af0 "pdflatex"
+  "tex_build/mt_bhinder.aux" 1787059501 55003 f7fd6bd1b1a251105bd65e0beb9f3af0 "pdflatex"
   "tex_build/mt_bhinder.bbl" 1787058226 48087 e2388f392189409762fb97a94a56332c "biber tex_build/mt_bhinder"
-  "tex_build/mt_bhinder.lof" 1787058231 2953 0bab7037828d8a741af65f26b8123809 "pdflatex"
-  "tex_build/mt_bhinder.lot" 1787058231 4157 aa385955315c8f6b9cbe99583e1849d8 "pdflatex"
-  "tex_build/mt_bhinder.run.xml" 1787058231 2353 e06cc201920911cde2ce1e70556471c6 "pdflatex"
-  "tex_build/mt_bhinder.toc" 1787058231 4729 a33732d0bf8706d3b153a4988e580659 "pdflatex"
+  "tex_build/mt_bhinder.lof" 1787059501 2953 0bab7037828d8a741af65f26b8123809 "pdflatex"
+  "tex_build/mt_bhinder.lot" 1787059501 4157 aa385955315c8f6b9cbe99583e1849d8 "pdflatex"
+  "tex_build/mt_bhinder.run.xml" 1787059501 2353 e06cc201920911cde2ce1e70556471c6 "pdflatex"
+  "tex_build/mt_bhinder.toc" 1787059501 4729 a33732d0bf8706d3b153a4988e580659 "pdflatex"
   "twbook.cls" 1784461843 23822 c9680a8735058e1da046a96494663c1f ""
   (generated)
   "tex_build/mt_bhinder.aux"

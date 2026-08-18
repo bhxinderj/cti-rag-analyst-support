@@ -23,9 +23,9 @@ DST = ROOT / "thesis" / "images" / "rubric_results.pdf"
 # entity across figures); V1 and V2 were not rubric-scored.
 CONFIGS = [
     ("baseline", "V0 baseline", "#d9d9d9", None),
-    ("legacy_hybrid", "V3 hybrid", "#8c8c8c", None),
-    ("templated_hybrid", "V4 templated", "#1a1a1a", None),
-    ("templated_hostedgen_haiku45", "V5 hosted", "#ffffff", "///"),
+    ("legacy_hybrid", "V3 hybrid", "#6c8ebf", None),
+    ("templated_hybrid", "V4 templated", "#2e7d32", None),
+    ("templated_hostedgen_haiku45", "V5 hosted", "#e09b3d", "edge"),
 ]
 
 DIMENSIONS = [
@@ -61,7 +61,7 @@ def main() -> None:
 
         for (key, _, color, hatch), y in zip(CONFIGS, ypos):
             mean, std = values[key]["mean"], values[key]["std"]
-            ax.barh(y, mean, height=0.62, color=color, hatch=hatch,
+            ax.barh(y, mean, height=0.62, color=color,
                     edgecolor=EDGE if hatch else "none", linewidth=0.6,
                     zorder=3)
             ax.errorbar(mean, y, xerr=std, fmt="none", ecolor="#333333",
