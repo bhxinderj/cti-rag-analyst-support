@@ -1,7 +1,7 @@
 \babel@toc {english}{}\relax 
 \contentsline {figure}{\numberline {\small 1\normalsize }{\ignorespaces Methodological approach of this thesis\relax }}{4}{figure.caption.8}%
 \contentsline {figure}{\numberline {\small 2\normalsize }{\ignorespaces Generic CTI analyst workflow with bottlenecks B1--B3\relax }}{5}{figure.caption.9}%
-\contentsline {figure}{\numberline {\small 3\normalsize }{\ignorespaces Generic RAG pipeline: offline indexing and query-time stages\relax }}{5}{figure.caption.10}%
+\contentsline {figure}{\numberline {\small 3\normalsize }{\ignorespaces Generic RAG pipeline: offline indexing and query-time stages\relax }}{6}{figure.caption.10}%
 \contentsline {figure}{\numberline {\small 4\normalsize }{\ignorespaces System architecture of the prototype (C4 container view). Numbered markers trace the online query path; circled letters locate the notation of Section~\ref {sec:task-formulation}.\relax }}{11}{figure.caption.13}%
 \contentsline {figure}{\numberline {\small 5\normalsize }{\ignorespaces Analyst workbench of the prototype: task-template cards, pipeline and backend status in the sidebar, and the head of a grounded response\relax }}{17}{figure.caption.18}%
 \contentsline {figure}{\numberline {\small 6\normalsize }{\ignorespaces MCP client transcript of a deterministic \texttt {cti\_query\_tool} call (\texttt {make mcp-demo}): the triage lookup for CVE-2023-4966 is answered from the fact layer in 1.1 seconds, with no model invoked\relax }}{18}{figure.caption.19}%

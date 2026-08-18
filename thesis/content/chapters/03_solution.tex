@@ -108,26 +108,16 @@ licensing dependencies, and makes the experiments reproducible.
 
 \section{System architecture}
 \label{sec:architecture}
+% Seite vor der Landscape-Abbildung um 2 Zeilen verlaengern, damit der
+% 3.3-Fliesstext geschlossen auf einer Seite steht (Lesefluss).
+\enlargethispage{2\baselineskip}
 
 Figure~\ref{fig:architecture} shows the prototype as a container view
 following the C4 model \parencite{brown2018c4}. Two paths separate
 building the system from using it: an offline path ingests sources and
 builds the retrieval artifacts, and an online path serves analyst queries.
 The architecture instantiates the generic RAG pipeline of
-Figure~\ref{fig:rag-pipeline}. In the figure, the numbered markers trace
-an analyst query through the online path, and the circled letters locate
-the notation of Section~\ref{sec:task-formulation} in the system.
-
-\begin{landscape}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{cti_rag_architecture_overview}
-    \caption{System architecture of the prototype (C4 container view).
-             Numbered markers trace the online query path; circled letters
-             locate the notation of Section~\ref{sec:task-formulation}.}
-    \label{fig:architecture}
-\end{figure}
-\end{landscape}
+Figure~\ref{fig:rag-pipeline}.
 
 On the online path, the analyst submits a query $q$ through the Streamlit
 workbench, which calls a FastAPI backend, or directly through the command
@@ -154,6 +144,19 @@ which the CTIIndexer builds the two retrieval artifacts with per-passage
 source metadata. The evaluation harness drives the same RAGChain that
 serves analysts, so measured behavior equals operational behavior
 (Section~\ref{sec:evaluation-design}).
+
+% Landscape-Seite bewusst NACH dem 3.3-Fliesstext, damit die Seite vor
+% der gedrehten Abbildung gefuellt bleibt (Lesefluss).
+\begin{landscape}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{cti_rag_architecture_overview}
+    \caption{System architecture of the prototype (C4 container view).
+             Numbered markers trace the online query path; circled letters
+             locate the notation of Section~\ref{sec:task-formulation}.}
+    \label{fig:architecture}
+\end{figure}
+\end{landscape}
 
 \section{Data ingestion and preprocessing}
 \label{sec:ingestion}
@@ -407,7 +410,7 @@ its retrieval quality relative to its footprint on the MTEB benchmark
     \label{tab:tech-selection}
 \end{table}
 
-\begin{figure}[H]
+\begin{figure}[htbp] % Screenshot-Konvention: floaten statt [H]-Zwang
     \centering
     \includegraphics[width=\textwidth]{ui_chat_view}
     \caption{Analyst workbench of the prototype: task-template cards,

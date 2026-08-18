@@ -405,6 +405,7 @@ inconsistencies (the deterministic facts remain correct) but does
 not eliminate them; Section~\ref{sec:limitations} returns to this
 point.
 
+\clearpage % 4.5 nicht als Ueberschrift am Seitenende beginnen lassen
 \section{Assessment against the design criteria}
 \label{sec:assessment}
 
@@ -471,6 +472,7 @@ optional extended mode calls a hosted model and is documented as a
 feature outside the evaluated configuration
 (Section~\ref{sec:mcp-interface}).
 
+\clearpage % 4.6 nicht als Ueberschrift am Seitenende beginnen lassen
 \section{Reference model for CTI-RAG integration}
 \label{sec:reference-model}
 
@@ -492,6 +494,16 @@ each principle with the evidence it rests on.
              Table~\ref{tab:principles}.}
     \label{fig:reference-model}
 \end{figure}
+
+The model reads as adoption guidance: an organization integrating RAG
+into CTI work starts at the source layer and moves upward, and every
+principle names the failure it prevents: P2 the identifier collapse
+of semantic-only retrieval, P3 and P4 the unverifiable fluency of
+ungrounded generation, P6 the silent loss of data control. The model is
+derived from one prototype, one corpus, and one query set; transferring
+it to other corpora and organizations requires validation, which
+Section~\ref{sec:limitations} records and
+Section~\ref{sec:future-work} takes up.
 
 \begin{table}[H]
     \centering
@@ -538,16 +550,6 @@ each principle with the evidence it rests on.
              empirical basis}
     \label{tab:principles}
 \end{table}
-
-The model reads as adoption guidance: an organization integrating RAG
-into CTI work starts at the source layer and moves upward, and every
-principle names the failure it prevents: P2 the identifier collapse
-of semantic-only retrieval, P3 and P4 the unverifiable fluency of
-ungrounded generation, P6 the silent loss of data control. The model is
-derived from one prototype, one corpus, and one query set; transferring
-it to other corpora and organizations requires validation, which
-Section~\ref{sec:limitations} records and
-Section~\ref{sec:future-work} takes up.
 
 \section{Answering the research questions}
 \label{sec:rq-answers}

@@ -1794,8 +1794,6 @@ INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm5
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvb8t.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvb8t.vf
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvb8r.tfm
-INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvro8t.vf
-INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvro8r.tfm
 INPUT ./content/chapters/03_solution.tex
 INPUT ./content/chapters/03_solution.tex
 INPUT ./content/chapters/03_solution.tex
@@ -1812,9 +1810,9 @@ INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/psnfss/t1pcr.fd
 INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/psnfss/t1pcr.fd
 INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/psnfss/t1pcr.fd
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr8t.tfm
-INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr8t.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/courier/pcrr8t.vf
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr8r.tfm
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr8t.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/courier/pcrr8t.vf
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr8r.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvro8t.vf
@@ -1945,6 +1943,8 @@ INPUT tables/query_set_full.tex
 INPUT ./tables/query_set_full.tex
 INPUT ./tables/query_set_full.tex
 INPUT tables/query_set_full.tex
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/vf/adobe/helvetic/phvro8t.vf
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/helvetic/phvro8r.tfm
 INPUT ./content/appendix/appendix_d.tex
 INPUT ./content/appendix/appendix_d.tex
 INPUT ./content/appendix/appendix_d.tex
