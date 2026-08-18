@@ -1,12 +1,12 @@
 # Fdb version 4
-["biber tex_build/mt_bhinder"] 1787058224 "tex_build/mt_bhinder.bcf" "tex_build/mt_bhinder.bbl" "tex_build/mt_bhinder" 1787065294 0
+["biber tex_build/mt_bhinder"] 1787058224 "tex_build/mt_bhinder.bcf" "tex_build/mt_bhinder.bbl" "tex_build/mt_bhinder" 1787065477 0
   "./references.bib" 1786470552 8889 749e5a8028b6400782175dacca65286a ""
-  "tex_build/mt_bhinder.bcf" 1787065293 111910 eae2dc4402852d076b1671bdaa714ad2 "pdflatex"
+  "tex_build/mt_bhinder.bcf" 1787065476 111910 eae2dc4402852d076b1671bdaa714ad2 "pdflatex"
   (generated)
   "tex_build/mt_bhinder.bbl"
   "tex_build/mt_bhinder.blg"
   (rewritten before read)
-["pdflatex"] 1787065291 "mt_bhinder.tex" "tex_build/mt_bhinder.pdf" "mt_bhinder" 1787065294 0
+["pdflatex"] 1787065474 "mt_bhinder.tex" "tex_build/mt_bhinder.pdf" "mt_bhinder" 1787065477 0
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr8c.tfm" 1136768653 1268 8bd405dc5751cfed76cb6fb2db78cb50 ""
@@ -318,7 +318,7 @@
   "content/meta/acronyms.tex" 1787060599 1174 bd2e9012b4bcd71f516fdbca3a55c261 ""
   "content/meta/ai_tools.tex" 1786316954 1163 77a496be22e95ef671773b2c2bd72a8d ""
   "images//cti_analyst_workflow.pdf" 1784389817 42327 7c131806831237b1402635faed43b549 ""
-  "images//cti_rag_architecture_overview.pdf" 1787065201 184153 53b1d4cb3c751e7729967a27a4e98309 ""
+  "images//cti_rag_architecture_overview.pdf" 1787065436 184160 51e3e2053244eb0cb4b1e70e778bffe6 ""
   "images//generation_results.pdf" 1787059475 16826 698788fe16a93283027152c58277bc4b ""
   "images//mcp_transcript.pdf" 1786303408 46129 1909ced4beba5d26f90375613f84f335 ""
   "images//methodology_overview.pdf" 1786292525 22734 8c04709f23eb8f30569c029bacd11c4e ""
@@ -335,12 +335,12 @@
   "tables/query_set_full.tex" 1786315688 5616 85a84d30a948cb0083a2a14b6e1eb740 ""
   "tables/ragas_final_v1.tex" 1787059871 1084 4a98fcc28f1ae7a0be7e79276c4a6bb4 ""
   "tables/rubric_final_v1.tex" 1787059871 783 39b1424d99eaaf88b0d2f62f3d7dd81a ""
-  "tex_build/mt_bhinder.aux" 1787065293 54808 017087f6beca20361b6a680f8243657d "pdflatex"
+  "tex_build/mt_bhinder.aux" 1787065476 54808 017087f6beca20361b6a680f8243657d "pdflatex"
   "tex_build/mt_bhinder.bbl" 1787058226 48087 e2388f392189409762fb97a94a56332c "biber tex_build/mt_bhinder"
-  "tex_build/mt_bhinder.lof" 1787065293 2953 912d2f2ab8a696f9ef651620c864927e "pdflatex"
-  "tex_build/mt_bhinder.lot" 1787065293 3938 dbbec145efd7319850702261f213fe56 "pdflatex"
-  "tex_build/mt_bhinder.run.xml" 1787065293 2353 e06cc201920911cde2ce1e70556471c6 "pdflatex"
-  "tex_build/mt_bhinder.toc" 1787065293 4731 8b3b4848632822961747ca66ab82b5e8 "pdflatex"
+  "tex_build/mt_bhinder.lof" 1787065476 2953 912d2f2ab8a696f9ef651620c864927e "pdflatex"
+  "tex_build/mt_bhinder.lot" 1787065476 3938 dbbec145efd7319850702261f213fe56 "pdflatex"
+  "tex_build/mt_bhinder.run.xml" 1787065476 2353 e06cc201920911cde2ce1e70556471c6 "pdflatex"
+  "tex_build/mt_bhinder.toc" 1787065476 4731 8b3b4848632822961747ca66ab82b5e8 "pdflatex"
   "twbook.cls" 1784461843 23822 c9680a8735058e1da046a96494663c1f ""
   (generated)
   "tex_build/mt_bhinder.aux"
