@@ -651,7 +651,7 @@ urlcolor=TWblue, urlbordercolor=white}
     I further declare that up to this date I have not published the work to
     hand nor have I presented it to another examination board in the same or
     similar form. I affirm that the version submitted matches the version in
-    the upload tool.``\vspace{4\baselineskip}
+    the upload tool.``\vspace{8\baselineskip}
 
   \noindent \@place, \today\hspace{0.4\linewidth}Digital Signature
   \ifx\@kurzfassung\@empty
