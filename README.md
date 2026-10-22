@@ -454,4 +454,14 @@ Important:
 
 ## License
 
-This project is part of an academic thesis. All code is open-source.
+The source code in this repository is released under the [MIT License](LICENSE).
+
+This covers the code (`src/`, `scripts/`, `tests/`, `main.py`, configs and the
+Makefile). It does not cover:
+
+- the thesis text and figures under `thesis/` and `docs/thesis_context/`, which
+  remain under the author's copyright and the publication rules of FH Technikum Wien;
+- the CTI data fetched at runtime (NVD/CVE, CISA KEV and Advisories, MISP/CIRCL),
+  which stays under the terms of its respective publisher;
+- third-party models downloaded at runtime (Llama 3.1, bge-small-en-v1.5,
+  ms-marco-MiniLM), which carry their own licenses.
