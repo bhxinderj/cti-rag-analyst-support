@@ -4,14 +4,14 @@ Cyber Threat Intelligence (CTI) verlangt von Analysten, Bedrohungs\-informatione
 aus heterogenen Quellen unter Zeitdruck zu korrelieren. Large Language
 Models (LLMs) k\"onnen diese Arbeit unterst\"utzen, scheitern im direkten
 Einsatz jedoch an drei Grenzen: veraltetem Modellwissen, Halluzinationen
-und fehlender Provenienz der Aussagen.
+und fehlendem Quellenbezug der Aussagen.
 
 Diese Masterarbeit untersucht, wie Retrieval-Augmented Generation (RAG)
 die Qualit\"at, Verl\"asslichkeit und operative N\"utzlichkeit von
 CTI-Analyse und Threat-Hunting-Workflows verbessern kann. Dazu wird ein
 Open-Source-Prototyp konzipiert, implementiert und evaluiert, der vier
 kuratierte CTI-Quellen (NVD, CISA KEV, CISA-Advisories, MISP; 84.982
-Dokumente) in einen provenienz-erhaltenden Index \"uberf\"uhrt. Ein
+Dokumente) in einen herkunfts\-erhaltenden Index \"uberf\"uhrt. Ein
 hybrides Retrieval kombiniert BM25 und dichte Vektorsuche mit
 Cross-Encoder-Reranking. Die Antwortgenerierung ist geschichtet:
 Verifizierbare Fakten werden deterministisch aus Passagen-Metadaten

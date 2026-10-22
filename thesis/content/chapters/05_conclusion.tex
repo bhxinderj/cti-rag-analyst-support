@@ -22,7 +22,12 @@ with field coverage, an analyst rubric, and scenario walk-throughs.
 The central finding is that answer correctness stays at the level of
 the non-retrieval baseline while traceability rises from 1.23 to 2.56:
 on this query set, retrieval buys verifiability rather than raw
-correctness.
+correctness. The baseline's parity is also conditional: it holds only
+where parametric knowledge covers the query, and where it does not,
+the baseline fabricates plausible answers instead of failing visibly
+(Appendix~\ref{app:outputs} shows CVE-2024-3094 misattributed to the
+Apache HTTP Server), while the grounded configurations answer from the
+snapshot or abstain.
 
 The scientific contribution is workflow-level empirical evidence for
 RAG in CTI (four task types under one architecture, with an ablation
@@ -46,11 +51,6 @@ The validity of the results is bounded by the following limitations:
           and a query set of 28 queries. This scope supports controlled
           comparison. Transfer to other corpora, languages, and
           organizations requires validation.
-    \item \textbf{Query-set bias toward the baseline:} The query set
-          names prominent, well-documented CVEs, which the parametric
-          baseline answers from training data. The correctness
-          comparison therefore reads as a conservative estimate of the
-          retrieval benefit (Section~\ref{sec:results-ablation}).
     \item \textbf{LLM-as-judge scoring:} All RAGAS scores come from a
           single judge model and inherit its biases
           \parencite{akkiraju2024facts}. The relevancy filter
@@ -58,29 +58,12 @@ The validity of the results is bounded by the following limitations:
           local and the hosted generator alike
           (Section~\ref{sec:results-generation}), a property of the
           judge metric rather than of one model.
-    \item \textbf{Context metrics are proxies:} Context precision and
-          context recall are reference-based, LLM-judged proxies, not
-          classical IR metrics. Document-level relevance judgments
-          (qrels) do not exist for this corpus. Per-stage retrieval
-          traces are preserved in the evaluation artifacts, so a
-          qrels-based ranking evaluation remains feasible future work
-          (Section~\ref{sec:future-work}).
     \item \textbf{Self-evaluation without a user study:} The
           scenario-based assessment was performed by the author along
           the rubric fixed before the results
           (Appendix~\ref{app:query-set}). No study with practicing
           analysts was conducted. Statements about operational
           usefulness rest on structured self-assessment.
-    \item \textbf{No runtime source assessment:} Ingestion is limited
-          to curated sources with preserved provenance, but the
-          prototype does not score source credibility at query time.
-          C3 is fulfilled only partially
-          (Section~\ref{sec:assessment}).
-    \item \textbf{Residual narrative inconsistencies:} The layered
-          design limits the impact of narrative errors (the
-          deterministic facts remain correct) but does not eliminate
-          them. Section~\ref{sec:scenario-cross} shows a gaps statement
-          contradicting the Layer-1 table of the same answer.
 \end{itemize}
 
 \section{Future work}
@@ -102,15 +85,10 @@ Section~\ref{sec:limitations} leave open.
 \end{figure}
 
 \subsection*{Scientific follow-up}
+% Seite um 3 Zeilen verlaengern, damit Kap. 5 ohne Witwenseite endet.
+\enlargethispage{3\baselineskip}
 
 \begin{itemize}
-    \item \textbf{Qrels-based retrieval evaluation:} The evaluation
-          artifacts preserve per-stage retrieval traces (BM25, vector,
-          fused, and reranked rankings) for every run. Adding
-          document-level relevance judgments to the existing queries
-          would enable classical IR metrics and separate ranking
-          quality from generation effects, complementing the
-          LLM-judged context proxies of this thesis.
     \item \textbf{User study with practicing analysts:} A study with
           analysts would replace the structured self-assessment,
           validate the rubric dimensions, and test whether the triage
