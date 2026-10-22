@@ -35,23 +35,36 @@ def _parse_severity(cvss_score: float | None) -> SeverityLevel:
     return SeverityLevel.LOW
 
 
-def _extract_cvss_v31(metrics: dict) -> tuple[float | None, str | None]:
-    """Extract CVSS v3.1 score and vector string."""
-    cvss_v31 = metrics.get("cvssMetricV31", [])
-    if not cvss_v31:
-        cvss_v31 = metrics.get("cvssMetricV30", [])
-    if not cvss_v31:
+# Preference order for the base score. v3.1 and v3.0 cover the evaluated
+# corpus; v4.0 is the fallback for CVEs that only carry a CNA-supplied v4.0
+# metric (NVD enrichment lag), which otherwise would be dropped by the
+# min_cvss filter and surface with severity "unknown".
+CVSS_METRIC_KEYS = ("cvssMetricV31", "cvssMetricV30", "cvssMetricV40")
+
+
+def _extract_cvss(metrics: dict) -> tuple[float | None, str | None]:
+    """Extract the CVSS base score and vector string (v3.1 > v3.0 > v4.0)."""
+    metric_list: list = []
+    for key in CVSS_METRIC_KEYS:
+        metric_list = metrics.get(key, [])
+        if metric_list:
+            break
+    if not metric_list:
         return None, None
 
     # Use primary metric (usually from NVD)
-    for metric in cvss_v31:
+    for metric in metric_list:
         if metric.get("type") == "Primary":
             data = metric.get("cvssData", {})
             return data.get("baseScore"), data.get("vectorString")
 
     # Fallback to first available
-    data = cvss_v31[0].get("cvssData", {})
+    data = metric_list[0].get("cvssData", {})
     return data.get("baseScore"), data.get("vectorString")
+
+
+# Backwards-compatible alias (the function also handled v3.0 before).
+_extract_cvss_v31 = _extract_cvss
 
 
 def _extract_cwe_ids(weaknesses: list) -> list[str]:
@@ -101,7 +114,7 @@ def parse_nvd_file(filepath: Path, min_cvss: float = 7.0) -> list[CTIDocument]:
 
         # Extract CVSS score
         metrics = cve.get("metrics", {})
-        cvss_score, cvss_vector = _extract_cvss_v31(metrics)
+        cvss_score, cvss_vector = _extract_cvss(metrics)
 
         # Apply CVSS filter
         if min_cvss > 0 and (cvss_score is None or cvss_score < min_cvss):
