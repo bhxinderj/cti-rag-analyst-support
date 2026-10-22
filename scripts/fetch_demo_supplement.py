@@ -144,6 +144,28 @@ def alert_sections(body_html: str) -> dict[str, str]:
     return sections
 
 
+def add_section_context(sections: dict[str, str], title: str, cve_ids: list[str]) -> dict[str, str]:
+    """
+    Prefix sections that do not name a CVE with a one-line context header.
+
+    AA advisories repeat their CVE ids in most sections; alerts name them
+    once in the opening paragraph. Without the header, the "mitigations"
+    chunk of an alert carries no CVE token, so an entity-centric follow-up
+    ("How do I mitigate CVE-2026-109618?") cannot reach it lexically and the
+    parser cannot attach the section-level CVE list either.
+    """
+    if not cve_ids:
+        return sections
+    header = f"Context: {title} ({', '.join(cve_ids)})."
+    out: dict[str, str] = {}
+    for key, text in sections.items():
+        if dl._extract_cve_ids_from_text(text):
+            out[key] = text
+        else:
+            out[key] = f"{header}\n\n{text}"
+    return out
+
+
 def fetch_cisa_alert(url: str, alert_id: str) -> dict:
     logger.info("CISA: fetching %s", url)
     page_html = dl._fetch_cisa_url_text(url)
@@ -152,15 +174,17 @@ def fetch_cisa_alert(url: str, alert_id: str) -> dict:
     if release_dt is None:
         raise RuntimeError(f"Could not parse the release date of {url}")
     body_html = dl._extract_cisa_body_html(page_html)
-    sections = alert_sections(body_html)
+    title = dl._extract_cisa_page_title(page_html)
+    cve_ids = dl._extract_cve_ids_from_text(body_html)
+    sections = add_section_context(alert_sections(body_html), title, cve_ids)
     if not sections:
         raise RuntimeError(f"No sections extracted from {url}")
     return {
         "id": alert_id,
-        "title": dl._extract_cisa_page_title(page_html),
+        "title": title,
         "published": release_dt.isoformat(),
         "last_updated": last_updated_dt.isoformat() if last_updated_dt else "",
-        "cve_ids": dl._extract_cve_ids_from_text(body_html),
+        "cve_ids": cve_ids,
         "sections": sections,
         "metadata": {
             "source_url": url,

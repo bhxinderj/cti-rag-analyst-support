@@ -214,3 +214,36 @@ class TestIndexSupplementCommand(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSupplementAlertSections(unittest.TestCase):
+    """The fetch script lives in scripts/; load it by path."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "fetch_demo_supplement", Path(__file__).resolve().parent.parent / "scripts" / "fetch_demo_supplement.py"
+        )
+        cls.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.mod)
+
+    def test_alert_preamble_is_split_into_summary_and_mitigations(self):
+        body = (
+            '<div class="c-page-title"><h1>Title</h1><time>October 21, 2026</time></div>'
+            "<p>CISA urges patching of CVE-2026-109618 and CVE-2026-109619.</p>"
+            "<p>CISA urges organizations to take the following actions:</p>"
+            "<ul><li>Apply the patch immediately.</li><li>Monitor for suspicious activity.</li></ul>"
+            "<h2>Disclaimer</h2><p>As is.</p>"
+        )
+        sections = self.mod.alert_sections(body)
+        self.assertEqual(list(sections), ["summary", "mitigations"])
+        self.assertNotIn("October 21", sections["summary"])
+        self.assertIn("Apply the patch", sections["mitigations"])
+
+    def test_sections_without_cve_get_context_header(self):
+        sections = {"summary": "Patch CVE-2026-109618 now.", "mitigations": "Apply the patch."}
+        out = self.mod.add_section_context(sections, "PHP alert", ["CVE-2026-109618", "CVE-2026-109619"])
+        self.assertEqual(out["summary"], sections["summary"])
+        self.assertTrue(out["mitigations"].startswith("Context: PHP alert (CVE-2026-109618, CVE-2026-109619)."))

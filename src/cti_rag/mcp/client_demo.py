@@ -15,7 +15,9 @@ import sys
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-QUESTION = "What is CVE-2023-4966 (Citrix Bleed) and how severe is it?"
+DEFAULT_QUESTION = "What is CVE-2023-4966 (Citrix Bleed) and how severe is it?"
+# Optional override: python -m src.cti_rag.mcp.client_demo "What is CVE-2026-109618?"
+QUESTION = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].strip() else DEFAULT_QUESTION
 
 
 async def main() -> None:
