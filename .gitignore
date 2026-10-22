@@ -210,6 +210,7 @@ __marimo__/
 
 # CTI data (reproducible via `python main.py download` + `python main.py index`)
 data/raw/
+data/raw_demo/
 data/processed/
 data/indexes/
 data/evaluation_results/

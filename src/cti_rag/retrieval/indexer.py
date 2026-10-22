@@ -11,6 +11,7 @@ Both indexes are persisted to disk for reproducibility.
 import json
 import logging
 import re
+import shutil
 from pathlib import Path
 
 import chromadb
@@ -86,6 +87,86 @@ def _read_bm25_artifact(path: Path) -> dict:
     """Load a persisted BM25 JSON artifact."""
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _merge_bm25_artifact(existing: dict, documents: list[CTIDocument]) -> dict:
+    """
+    Return a new BM25 payload with ``documents`` appended to ``existing``.
+
+    A doc_id that is already present is replaced in place (idempotent
+    re-runs of the supplement step), everything else keeps its position so
+    the base corpus ordering stays identical to the cloned setup.
+    """
+    doc_ids = list(existing["doc_ids"])
+    corpus_texts = list(existing["corpus_texts"])
+    tokenized_corpus = list(existing.get("tokenized_corpus") or [_tokenize_cti(t) for t in corpus_texts])
+    metadatas = list(existing.get("metadatas") or [{} for _ in doc_ids])
+    position = {doc_id: idx for idx, doc_id in enumerate(doc_ids)}
+
+    for doc in documents:
+        text = doc.to_embedding_text()
+        tokens = _tokenize_cti(text)
+        meta = doc.to_chromadb_metadata()
+        idx = position.get(doc.doc_id)
+        if idx is None:
+            position[doc.doc_id] = len(doc_ids)
+            doc_ids.append(doc.doc_id)
+            corpus_texts.append(text)
+            tokenized_corpus.append(tokens)
+            metadatas.append(meta)
+        else:
+            corpus_texts[idx] = text
+            tokenized_corpus[idx] = tokens
+            metadatas[idx] = meta
+
+    return {
+        "doc_ids": doc_ids,
+        "corpus_texts": corpus_texts,
+        "tokenized_corpus": tokenized_corpus,
+        "metadatas": metadatas,
+    }
+
+
+def clone_setup_indexes(base_config: dict, target_config: dict, root: Path) -> bool:
+    """
+    Copy the base setup's persisted indexes into the target setup's paths.
+
+    Returns True when a copy was made, False when the target already exists.
+    The ChromaDB collection is renamed to the target's collection name so the
+    retriever opens it under the target configuration. The base artifacts
+    are only read.
+    """
+    base_chroma = root / base_config["chromadb"]["persist_directory"]
+    base_bm25 = root / base_config["retrieval"]["bm25"]["index_path"]
+    target_chroma = root / target_config["chromadb"]["persist_directory"]
+    target_bm25 = root / target_config["retrieval"]["bm25"]["index_path"]
+
+    if target_chroma.exists() and target_bm25.exists():
+        logger.info("Target indexes already exist at %s; skipping clone", target_bm25.parent)
+        return False
+    if not base_chroma.exists() or not base_bm25.exists():
+        raise FileNotFoundError(
+            f"Base setup indexes missing: {base_chroma} / {base_bm25}. Build the base setup first."
+        )
+
+    logger.info("Cloning %s -> %s", base_bm25.parent, target_bm25.parent)
+    target_bm25.parent.mkdir(parents=True, exist_ok=True)
+    if target_chroma.exists():
+        shutil.rmtree(target_chroma)
+    shutil.copytree(base_chroma, target_chroma)
+    shutil.copy2(base_bm25, target_bm25)
+
+    base_name = base_config["retrieval"]["vector"]["collection_name"]
+    target_name = target_config["retrieval"]["vector"]["collection_name"]
+    if base_name != target_name:
+        client = chromadb.PersistentClient(
+            path=str(target_chroma),
+            settings=chromadb.Settings(anonymized_telemetry=False),
+        )
+        collection = client.get_collection(name=base_name)
+        collection.modify(name=target_name)
+        logger.info("Renamed ChromaDB collection %s -> %s", base_name, target_name)
+    return True
 
 
 class CTIIndexer:
@@ -174,6 +255,35 @@ class CTIIndexer:
 
         logger.info(f"BM25 index saved: {self.bm25_index_path}")
         logger.info(f"Indexing complete: {len(documents)} documents in both indexes")
+
+    def append_documents(self, documents: list[CTIDocument], batch_size: int = 100):
+        """
+        Add documents to existing indexes without rebuilding the base corpus.
+
+        ChromaDB uses upsert so re-running with the same doc_ids is
+        idempotent; the BM25 artifact is merged via _merge_bm25_artifact.
+        """
+        if not documents:
+            logger.warning("No documents to append")
+            return
+        if not self.bm25_index_path.exists():
+            raise FileNotFoundError(
+                f"BM25 artifact missing at {self.bm25_index_path}; append needs an existing index."
+            )
+
+        logger.info(f"Appending {len(documents)} documents...")
+        for i in tqdm(range(0, len(documents), batch_size), desc="ChromaDB (append)"):
+            batch = documents[i : i + batch_size]
+            self.collection.upsert(
+                ids=[doc.doc_id for doc in batch],
+                documents=[doc.to_embedding_text() for doc in batch],
+                metadatas=[doc.to_chromadb_metadata() for doc in batch],
+            )
+        logger.info(f"ChromaDB: {self.collection.count()} documents after append")
+
+        merged = _merge_bm25_artifact(_read_bm25_artifact(self.bm25_index_path), documents)
+        _write_bm25_artifact(self.bm25_index_path, **merged)
+        logger.info(f"BM25 index updated: {len(merged['doc_ids'])} documents")
 
     def clear_indexes(self):
         """Remove all documents from both indexes. Use with caution."""

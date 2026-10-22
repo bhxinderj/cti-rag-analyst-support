@@ -24,13 +24,23 @@ def _load_base_config() -> dict:
         return yaml.safe_load(f)
 
 
-def load_config() -> dict:
+SUPPORTED_SETUPS = {"a", "b", "demo"}
+
+
+def load_config(setup: str | None = None) -> dict:
     """
     Load configuration and apply the active experiment setup, if configured.
 
     Supported setups:
     - A: NVD + CISA KEV + MISP
     - B: NVD + CISA KEV + MISP + CISA Advisories
+    - demo: Setup B plus a post-snapshot supplement (``data.demo`` in
+      settings.yaml). Not evaluated; exists so the demo can triage a CVE
+      newer than the frozen corpus without touching the Setup-B artifacts.
+
+    ``setup`` overrides the ``CTI_RAG_SETUP`` environment variable. It is
+    used by the demo clone step, which needs the base setup's paths while
+    the process itself runs as the demo setup.
     """
     config = copy.deepcopy(_load_base_config())
 
@@ -42,16 +52,18 @@ def load_config() -> dict:
             raise ValueError(f"Unsupported CTI_RAG_LLM_PROVIDER: {llm_provider}")
         config["llm"]["provider"] = llm_provider
 
-    active_setup = os.environ.get("CTI_RAG_SETUP", "").strip().lower()
+    if setup is None:
+        setup = os.environ.get("CTI_RAG_SETUP", "")
+    active_setup = setup.strip().lower()
 
     if not active_setup:
         return config
 
-    if active_setup not in {"a", "b"}:
+    if active_setup not in SUPPORTED_SETUPS:
         raise ValueError(f"Unsupported CTI_RAG_SETUP: {active_setup}")
 
     setup_suffix = f"setup_{active_setup}"
-    include_cisa_advisories = active_setup == "b"
+    include_cisa_advisories = active_setup in {"b", "demo"}
 
     config["data"]["active_setup"] = active_setup
     config["data"]["include_cisa_advisories"] = include_cisa_advisories
@@ -60,6 +72,16 @@ def load_config() -> dict:
     config["retrieval"]["vector"]["collection_name"] = f"{config['retrieval']['vector']['collection_name']}_{setup_suffix}"
     config["chromadb"]["persist_directory"] = f"data/indexes/{setup_suffix}/chromadb"
     config["evaluation"]["results_dir"] = f"data/evaluation_results/{setup_suffix}"
+
+    if active_setup == "demo":
+        demo = config["data"].get("demo") or {}
+        base_setup = str(demo.get("base_setup", "b")).strip().lower()
+        if base_setup not in SUPPORTED_SETUPS - {"demo"}:
+            raise ValueError(f"Unsupported data.demo.base_setup: {base_setup}")
+        config["data"]["base_setup"] = base_setup
+        config["data"]["supplement_dir"] = demo.get("supplement_dir", "data/raw_demo")
+        if demo.get("snapshot_date"):
+            config["data"]["snapshot_date"] = str(demo["snapshot_date"])
 
     return config
 

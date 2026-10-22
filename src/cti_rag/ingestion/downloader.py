@@ -373,9 +373,10 @@ def download_nvd(
                 if published_dt and published_dt.date() > snapshot_cutoff:
                     continue
 
-            # Check cvssMetricV31, then cvssMetricV30
+            # Check cvssMetricV31, then cvssMetricV30, then the v4.0 fallback
+            # (same preference order as nvd_parser.CVSS_METRIC_KEYS)
             cvss_score = 0.0
-            for key in ("cvssMetricV31", "cvssMetricV30"):
+            for key in ("cvssMetricV31", "cvssMetricV30", "cvssMetricV40"):
                 metric_list = metrics.get(key, [])
                 if metric_list:
                     cvss_score = metric_list[0].get("cvssData", {}).get("baseScore", 0.0)
