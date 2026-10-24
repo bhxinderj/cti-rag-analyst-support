@@ -1,36 +1,37 @@
-# Demo-Video: Shot-für-Shot-Skript (Masterprüfung)
+# Demo Video: Shot-by-Shot Script (Master's Defense)
 
-Stand 2026-10-22. Alle Queries, Zeiten und Ausgaben in diesem Skript wurden an diesem Tag
-gegen den Demo-Index (`CTI_RAG_SETUP=demo`) und den eingefrorenen Setup-B-Index
-verifiziert. Sprache: Captions (Lower Thirds) Englisch, passend zur UI; Voiceover
-Deutsch. Für eine englische Prüfung die Voiceover-Zeilen 1:1 übersetzen.
+Status 2026-10-22. Every query, timing and output in this script was verified on that day
+against the demo index (`CTI_RAG_SETUP=demo`) and the frozen Setup-B index. The defense is
+held in English (English slides, English thesis), so captions (lower thirds) and voiceover
+are both English.
 
-Gesamtlänge: ca. 2:30 min. Harte Obergrenze 3:00 min.
+Total length: about 2:30 min. Hard ceiling 3:00 min.
 
-## 1. Dramaturgie
+## 1. Narrative
 
-Die Lücke CVE-2026-109618 / CVE-2026-109619 („php2shell") wurde am 20.10.2026 geleakt,
-am 21.10. gepatcht und von NVD und CISA erfasst. Kein Generationsmodell im Prototyp kann
-sie kennen. Jede korrekte Aussage im Video stammt damit nachweislich aus dem Retrieval.
+CVE-2026-109618 / CVE-2026-109619 ("php2shell") leaked on 2026-10-20, were patched on
+2026-10-21 and were recorded by NVD and CISA the same day. No generation model in the
+prototype can know them. Every correct statement in the video therefore demonstrably comes
+from retrieval.
 
-Erzählbogen in drei Akten:
+Three acts:
 
-| Akt | Szenen | Aussage |
+| Act | Scenes | Claim |
 |---|---|---|
-| Vorher | 1, 2 | Das System rät nicht. Ohne Evidenz: Abstention. Modell allein: weiß nichts. |
-| Nachher | 3, 4, 5 | Mit frischer Evidenz: deterministische Triage, Quellenvergleich, Konversation. |
-| Grenzen | 6, 7, 8 | Integration (MCP), ehrliche Latenz der evaluierten lokalen Konfiguration, Deklaration. |
+| Before | 1, 2 | The system does not guess. No evidence: abstention. Model alone: knows nothing. |
+| After | 3, 4, 5 | With fresh evidence: deterministic triage, cross-source comparison, conversation. |
+| Limits | 6, 7, 8 | Integration (MCP), honest latency of the evaluated local configuration, declaration. |
 
-Pflichtdeklaration (Szene 8 und Voiceover in Szene 3): Evaluiert wurde Setup B mit
-lokalem Llama 3.1 8B. Der Demo-Index ist der evaluierte Korpus plus ein Supplement vom
-22.10.2026. Extended Analysis ist ein nicht evaluierter Komfortmodus.
+Mandatory declaration (scene 8, and in the voiceover of scene 3): the evaluation covers
+Setup B with local Llama 3.1 8B. The demo index is the evaluated corpus plus a supplement
+fetched on 2026-10-22. Extended Analysis is a non-evaluated convenience mode.
 
-Nicht behaupten: dass die FH Technikum Wien betroffen war. Öffentlich belegt sind TU Wien,
-Uni Wien, WU, BOKU, MedUni Wien und JKU. Formulierung: „österreichische Hochschulen".
+Do not claim that FH Technikum Wien was affected. Publicly documented are TU Wien,
+University of Vienna, WU, BOKU, MedUni Vienna and JKU. Say "Austrian universities".
 
-## 2. Pre-Flight
+## 2. Pre-flight
 
-### 2.1 Daten und Index
+### 2.1 Data and index
 
 ```bash
 make demo-supplement
@@ -40,26 +41,26 @@ make demo-supplement
 make demo-index
 ```
 
-Beides ist idempotent. Vor der Aufnahme einmal laufen lassen, danach prüfen:
+Both are idempotent. Run once before recording, then check:
 
-- KEV-Status. Steht eine der CVEs inzwischen im CISA-KEV-Katalog, springt die Triage-Ampel
-  von „HIGH — Review" auf „CRITICAL — Immediate attention". Die Voiceover-Zeile in Szene 3
-  dann anpassen (Variante B unten). Prüfen mit:
+- KEV status. If either CVE has entered the CISA KEV catalog, the triage signal moves from
+  "HIGH — Review" to "CRITICAL — Immediate attention". Use voiceover variant B in scene 3.
+  Check with:
 
 ```bash
 curl -s https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json | grep -c "CVE-2026-10961"
 ```
 
-  Ist der Zähler größer als 0: den frischen KEV-Export nach
-  `data/raw_demo/cisa_kev/known_exploited_vulnerabilities.json` legen und `make demo-index`
-  erneut ausführen. Der Parser nimmt das Format unverändert.
+  If the count is above 0: save the fresh KEV export as
+  `data/raw_demo/cisa_kev/known_exploited_vulnerabilities.json` and run `make demo-index`
+  again. The parser accepts the format unchanged.
 
-### 2.2 Backend und UI
+### 2.2 Backend and UI
 
-Die UI spricht mit der API auf Port 8000. Setup B und Demo sind getrennte API-Prozesse.
-Empfehlung: Szenen 1 und 2 zuerst mit Setup B aufnehmen, dann API neu starten.
+The UI talks to the API on port 8000. Setup B and demo are separate API processes.
+Recommendation: record scenes 1 and 2 with Setup B first, then restart the API.
 
-Setup B (Szenen 1, 2):
+Setup B (scenes 1, 2):
 
 ```bash
 make api SETUP=b
@@ -69,7 +70,7 @@ make api SETUP=b
 make ui SETUP=b
 ```
 
-Demo (Szenen 3 bis 7):
+Demo (scenes 3 to 7):
 
 ```bash
 make api SETUP=demo
@@ -79,43 +80,43 @@ make api SETUP=demo
 make ui SETUP=demo
 ```
 
-Alternative ohne Neustart: zweite API auf Port 8001 und zweite UI auf Port 8502 mit
-`CTI_RAG_API_URL=http://localhost:8001`. Kostet doppelt Speicher für Embedding, Reranker
-und Chroma; auf dem M4 mit 24 GB machbar.
+Alternative without restart: a second API on port 8001 and a second UI on port 8502 with
+`CTI_RAG_API_URL=http://localhost:8001`. Doubles memory for embedding model, reranker and
+Chroma; feasible on the M4 with 24 GB.
 
-Vorwärmen vor jedem Aufnahmeblock: eine beliebige Query einmal durchlaufen lassen, damit
-Modelle und Chroma im Speicher sind. Danach in der Sidebar „＋ New chat".
+Warm up before each recording block: run any query once so models and Chroma are in memory.
+Then click "＋ New chat" in the sidebar.
 
-### 2.3 Bild
+### 2.3 Picture
 
-- Eigenes, leeres Browser-Profil. Keine Lesezeichenleiste, keine Tabs, keine Extensions.
-- Fenster 1920×1080, Browser-Zoom 125 %. Dark Theme und `toolbarMode = "minimal"` sind in
-  `.streamlit/config.toml` bereits gesetzt.
-- Sidebar aufgeklappt lassen: „Setup: b" bzw. „Setup: demo" ist Beweismittel.
-- Nicht stören an, Dock aus, Desktop leer.
-- Queries per Cmd+V einfügen, nicht tippen.
-- Jede Szene als eigener Clip, mindestens zwei Takes.
-- Nach jedem Ergebnis zwei Sekunden Ruhe, Cursor aus dem Bild.
-- Terminal für Szenen 2 und 6: Schrift 18 pt, Prompt gekürzt, keine Pfade mit Klarnamen,
-  kein `env`-Output, keine API-Keys.
+- Separate, empty browser profile. No bookmarks bar, no tabs, no extensions.
+- Window 1920×1080, browser zoom 125 %. Dark theme and `toolbarMode = "minimal"` are
+  already set in `.streamlit/config.toml`.
+- Keep the sidebar open: "Setup: b" and "Setup: demo" are evidence.
+- Do Not Disturb on, Dock hidden, desktop empty.
+- Paste queries with Cmd+V, never type them.
+- One clip per scene, at least two takes each.
+- Two seconds of stillness after every result, cursor out of frame.
+- Terminal for scenes 2 and 6: 18 pt font, shortened prompt, no paths with real names,
+  no `env` output, no API keys.
 
-### 2.4 Lesen vor dem Weiterklicken
+### 2.4 Read before you click on
 
-Im Extended-Modus formuliert ein hosted Modell die L2-Abschnitte. In einem Testlauf stand
-unter „Source Agreement", NVD und CISA vergäben beide CVSS 9.8, obwohl der CISA-Alert keinen
-Score nennt. Der L1-Block ist deterministisch und immer korrekt, L2 kann wackeln. Deshalb:
-Take erst freigeben, nachdem du die L2-Sätze gelesen hast. Enthält einer eine Aussage, die
-die zitierte Quelle nicht trägt, neuer Take. Im Zweifel die L1-Blöcke länger im Bild lassen.
+In Extended mode a hosted model writes the L2 sections. In one test run "Source Agreement"
+stated that NVD and CISA both assign CVSS 9.8, although the CISA alert carries no score.
+The L1 block is deterministic and was correct in every run; L2 can wobble. So: approve a
+take only after reading the L2 sentences. If one makes a claim the cited source does not
+support, record again. When in doubt, keep the L1 blocks on screen longer.
 
-## 3. Shot-Liste
+## 3. Shot list
 
-Notation: **Query** ist der exakte Text zum Einfügen. **Bild** ist das, was zu sehen sein
-muss. **Zoom** sind Nachbearbeitungs-Zooms. **Caption** ist die Lower-Third-Einblendung.
-**VO** ist der Voiceover-Text. Zeiten sind Zielwerte im fertigen Schnitt.
+Notation: **Query** is the exact text to paste. **Frame** is what must be visible.
+**Zoom** are post-production zooms. **Caption** is the lower-third overlay. **VO** is the
+voiceover. Times are targets in the final cut.
 
-### Szene 0: Titelkarte (0:00–0:05)
+### Scene 0: Title card (0:00–0:05)
 
-Standbild, kein UI.
+Still frame, no UI.
 
 Caption:
 ```
@@ -123,223 +124,223 @@ CTI-RAG Analyst Support — prototype demo
 Query: php2shell (CVE-2026-109618 / CVE-2026-109619), disclosed 2026-10-20
 ```
 
-VO: „Ein SOC-Analyst, fünf Quellen, eine neue kritische Lücke. Wir fragen den Prototypen
-nach php2shell, zwei Tage nach der Veröffentlichung."
+VO: "One SOC analyst, five sources, one new critical vulnerability. We ask the prototype
+about php2shell, two days after disclosure."
 
-### Szene 1: Abstention auf dem evaluierten Index (0:05–0:25)
+### Scene 1: Abstention on the evaluated index (0:05–0:25)
 
 Setup: B. Sidebar: Retrieval Mode `hybrid`, Pipeline `Templated (Phase 2)`,
-Extended Analysis **aus**.
+Extended Analysis **off**.
 
 Query:
 ```
 What is CVE-2026-109618 and how severe is it?
 ```
 
-Verifiziert: Abstention nach 3,6 s, Generation 0 ms, kein Modellaufruf.
+Verified: abstention after 3.6 s, generation 0 ms, no model call.
 
-Bild: Antwort „Insufficient evidence in the retrieved context to answer this question.
-Missing: The retrieved context does not mention cve-2026-109618." Darunter Timing-Pills
-mit `generation 0ms`. Expander „Retrieved context — not cited (5)" öffnen: fünf fremde
-CVEs mit niedrigen Scores.
+Frame: answer "Insufficient evidence in the retrieved context to answer this question.
+Missing: The retrieved context does not mention cve-2026-109618." Below it the timing pills
+with `generation 0ms`. Open the expander "Retrieved context — not cited (5)": five unrelated
+CVEs with low scores.
 
-Zoom: Sidebar „Setup: b", dann Pill `generation 0ms`, dann der geöffnete Expander.
+Zoom: sidebar "Setup: b", then the pill `generation 0ms`, then the opened expander.
 
 Caption:
 ```
 Evaluated corpus (snapshot 2025-12-31): no evidence → explicit abstention, no model call
 ```
 
-VO: „Der evaluierte Korpus endet am 31. Dezember 2025. Das System findet keine Evidenz und
-lehnt ab, bevor überhaupt ein Modell aufgerufen wird. Es zeigt trotzdem, was es gefunden
-hat, und markiert es als nicht verwendet."
+VO: "The evaluated corpus ends on 31 December 2025. The system finds no evidence and
+declines before any model is called. It still shows what it retrieved, and marks it as
+not used."
 
-Risiko: keins. Deterministisch, unter 4 s.
+Risk: none. Deterministic, under 4 s.
 
-### Szene 2: Modell ohne Retrieval (0:25–0:35)
+### Scene 2: Model without retrieval (0:25–0:35)
 
-Terminal, Setup B. Optional, aber stark. Vorher aufgenommen, im Schnitt auf 10 s gekürzt.
+Terminal, Setup B. Optional but strong. Recorded beforehand, cut to 10 s.
 
 ```bash
 CTI_RAG_SETUP=b .venv/bin/python main.py baseline "What is CVE-2026-109618 and how severe is it?"
 ```
 
-Verifiziert: 16 s Generierung lokal. Antwort sinngemäß: „There is no information available
+Verified: 16 s of local generation. Answer in substance: "There is no information available
 on CVE-2026-109618 … knowledge cutoff is 2025-12-31."
 
-Bild: nur die Zeilen „Mode: BASELINE (no retrieval)" und der Summary-Absatz.
+Frame: only the lines "Mode: BASELINE (no retrieval)" and the Summary paragraph.
 
 Caption:
 ```
 Same local model, no retrieval: nothing to say
 ```
 
-VO: „Das Sprachmodell allein kennt die Lücke nicht. Alles, was gleich kommt, muss also aus
-den Quellen stammen."
+VO: "The language model on its own does not know the vulnerability. Everything that follows
+has to come from the sources."
 
-Risiko: Die Baseline kann in einem anderen Take halluzinieren statt zuzugeben, dass sie
-nichts weiß. Beides ist verwendbar; eine Halluzination wäre sogar das stärkere Argument,
-braucht dann aber eine Caption „fabricated, no sources". Take lesen, dann entscheiden.
+Risk: in another take the baseline may hallucinate instead of admitting ignorance. Both are
+usable; a hallucination is actually the stronger argument, but then needs the caption
+"fabricated, no sources". Read the take, then decide.
 
-### Szene 3: VulnTriage auf dem Demo-Index (0:35–1:10)
+### Scene 3: VulnTriage on the demo index (0:35–1:10)
 
-Setup: demo. Sidebar: `hybrid`, `Templated (Phase 2)`, Extended Analysis **an**
-(Sidebar-Hinweis „Data leaves the local machine" sichtbar).
+Setup: demo. Sidebar: `hybrid`, `Templated (Phase 2)`, Extended Analysis **on**
+(sidebar notice "Data leaves the local machine" visible).
 
-Harter Schnitt von Szene 2, davor Zwischentitel 2 s:
+Hard cut from scene 2, preceded by a 2 s intertitle:
 ```
 Index refreshed: evaluated corpus + NVD records and CISA alert of 2026-10-21
 ```
 
-Query (identisch zu Szene 1):
+Query (identical to scene 1):
 ```
 What is CVE-2026-109618 and how severe is it?
 ```
 
-Verifiziert: 7 s, Template VulnTriage, zitiert `nvd_CVE-2026-109618` und
+Verified: 7 s, template VulnTriage, cites `nvd_CVE-2026-109618` and
 `cisa_advisory_CISA-ALERT-2026-10-21-PHP2SHELL_summary`.
 
-Bild, in dieser Reihenfolge:
-1. Pills: `extended`-Pill mit Modellname, `template · VulnTriage`, Timings.
-2. L1-Block: „Triage Signal: HIGH — Review", „Rationale: CVSS 9.8 + no KEV listing, no
-   ransomware evidence", „Listed in CISA KEV: no".
-3. Expander „Routing decision" öffnen: `template: VulnTriage`, `primary_entities:
+Frame, in this order:
+1. Pills: `extended` pill with model name, `template · VulnTriage`, timings.
+2. L1 block: "Triage Signal: HIGH — Review", "Rationale: CVSS 9.8 + no KEV listing, no
+   ransomware evidence", "Listed in CISA KEV: no".
+3. Open the expander "Routing decision": `template: VulnTriage`, `primary_entities:
    ['CVE-2026-109618']`.
-4. Kurz nach unten scrollen: „Exploitation Context", „Mitigations", „Gaps".
-5. Expander „Cited Sources (2)".
+4. Scroll down briefly: "Exploitation Context", "Mitigations", "Gaps".
+5. Expander "Cited Sources (2)".
 
-Zoom: Sidebar „Setup: demo" und der Hinweis „Data leaves the local machine"; dann Triage
-Signal; dann Routing decision.
+Zoom: sidebar "Setup: demo" and the notice "Data leaves the local machine"; then the triage
+signal; then the routing decision.
 
 Caption:
 ```
 L1: deterministic fact bundle (no model) · L2: generated, every sentence cited
 ```
 
-VO (Variante A, CVEs nicht in KEV): „Mit der frischen Evidenz routet der Prototyp die Frage
-auf das VulnTriage-Template. Der obere Block ist deterministisch: CVSS 9,8, kein KEV-Eintrag,
-Ampel ‚High, Review'. Critical wäre es erst mit bestätigter Ausnutzung. Darunter formuliert
-ein Modell den Kontext, jeder Satz mit Quelle. Hier läuft der Extended-Modus mit einem
-gehosteten Modell. Die evaluierte Konfiguration ist lokal; dazu gleich mehr."
+VO (variant A, CVEs not in KEV): "With fresh evidence the prototype routes the question to
+the VulnTriage template. The upper block is deterministic: CVSS 9.8, no KEV entry, signal
+'High, Review'. It would only become Critical with confirmed exploitation. Below, a model
+writes the context, every sentence with its source. This run uses Extended mode with a
+hosted model. The evaluated configuration is local; more on that in a moment."
 
-VO (Variante B, falls inzwischen in KEV): „… CVSS 9,8 und ein KEV-Eintrag, Ampel ‚Critical,
+VO (variant B, if listed in KEV meanwhile): "… CVSS 9.8 and a KEV entry, signal 'Critical,
 Immediate attention'. …"
 
-Risiko: Die L2-Sätze lesen (siehe 2.4). Der Abschnitt „Gaps" ist gewollt: er benennt, was
-die Quellen nicht hergeben (IoCs, Detection Rules). Im Bild lassen.
+Risk: read the L2 sentences (see 2.4). The "Gaps" section is intended: it names what the
+sources do not provide (IoCs, detection rules). Keep it in frame.
 
-### Szene 4: CrossSourceCompare (1:10–1:35)
+### Scene 4: CrossSourceCompare (1:10–1:35)
 
-Setup: demo. Extended **an**. Gleicher Chat oder „New chat", beides funktioniert, weil
-die Query eigenständig ist.
+Setup: demo. Extended **on**. Same chat or "New chat", both work because the query is
+standalone.
 
 Query:
 ```
 What do NVD and CISA say about the php2shell vulnerabilities CVE-2026-109618 and CVE-2026-109619?
 ```
 
-Verifiziert: 8,4 s, Template CrossSourceCompare, L1-Tabelle mit beiden CVEs, zitiert
-NVD-Einträge beider CVEs und den CISA-Alert.
+Verified: 8.4 s, template CrossSourceCompare, L1 table with both CVEs, cites both NVD
+records and the CISA alert.
 
-Bild: L1 „Comparison Table" (CVE, CVSS, KEV Listed, Ransomware, Vendor), darunter
-„Top Matches by Triage Signal", dann „Source Agreement" und „Cross-Source Facts".
+Frame: L1 "Comparison Table" (CVE, CVSS, KEV Listed, Ransomware, Vendor), below it
+"Top Matches by Triage Signal", then "Source Agreement" and "Cross-Source Facts".
 
-Zoom: Tabelle; dann der Satz in „Cross-Source Facts", der die zwei unterschiedlichen
-Root Causes (longjmp/OOM vs. stale global state) nebeneinanderstellt.
+Zoom: the table; then the sentence in "Cross-Source Facts" that puts the two different root
+causes side by side (longjmp/OOM vs. stale global state).
 
 Caption:
 ```
 Two CVEs, three sources (NVD, CISA alert, KEV check): one deterministic table
 ```
 
-VO: „Zwei CVEs, drei Quellen. Die Tabelle ist deterministisch aus den Fakten gebaut: gleiche
-Schwere, beide noch nicht im KEV. Das Modell ergänzt, worin sich die Quellen unterscheiden:
-NVD beschreibt zwei verschiedene Ursachen, CISA fasst beide unter php2shell zusammen."
+VO: "Two CVEs, three sources. The table is built deterministically from the facts: same
+severity, neither in KEV yet. The model adds where the sources differ: NVD describes two
+distinct root causes, CISA groups both under php2shell."
 
-Risiko: L2 „Source Agreement" lesen (2.4). Die Zeile „Entities with data from NVD and CISA
-KEV: 0" ist korrekt und darf stehen bleiben.
+Risk: read L2 "Source Agreement" (2.4). The line "Entities with data from NVD and CISA
+KEV: 0" is correct and may stay.
 
-### Szene 5: Konversatives Follow-up (1:35–1:55)
+### Scene 5: Conversational follow-up (1:35–1:55)
 
-Setup: demo. Extended **an**. Im selben Chat direkt nach Szene 3 aufnehmen (die Szene
-braucht den Vorgänger). Praktisch: Szene 3 und 5 in einem Take, Szene 4 separat.
+Setup: demo. Extended **on**. Record in the same chat right after scene 3 (the scene needs
+its predecessor). Practical: scenes 3 and 5 in one take, scene 4 separately.
 
 Query:
 ```
 and how do I mitigate it?
 ```
 
-Verifiziert: Condense in 1,1 s zu „How do I mitigate CVE-2026-109618?", Antwort nach
-11 s; `cisa_advisory_…_mitigations` auf Platz 1, Abschnitte „Mitigations" (fünf Punkte) und
-„Detection & Hunting" (PHP-Worker, die Shells starten).
+Verified: condensed in 1.1 s to "How do I mitigate CVE-2026-109618?", answer after 11 s;
+`cisa_advisory_…_mitigations` ranked first, sections "Mitigations" (five items) and
+"Detection & Hunting" (PHP workers launching shells).
 
-Bild: die Caption unter der Frage „🧭 Interpreted as (condensed): How do I mitigate
-CVE-2026-109618?"; dann „Mitigations" und „Detection & Hunting".
+Frame: the caption under the question "🧭 Interpreted as (condensed): How do I mitigate
+CVE-2026-109618?"; then "Mitigations" and "Detection & Hunting".
 
-Zoom: die „Interpreted as"-Zeile; dann „Detection & Hunting".
+Zoom: the "Interpreted as" line; then "Detection & Hunting".
 
 Caption:
 ```
 Condense-then-retrieve: the follow-up is rewritten, generation never sees chat history
 ```
 
-VO: „Ein Analyst fragt nach, nicht neu. Der Prototyp schreibt die elliptische Frage in eine
-eigenständige um und zeigt das offen an. Erst die umgeschriebene Frage geht in die
-unveränderte Pipeline. Die Antwort zieht jetzt die Maßnahmen aus dem CISA-Alert, inklusive
-eines Hunting-Hinweises."
+VO: "An analyst follows up, they do not start over. The prototype rewrites the elliptical
+question into a standalone one and shows that openly. Only the rewritten question enters
+the unchanged pipeline. The answer now pulls the measures from the CISA alert, including a
+hunting hint."
 
-Risiko: Falls das Modell „carry-over" statt „condensed" wählt, ändert sich nur das Wort in
-der Caption. Beides ist korrekt.
+Risk: if the model picks "carry-over" instead of "condensed", only that word in the caption
+changes. Both are correct.
 
-### Szene 6: MCP-Integration (1:55–2:10)
+### Scene 6: MCP integration (1:55–2:10)
 
-Terminal, Setup demo. Vorher aufgenommen.
+Terminal, Setup demo. Recorded beforehand.
 
 ```bash
 CTI_RAG_SETUP=demo .venv/bin/python -m src.cti_rag.mcp.client_demo "What is CVE-2026-109618 and how severe is it?"
 ```
 
-Verifiziert: 731 ms, Fußzeile „Template: VulnTriage · deterministic facts, no model
-invoked". Log-Zeilen vor „Tools: cti_query_tool" im Schnitt wegschneiden.
+Verified: 731 ms, footer "Template: VulnTriage · deterministic facts, no model invoked".
+Cut the log lines before "Tools: cti_query_tool".
 
-Bild: ab „Tools: cti_query_tool", der Tool-Call, der Fact-Block, die Fußzeile.
+Frame: from "Tools: cti_query_tool", the tool call, the fact block, the footer.
 
 Caption:
 ```
 Same fact pipeline exposed as an MCP tool: 0.7 s, no LLM
 ```
 
-VO: „Dieselbe Faktenpipeline steht als MCP-Tool bereit. Ein Analysten-Client bekommt die
-Triage in unter einer Sekunde, ohne dass ein Modell beteiligt ist."
+VO: "The same fact pipeline is available as an MCP tool. An analyst client gets the triage
+in under a second, with no model involved."
 
-### Szene 7: Der Preis der lokalen Konfiguration (2:10–2:25)
+### Scene 7: The price of the local configuration (2:10–2:25)
 
-Setup: demo. Extended **aus**. „New chat".
+Setup: demo. Extended **off**. "New chat".
 
 Query:
 ```
 What is CVE-2026-109618 and how severe is it?
 ```
 
-Verifiziert: lokal 46 s Generierung (End-to-End 48 s), gleiche Zitate wie Szene 3.
+Verified: 46 s of local generation (48 s end to end), same citations as scene 3.
 
-Aufnahme in Echtzeit, im Schnitt als Zeitraffer (8× bis 10×) mit eingeblendeter
-Stoppuhr. Am Ende 2 s Echtzeit auf der Pill `generation 46xxx ms`.
+Record in real time, present as time-lapse (8× to 10×) with a stopwatch overlay. End with
+2 s of real time on the pill `generation 46xxx ms`.
 
-Zoom: Pill `generation …ms` und das Fehlen der `extended`-Pill.
+Zoom: the pill `generation …ms` and the absence of the `extended` pill.
 
 Caption:
 ```
 Evaluated configuration: local Llama 3.1 8B, nothing leaves the machine · ~46 s (sped up)
 ```
 
-VO: „Das ist die evaluierte Konfiguration: alles lokal, nichts verlässt den Rechner. Der
-Preis ist Zeit, hier 46 Sekunden statt 7. Der Extended-Modus ist deshalb eine bewusste
-Wahl des Nutzers und klar gekennzeichnet, nicht der Standard."
+VO: "This is the evaluated configuration: everything local, nothing leaves the machine. The
+price is time, here 46 seconds instead of 7. That is why Extended mode is a deliberate,
+clearly labeled choice by the user, not the default."
 
-### Szene 8: Abspann (2:25–2:30)
+### Scene 8: End card (2:25–2:30)
 
-Standbild.
+Still frame.
 
 ```
 Evaluated: Setup B, local Llama 3.1 8B, 28 queries, n = 3 (see thesis ch. 4)
@@ -347,45 +348,45 @@ Demo index: evaluated corpus + supplement fetched 2026-10-22 (not evaluated)
 Extended Analysis: hosted model, user opt-in, not evaluated
 ```
 
-VO: „Evaluiert wurde Setup B mit dem lokalen Modell. Der Demo-Index ist der evaluierte
-Korpus plus ein dokumentiertes Supplement vom 22. Oktober. Zahlen dazu in Kapitel 4."
+VO: "The evaluation covers Setup B with the local model. The demo index is the evaluated
+corpus plus a documented supplement from 22 October. Numbers are in chapter 4."
 
-## 4. Schnitt
+## 4. Editing
 
-- Zooms als sanfte Ken-Burns-Bewegungen, 1,3× bis 1,6×, nie mehr. Jeder Zoom zeigt genau
-  ein Element.
-- Wartezeiten im Extended-Modus (7 bis 11 s) ungeschnitten lassen. Das ist das Argument.
-- Zeitraffer nur in Szene 7, mit Stoppuhr-Overlay. Kein versteckter Jump-Cut irgendwo.
-- Captions unten links, zwei Zeilen maximal, mindestens 4 s stehen lassen.
-- Untertitel für das gesamte Voiceover einbrennen. Beamer-Audio fällt aus.
-- Kein Musikbett oder sehr leise unter –30 dB.
-- Export: MP4, H.264, 1080p, 30 fps, AAC. Lokal in Keynote/PowerPoint einbetten, nicht
-  verlinken. Kopie auf USB-Stick. Backup-Folie pro Szene mit Screenshot.
+- Zooms as gentle Ken Burns moves, 1.3× to 1.6×, never more. Each zoom shows exactly one
+  element.
+- Leave Extended-mode waits (7 to 11 s) uncut. That is the argument.
+- Time-lapse only in scene 7, with the stopwatch overlay. No hidden jump cut anywhere.
+- Captions bottom left, two lines maximum, on screen for at least 4 s.
+- Burn in subtitles for the entire voiceover. Projector audio fails.
+- No music bed, or very quiet below –30 dB.
+- Export: MP4, H.264, 1080p, 30 fps, AAC. Embed locally in Keynote/PowerPoint, do not link.
+  Copy on a USB stick. One backup slide per scene with a screenshot.
 
-## 5. Einsatz in der Präsentation
+## 5. Use in the presentation
 
-Empfehlung: zwei Clips statt eines Blocks.
+Recommendation: two clips instead of one block.
 
-- Clip A (Szenen 0 bis 5, ca. 1:55) direkt nach der Architektur-Folie. Vorher die Boxen
-  benennen, die gleich im UI auftauchen: Router, Fact Bundle, Template, Reranker.
-- Clip B (Szenen 6 bis 8, ca. 0:35) bei der Diskussion von Latenz, Privacy und Future Work.
+- Clip A (scenes 0 to 5, about 1:55) right after the architecture slide. Name the boxes
+  beforehand that will appear in the UI: router, fact bundle, template, reranker.
+- Clip B (scenes 6 to 8, about 0:35) when discussing latency, privacy and future work.
 
-Für die Fragerunde: Laptop mit laufender Demo-API bereithalten. Eine Live-Frage nach dem
-Video ist ein starker Moment; das Risiko trägst du dann bewusst und mit vorgewärmtem System.
+For the Q&A: keep the laptop with the demo API running. A live question after the video is
+a strong moment; the risk is then deliberate and the system is warm.
 
-## 6. Verifizierte Messwerte (2026-10-22)
+## 6. Verified measurements (2026-10-22)
 
-| Szene | Konfiguration | Ergebnis | Zeit |
+| Scene | Configuration | Result | Time |
 |---|---|---|---|
-| 1 | Setup B, lokal, templated | Abstention, kein Modellaufruf | 3,6 s |
-| 2 | Setup B, Baseline ohne Retrieval | „no information … cutoff 2025-12-31" | 16 s |
-| 3 | Demo, Extended | VulnTriage, HIGH — Review, 2 Zitate | 7,1 s |
-| 4 | Demo, Extended | CrossSourceCompare, L1-Tabelle, 3 Zitate | 8,4 s |
-| 5 | Demo, Extended, Follow-up | condensed, Mitigations-Chunk Platz 1, Detection & Hunting | 1,1 s + 11,4 s |
-| 6 | Demo, MCP | VulnTriage-Fakten, kein LLM | 0,73 s |
-| 7 | Demo, lokal, templated | VulnTriage, 2 Zitate | 48,6 s (Generation 46,2 s) |
+| 1 | Setup B, local, templated | abstention, no model call | 3.6 s |
+| 2 | Setup B, baseline without retrieval | "no information … cutoff 2025-12-31" | 16 s |
+| 3 | demo, Extended | VulnTriage, HIGH — Review, 2 citations | 7.1 s |
+| 4 | demo, Extended | CrossSourceCompare, L1 table, 3 citations | 8.4 s |
+| 5 | demo, Extended, follow-up | condensed, mitigations chunk ranked first, Detection & Hunting | 1.1 s + 11.4 s |
+| 6 | demo, MCP | VulnTriage facts, no LLM | 0.73 s |
+| 7 | demo, local, templated | VulnTriage, 2 citations | 48.6 s (generation 46.2 s) |
 
-Supplement-Fakten: NVD führt beide CVEs mit CVSS 3.1 9.8 (Primary, nvd@nist.gov) und
-CVSS 4.0 9.2 (CNA php.net); CISA-Alert vom 21.10.2026 mit den Sections `summary` und
-`mitigations`; KEV am 22.10. ohne Eintrag; CIRCL-MISP ohne Event. Der eingefrorene Korpus
-(82.282 NVD-Dokumente) ist durch den CVSS-v4-Fallback unverändert.
+Supplement facts: NVD lists both CVEs with CVSS 3.1 9.8 (Primary, nvd@nist.gov) and
+CVSS 4.0 9.2 (CNA php.net); CISA alert of 2026-10-21 with sections `summary` and
+`mitigations`; KEV without an entry on 2026-10-22; CIRCL MISP without an event. The frozen
+corpus (82,282 NVD documents) is unchanged by the CVSS v4 fallback.
