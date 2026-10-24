@@ -186,6 +186,31 @@ Setup semantics:
 
 Baseline mode does not use retrieval and therefore does not require reindexing.
 
+### 5. Optional: demo setup with a post-snapshot supplement
+
+The evaluated corpus is frozen at `snapshot_date: 2025-12-31` (tag `evaluated-v1`).
+To demonstrate triage of a CVE newer than that corpus without touching the
+evaluated artifacts, a third setup `demo` clones the Setup-B indexes once and
+appends a small supplement (default: the "php2shell" pair CVE-2026-109618 /
+CVE-2026-109619 plus CISA's alert of 2026-10-21):
+
+```bash
+make demo-supplement   # fetch NVD records + CISA alert into data/raw_demo/ (manifests with sha256)
+make demo-index        # clone data/indexes/setup_b -> setup_demo, append the supplement
+make ui SETUP=demo     # or: make run QUERY="What is CVE-2026-109618?" SETUP=demo
+```
+
+Semantics and guarantees:
+- `data/raw/` and `data/indexes/setup_b/` are read only; the demo lives in `data/raw_demo/`,
+  `data/indexes/setup_demo/` and `data/processed/setup_demo/`.
+- The supplement passes through the same parsers and the snapshot filter, with its own
+  cutoff `data.demo.snapshot_date` (see `configs/settings.yaml`).
+- NVD records that only carry a CNA-supplied CVSS v4.0 metric are scored from it
+  (v3.1 and v3.0 keep precedence); this fallback never changes a document of the
+  evaluated corpus, which has v3.x scores throughout.
+- `make demo-index` is idempotent (ChromaDB upsert, BM25 merge by `doc_id`).
+- The demo setup is **not evaluated**. Reported metrics refer to Setup B only.
+
 ## Usage
 
 ### Interactive mode (recommended for exploration)

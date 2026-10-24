@@ -8,7 +8,7 @@ QUERY ?= What is CVE-2021-44228 and how has it been exploited?
 MODE ?= hybrid
 SETUP ?= default
 
-.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both run evaluate ablation smoke e2e-smoke e2e-eval-smoke test test-retrieval thesis thesis-force api ui rubric mcp-server mcp-demo
+.PHONY: help venv install bootstrap pull-llm warmup-models download index index-a index-b index-both demo-supplement demo-index run evaluate ablation smoke e2e-smoke e2e-eval-smoke test test-retrieval thesis thesis-force api ui rubric mcp-server mcp-demo
 
 help:
 	@echo "Available targets:"
@@ -22,7 +22,9 @@ help:
 	@echo "  make index-a         Rebuild Setup A indexes"
 	@echo "  make index-b         Rebuild Setup B indexes"
 	@echo "  make index-both      Rebuild both Setup A and Setup B indexes"
-	@echo "  make run             Run one query (override QUERY=... MODE=... SETUP=default|a|b)"
+	@echo "  make demo-supplement Fetch the post-snapshot demo supplement into data/raw_demo"
+	@echo "  make demo-index      Clone Setup B indexes and append the supplement (CTI_RAG_SETUP=demo)"
+	@echo "  make run             Run one query (override QUERY=... MODE=... SETUP=default|a|b|demo)"
 	@echo "  make evaluate        Run evaluation (override MODE=... SETUP=default|a|b)"
 	@echo "  make ablation        Run the ablation study"
 	@echo "  make smoke           Run narrow reproducibility and traceability checks"
@@ -68,13 +70,13 @@ download: install
 index: install
 	@if [ "$(SETUP)" = "default" ]; then \
 		$(VENV_PY) main.py index --clear; \
-	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ] || [ "$(SETUP)" = "demo" ]; then \
 		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) main.py index --clear; \
 	elif [ "$(SETUP)" = "both" ]; then \
 		CTI_RAG_SETUP=a $(VENV_PY) main.py index --clear; \
 		CTI_RAG_SETUP=b $(VENV_PY) main.py index --clear; \
 	else \
-		echo "Unsupported SETUP=$(SETUP). Use default, a, b, or both."; \
+		echo "Unsupported SETUP=$(SETUP). Use default, a, b, demo, or both."; \
 		exit 1; \
 	fi
 
@@ -88,13 +90,20 @@ index-both: install
 	CTI_RAG_SETUP=a $(VENV_PY) main.py index --clear
 	CTI_RAG_SETUP=b $(VENV_PY) main.py index --clear
 
+# Demo setup: never rebuilds Setup B; clones its indexes once and appends data/raw_demo.
+demo-supplement: install
+	$(VENV_PY) scripts/fetch_demo_supplement.py
+
+demo-index: install
+	CTI_RAG_SETUP=demo $(VENV_PY) main.py index-supplement
+
 run: install
 	@if [ "$(SETUP)" = "default" ]; then \
 		$(VENV_PY) main.py query "$(QUERY)" --mode $(MODE); \
-	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ] || [ "$(SETUP)" = "demo" ]; then \
 		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) main.py query "$(QUERY)" --mode $(MODE); \
 	else \
-		echo "SETUP=$(SETUP) is not valid for make run. Use default, a, or b."; \
+		echo "SETUP=$(SETUP) is not valid for make run. Use default, a, b, or demo."; \
 		exit 1; \
 	fi
 
@@ -137,20 +146,20 @@ rubric: install
 api: install
 	@if [ "$(SETUP)" = "default" ]; then \
 		$(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload; \
-	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ] || [ "$(SETUP)" = "demo" ]; then \
 		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) -m uvicorn src.cti_rag.api.server:app --host 0.0.0.0 --port 8000 --reload; \
 	else \
-		echo "SETUP=$(SETUP) is not valid for make api. Use default, a, or b."; \
+		echo "SETUP=$(SETUP) is not valid for make api. Use default, a, b, or demo."; \
 		exit 1; \
 	fi
 
 ui: install
 	@if [ "$(SETUP)" = "default" ]; then \
 		$(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501; \
-	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ]; then \
+	elif [ "$(SETUP)" = "a" ] || [ "$(SETUP)" = "b" ] || [ "$(SETUP)" = "demo" ]; then \
 		CTI_RAG_SETUP=$(SETUP) $(VENV_PY) -m streamlit run src/cti_rag/ui/app.py --server.port 8501; \
 	else \
-		echo "SETUP=$(SETUP) is not valid for make ui. Use default, a, or b."; \
+		echo "SETUP=$(SETUP) is not valid for make ui. Use default, a, b, or demo."; \
 		exit 1; \
 	fi
 
@@ -161,7 +170,7 @@ thesis-force:
 	cd thesis && latexmk -pdf -interaction=nonstopmode -file-line-error -outdir=tex_build -g mt_bhinder.tex
 
 mcp-server: install
-	CTI_RAG_SETUP=$(if $(filter a b,$(SETUP)),$(SETUP),b) $(VENV_PY) -m src.cti_rag.mcp.server
+	CTI_RAG_SETUP=$(if $(filter a b demo,$(SETUP)),$(SETUP),b) $(VENV_PY) -m src.cti_rag.mcp.server
 
 mcp-demo: install
-	CTI_RAG_SETUP=$(if $(filter a b,$(SETUP)),$(SETUP),b) $(VENV_PY) -m src.cti_rag.mcp.client_demo
+	CTI_RAG_SETUP=$(if $(filter a b demo,$(SETUP)),$(SETUP),b) $(VENV_PY) -m src.cti_rag.mcp.client_demo
