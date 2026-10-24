@@ -102,7 +102,7 @@
         <mxCell id="33" value="[DB] Evaluation Artifacts&#xa;JSON - CSV - traces" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#15803D;fontSize=11;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1360" y="860" width="180" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="34" value="Judge Provider&#xa;OpenRouter / OpenAI&#xa;or Ollama" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="34" value="Judge Provider&#xa;OpenRouter or Ollama" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#EA580C;fontSize=11;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1670" y="865" width="110" height="70" as="geometry" />
         </mxCell>
 
