@@ -70,6 +70,15 @@ data:
       year_range: [2020, 2025]
     misp:
       raw_dir: "data/raw/misp"
+  # --- Demo setup (CTI_RAG_SETUP=demo) ---
+  # Not part of the evaluation. Clones the Setup-B indexes and appends a small
+  # supplement of post-snapshot documents (fetched by
+  # scripts/fetch_demo_supplement.py) so the demo can triage a current CVE.
+  # The evaluated raw snapshot (data/raw) and the Setup-B indexes stay untouched.
+  demo:
+    base_setup: "b"
+    snapshot_date: "2026-10-22"   # Supplement cutoff; documents published later are dropped
+    supplement_dir: "data/raw_demo"
 
 # --- ChromaDB Configuration ---
 chromadb:

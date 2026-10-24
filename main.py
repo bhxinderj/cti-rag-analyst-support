@@ -178,53 +178,91 @@ def cmd_download(args):
     print("\nDownload complete. Check data/raw/ for files.")
 
 
-def cmd_index(args):
-    """Ingest data and build search indexes."""
+def _parse_source_tree(config: dict, raw_root: Path, *, label: str = "") -> list:
+    """
+    Parse one raw-data tree (``<raw_root>/{nvd,cisa_kev,cisa_advisories,misp}``)
+    into CTIDocuments, honouring the setup's advisory inclusion flag.
+
+    The evaluated snapshot lives in ``data/raw``; the demo supplement uses the
+    same layout under ``data.demo.supplement_dir`` so both go through the
+    identical parsers and filters.
+    """
     from src.cti_rag.ingestion.nvd_parser import parse_nvd_directory
     from src.cti_rag.ingestion.cisa_parser import parse_cisa_kev, parse_cisa_advisories_directory
     from src.cti_rag.ingestion.misp_parser import parse_misp_directory
+
+    docs = []
+    include_cisa_advisories = config["data"].get("include_cisa_advisories", True)
+    prefix = f"  {label}" if label else "  "
+
+    nvd_dir = raw_root / "nvd"
+    if nvd_dir.exists() and list(nvd_dir.glob("*.json")):
+        min_cvss = config["data"]["sources"]["nvd"].get("min_cvss", 7.0)
+        nvd_docs = parse_nvd_directory(nvd_dir, min_cvss=min_cvss)
+        docs.extend(nvd_docs)
+        print(f"{prefix}NVD: {len(nvd_docs)} documents")
+
+    kev_file = raw_root / "cisa_kev" / "known_exploited_vulnerabilities.json"
+    if kev_file.exists():
+        kev_docs = parse_cisa_kev(kev_file)
+        docs.extend(kev_docs)
+        print(f"{prefix}CISA KEV: {len(kev_docs)} documents")
+
+    advisory_dir = raw_root / "cisa_advisories"
+    if include_cisa_advisories and advisory_dir.exists() and list(advisory_dir.glob("*.json")):
+        advisory_docs = parse_cisa_advisories_directory(advisory_dir)
+        docs.extend(advisory_docs)
+        print(f"{prefix}CISA Advisories: {len(advisory_docs)} documents")
+    elif not include_cisa_advisories:
+        print(f"{prefix}CISA Advisories: skipped for this setup")
+
+    misp_dir = raw_root / "misp"
+    if misp_dir.exists() and list(misp_dir.glob("*.json")):
+        misp_docs = parse_misp_directory(misp_dir)
+        docs.extend(misp_docs)
+        print(f"{prefix}MISP: {len(misp_docs)} documents")
+
+    return docs
+
+
+def _base_raw_root(config: dict, root: Path) -> Path:
+    """Parent directory of the configured raw source dirs (normally data/raw)."""
+    return (root / config["data"]["sources"]["nvd"]["raw_dir"]).parent
+
+
+def _load_supplement_documents(config: dict, root: Path) -> list:
+    """Parse and snapshot-filter the demo supplement tree."""
+    supplement_dir = config["data"].get("supplement_dir")
+    if not supplement_dir:
+        raise ValueError("No supplement_dir configured; the supplement is a demo-setup feature.")
+    supplement_root = root / supplement_dir
+    if not supplement_root.exists():
+        print(f"  Supplement directory missing: {supplement_root}")
+        return []
+    docs = _parse_source_tree(config, supplement_root, label="supplement ")
+    docs, dropped = _filter_documents_by_snapshot(docs, config["data"].get("snapshot_date"))
+    if dropped:
+        print(f"  Snapshot filter dropped {len(dropped)} supplement document(s)")
+    return docs
+
+
+def cmd_index(args):
+    """Ingest data and build search indexes."""
     from src.cti_rag.retrieval.indexer import CTIIndexer
 
     config = load_config()
     root = get_project_root()
-    all_docs = []
     active_setup = config["data"].get("active_setup", "default")
-    include_cisa_advisories = config["data"].get("include_cisa_advisories", True)
     snapshot_date = config["data"].get("snapshot_date")
 
     print(f"Building indexes for setup: {active_setup}")
 
-    # Parse NVD
-    nvd_dir = root / config["data"]["sources"]["nvd"]["raw_dir"]
-    if nvd_dir.exists() and list(nvd_dir.glob("*.json")):
-        min_cvss = config["data"]["sources"]["nvd"].get("min_cvss", 7.0)
-        nvd_docs = parse_nvd_directory(nvd_dir, min_cvss=min_cvss)
-        all_docs.extend(nvd_docs)
-        print(f"  NVD: {len(nvd_docs)} documents")
+    all_docs = _parse_source_tree(config, _base_raw_root(config, root))
 
-    # Parse CISA KEV
-    kev_dir = root / config["data"]["sources"]["cisa_kev"]["raw_dir"]
-    kev_file = kev_dir / "known_exploited_vulnerabilities.json"
-    if kev_file.exists():
-        kev_docs = parse_cisa_kev(kev_file)
-        all_docs.extend(kev_docs)
-        print(f"  CISA KEV: {len(kev_docs)} documents")
-
-    # Parse CISA Advisories
-    advisory_dir = root / config["data"]["sources"]["cisa_advisories"]["raw_dir"]
-    if include_cisa_advisories and advisory_dir.exists() and list(advisory_dir.glob("*.json")):
-        advisory_docs = parse_cisa_advisories_directory(advisory_dir)
-        all_docs.extend(advisory_docs)
-        print(f"  CISA Advisories: {len(advisory_docs)} documents")
-    elif not include_cisa_advisories:
-        print("  CISA Advisories: skipped for this setup")
-
-    # Parse MISP
-    misp_dir = root / config["data"]["sources"]["misp"]["raw_dir"]
-    if misp_dir.exists() and list(misp_dir.glob("*.json")):
-        misp_docs = parse_misp_directory(misp_dir)
-        all_docs.extend(misp_docs)
-        print(f"  MISP: {len(misp_docs)} documents")
+    if config["data"].get("supplement_dir"):
+        supplement_root = root / config["data"]["supplement_dir"]
+        if supplement_root.exists():
+            all_docs.extend(_parse_source_tree(config, supplement_root, label="supplement "))
 
     if not all_docs:
         print("\nNo documents found. Run 'python main.py download' first.")
@@ -254,6 +292,64 @@ def cmd_index(args):
         print("Previous indexes cleared.")
 
     indexer.index_documents(all_docs)
+
+    stats = indexer.get_stats()
+    print(f"\nIndex stats: {json.dumps(stats, indent=2)}")
+
+
+def cmd_index_supplement(args):
+    """
+    Demo setup only: clone the base setup's indexes (once) and append the
+    supplement documents instead of re-embedding the whole corpus.
+
+    The base setup's artifacts are read, never written. Re-runs are
+    idempotent (ChromaDB upsert, BM25 merge by doc_id).
+    """
+    from src.cti_rag.retrieval.indexer import CTIIndexer, clone_setup_indexes
+
+    config = load_config()
+    root = get_project_root()
+    active_setup = config["data"].get("active_setup", "default")
+    base_setup = config["data"].get("base_setup")
+    if active_setup != "demo" or not base_setup:
+        print("index-supplement requires CTI_RAG_SETUP=demo (see data.demo in configs/settings.yaml).")
+        sys.exit(2)
+
+    base_config = load_config(setup=base_setup)
+    print(f"Demo setup: base={base_setup}, snapshot_date={config['data'].get('snapshot_date')}")
+
+    cloned = clone_setup_indexes(base_config, config, root)
+    print("  Indexes cloned from base setup." if cloned else "  Demo indexes present; appending.")
+
+    supplement_docs = _load_supplement_documents(config, root)
+    if not supplement_docs:
+        print("\nNo supplement documents found. Run scripts/fetch_demo_supplement.py first.")
+        return
+
+    print(f"\nSupplement documents to append: {len(supplement_docs)}")
+    for doc in supplement_docs:
+        print(f"    {doc.doc_id}  (published {doc.published_date.date() if doc.published_date else 'n/a'})")
+
+    indexer = CTIIndexer()
+    indexer.append_documents(supplement_docs)
+
+    # Keep the processed-document dump in step: base dump + supplement, deduped by doc_id.
+    processed_file = root / config["data"].get("processed_path", "data/processed/all_documents.json")
+    base_processed = root / base_config["data"].get("processed_path", "data/processed/all_documents.json")
+    processed_docs: list[dict] = []
+    if processed_file.exists():
+        with open(processed_file) as f:
+            processed_docs = json.load(f)
+    elif base_processed.exists():
+        with open(base_processed) as f:
+            processed_docs = json.load(f)
+    supplement_ids = {doc.doc_id for doc in supplement_docs}
+    processed_docs = [d for d in processed_docs if d.get("doc_id") not in supplement_ids]
+    processed_docs.extend(doc.model_dump(mode="json") for doc in supplement_docs)
+    processed_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(processed_file, "w") as f:
+        json.dump(processed_docs, f, indent=2, default=str)
+    print(f"Processed documents saved: {processed_file} ({len(processed_docs)} documents)")
 
     stats = indexer.get_stats()
     print(f"\nIndex stats: {json.dumps(stats, indent=2)}")
@@ -593,6 +689,12 @@ def main():
     idx = subparsers.add_parser("index", help="Build search indexes")
     idx.add_argument("--clear", action="store_true", help="Clear existing indexes first")
 
+    # Index supplement (demo setup)
+    subparsers.add_parser(
+        "index-supplement",
+        help="Demo setup: clone the base indexes once and append data.demo.supplement_dir documents",
+    )
+
     # Query
     q = subparsers.add_parser("query", help="Run a RAG query")
     q.add_argument("question", type=str)
@@ -662,6 +764,7 @@ def main():
     commands = {
         "download": cmd_download,
         "index": cmd_index,
+        "index-supplement": cmd_index_supplement,
         "query": cmd_query,
         "baseline": cmd_baseline,
         "interactive": cmd_interactive,
